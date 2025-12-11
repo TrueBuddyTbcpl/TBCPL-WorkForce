@@ -20,7 +20,6 @@ export const generatePDF = async () => {
     });
 
     const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
 
     // Convert each page to canvas and add to PDF
     for (let i = 0; i < pages.length; i++) {
