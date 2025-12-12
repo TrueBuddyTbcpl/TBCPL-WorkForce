@@ -1,7 +1,7 @@
 // components/operation/report-create/sections/DynamicSection.tsx
 import { useState } from 'react';
 import type { Section, TableContent, CustomTableContent, NarrativeContent } from '../types/report.types';
-import { Trash2, Plus, GripVertical, Image as ImageIcon, X } from 'lucide-react';
+import { Trash2, Plus, GripVertical, Link as LinkIcon, X } from 'lucide-react';
 
 interface DynamicSectionProps {
     section: Section;
@@ -18,7 +18,6 @@ const DynamicSection = ({ section, index, onUpdate, onDelete }: DynamicSectionPr
         onUpdate(section.id, { ...section, title });
     };
 
-
     const handleTypeChange = (type: 'table' | 'narrative' | 'custom-table') => {
         let newContent: TableContent | NarrativeContent | CustomTableContent;
 
@@ -27,7 +26,6 @@ const DynamicSection = ({ section, index, onUpdate, onDelete }: DynamicSectionPr
         } else if (type === 'narrative') {
             newContent = { text: '' };
         } else {
-            // type === 'custom-table'
             newContent = { columnCount: 2, columnHeaders: ['', ''], rows: [] };
         }
 
@@ -132,6 +130,18 @@ const DynamicSection = ({ section, index, onUpdate, onDelete }: DynamicSectionPr
         if (section.type === 'narrative') {
             onUpdate(section.id, { ...section, content: { text } });
         }
+    };
+
+    // Image Link handlers
+    const handleImageLinkChange = (idx: number, link: string) => {
+        const updatedImages = [...(section.images || [])];
+        updatedImages[idx] = link;
+        onUpdate(section.id, { ...section, images: updatedImages });
+    };
+
+    const handleDeleteImage = (idx: number) => {
+        const updatedImages = section.images?.filter((_, i) => i !== idx) || [];
+        onUpdate(section.id, { ...section, images: updatedImages });
     };
 
     return (
@@ -365,7 +375,7 @@ const DynamicSection = ({ section, index, onUpdate, onDelete }: DynamicSectionPr
                         </div>
                     )}
 
-                    {/* Image Upload Checkbox & Input */}
+                    {/* Image Links Section - SIMPLIFIED */}
                     <div className="border-t border-gray-200 pt-4">
                         <label className="flex items-center gap-2 mb-3">
                             <input
@@ -374,14 +384,13 @@ const DynamicSection = ({ section, index, onUpdate, onDelete }: DynamicSectionPr
                                 onChange={(e) => {
                                     setHasImages(e.target.checked);
                                     if (!e.target.checked) {
-                                        // Clear images when unchecking
                                         onUpdate(section.id, { ...section, images: [] });
                                     }
                                 }}
                                 className="w-4 h-4"
                             />
                             <span className="text-sm font-medium text-gray-700">
-                                Attach Images to this section
+                                Attach Image Links to this section
                             </span>
                         </label>
 
@@ -391,7 +400,7 @@ const DynamicSection = ({ section, index, onUpdate, onDelete }: DynamicSectionPr
                                 {(!section.images || section.images.length === 0) && (
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            How many images do you want to upload?
+                                            How many images do you want to add?
                                         </label>
                                         <input
                                             type="number"
@@ -403,7 +412,6 @@ const DynamicSection = ({ section, index, onUpdate, onDelete }: DynamicSectionPr
                                                 if (e.key === 'Enter') {
                                                     const count = parseInt((e.target as HTMLInputElement).value);
                                                     if (count > 0) {
-                                                        // Initialize empty array with placeholders
                                                         const emptyImages = Array(count).fill('');
                                                         onUpdate(section.id, {
                                                             ...section,
@@ -415,7 +423,6 @@ const DynamicSection = ({ section, index, onUpdate, onDelete }: DynamicSectionPr
                                             onBlur={(e) => {
                                                 const count = parseInt(e.target.value);
                                                 if (count > 0) {
-                                                    // Initialize empty array with placeholders
                                                     const emptyImages = Array(count).fill('');
                                                     onUpdate(section.id, {
                                                         ...section,
@@ -430,12 +437,12 @@ const DynamicSection = ({ section, index, onUpdate, onDelete }: DynamicSectionPr
                                     </div>
                                 )}
 
-                                {/* Individual Image Upload Slots */}
+                                {/* Image Link Input Fields */}
                                 {section.images && section.images.length > 0 && (
                                     <div className="space-y-3">
                                         <div className="flex items-center justify-between">
                                             <label className="text-sm font-medium text-gray-700">
-                                                Upload Images ({section.images.filter(img => img !== '').length} / {section.images.length})
+                                                Image Links ({section.images.filter(img => img !== '').length} / {section.images.length})
                                             </label>
                                             <button
                                                 onClick={() => {
@@ -447,72 +454,52 @@ const DynamicSection = ({ section, index, onUpdate, onDelete }: DynamicSectionPr
                                             </button>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-3">
                                             {section.images.map((img, idx) => (
-                                                <div key={idx} className="border-2 border-dashed border-gray-300 rounded-lg p-3 hover:border-blue-400 transition-colors">
-                                                    {!img || img === '' ? (
-                                                        <div className="space-y-2">
-                                                            <div className="text-center">
-                                                                <p className="text-xs font-semibold text-gray-600 mb-2">
-                                                                    Image {idx + 1}
-                                                                </p>
-                                                                <input
-                                                                    type="file"
-                                                                    accept="image/*"
-                                                                    onChange={(e) => {
-                                                                        const file = e.target.files?.[0];
-                                                                        if (file) {
-                                                                            const reader = new FileReader();
-                                                                            reader.onloadend = () => {
-                                                                                const updatedImages = [...(section.images || [])];
-                                                                                updatedImages[idx] = reader.result as string;
-                                                                                onUpdate(section.id, {
-                                                                                    ...section,
-                                                                                    images: updatedImages
-                                                                                });
-                                                                            };
-                                                                            reader.readAsDataURL(file);
-                                                                        }
-                                                                    }}
-                                                                    className="hidden"
-                                                                    id={`image-upload-${section.id}-${idx}`}
-                                                                />
-                                                                <label
-                                                                    htmlFor={`image-upload-${section.id}-${idx}`}
-                                                                    className="cursor-pointer flex flex-col items-center justify-center h-24"
-                                                                >
-                                                                    <ImageIcon className="w-8 h-8 text-gray-400 mb-2" />
-                                                                    <span className="text-xs text-gray-500">
-                                                                        Click to upload
-                                                                    </span>
-                                                                </label>
+                                                <div key={idx} className="bg-gray-50 border border-gray-300 rounded-lg p-3">
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="flex-shrink-0 mt-2">
+                                                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                                                <LinkIcon className="w-4 h-4 text-blue-600" />
                                                             </div>
                                                         </div>
-                                                    ) : (
-                                                        <div className="relative">
-                                                            <img
-                                                                src={img}
-                                                                alt={`Preview ${idx + 1}`}
-                                                                className="w-full h-24 object-cover rounded-lg"
+                                                        
+                                                        <div className="flex-1 space-y-2">
+                                                            <label className="block text-xs font-semibold text-gray-700">
+                                                                Image {idx + 1} - Paste Link
+                                                            </label>
+                                                            <input
+                                                                type="text"
+                                                                value={img || ''}
+                                                                onChange={(e) => handleImageLinkChange(idx, e.target.value)}
+                                                                placeholder="Paste Google Drive link or direct image URL here"
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                                             />
-                                                            <button
-                                                                onClick={() => {
-                                                                    const updatedImages = [...(section.images || [])];
-                                                                    updatedImages[idx] = '';
-                                                                    onUpdate(section.id, {
-                                                                        ...section,
-                                                                        images: updatedImages
-                                                                    });
-                                                                }}
-                                                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 shadow-md"
-                                                            >
-                                                                <X className="w-3 h-3" />
-                                                            </button>
-                                                            <div className="absolute bottom-1 left-1 bg-black bg-opacity-60 text-white text-xs px-2 py-0.5 rounded">
-                                                                Image {idx + 1}
-                                                            </div>
+                                                            {img && (
+                                                                <div className="relative mt-2">
+                                                                    <img
+                                                                        src={img}
+                                                                        alt={`Preview ${idx + 1}`}
+                                                                        className="w-full h-32 object-cover rounded border border-gray-200"
+                                                                        onError={(e) => {
+                                                                            (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="100"%3E%3Crect fill="%23fee" width="200" height="100"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23c00" font-size="12"%3EInvalid Image URL%3C/text%3E%3C/svg%3E';
+                                                                        }}
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                            <p className="text-xs text-blue-600">
+                                                                💡 For Google Drive: Right-click image → Get link → Change to "Anyone with the link"
+                                                            </p>
                                                         </div>
-                                                    )}
+
+                                                        <button
+                                                            onClick={() => handleDeleteImage(idx)}
+                                                            className="flex-shrink-0 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                            title="Delete this image"
+                                                        >
+                                                            <X className="w-5 h-5" />
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             ))}
                                         </div>
@@ -521,7 +508,6 @@ const DynamicSection = ({ section, index, onUpdate, onDelete }: DynamicSectionPr
                             </div>
                         )}
                     </div>
-
                 </div>
             )}
         </div>

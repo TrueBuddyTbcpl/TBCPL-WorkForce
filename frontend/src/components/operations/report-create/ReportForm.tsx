@@ -1,10 +1,10 @@
 // components/operation/report-create/ReportForm.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { ReportData, Section } from './types/report.types';
-import { ChevronRight, Plus, Save, Upload, X } from 'lucide-react';
+import { ChevronRight, Plus, Save, Upload, X, ArrowLeft } from 'lucide-react';
 import DynamicSection from './sections/DynamicSection';
 
 const headerSchema = z.object({
@@ -23,30 +23,116 @@ interface ReportFormProps {
     initialData?: ReportData;
 }
 
+const FORM_STEP_KEY = 'report_form_step';
+
 const ReportForm = ({ onComplete, initialData }: ReportFormProps) => {
-    const [currentStep, setCurrentStep] = useState(1);
+    // Load saved form step on mount
+    const [currentStep, setCurrentStep] = useState(() => {
+        const savedStep = localStorage.getItem(FORM_STEP_KEY);
+        return savedStep ? parseInt(savedStep) : 1;
+    });
+
     const [sections, setSections] = useState<Section[]>(initialData?.sections || []);
     const [headerData, setHeaderData] = useState<HeaderFormData | null>(
         initialData?.header || null
     );
     const [logoPreview, setLogoPreview] = useState<string | null>(
-        initialData?.header.clientLogo || null
+        initialData?.header?.clientLogo || null
     );
 
     const {
         register,
         handleSubmit,
         setValue,
+        watch,
         formState: { errors },
     } = useForm<HeaderFormData>({
         resolver: zodResolver(headerSchema),
-        defaultValues: initialData?.header,
+        defaultValues: initialData?.header || {
+            title: '',
+            subtitle: '',
+            preparedFor: '',
+            preparedBy: '',
+            date: new Date().toISOString().split('T')[0],
+            clientLogo: ''
+        },
     });
+
+    // Watch all form fields for changes
+    const watchedFields = watch();
+
+    // Save form step whenever it changes
+    useEffect(() => {
+        localStorage.setItem(FORM_STEP_KEY, currentStep.toString());
+    }, [currentStep]);
+
+    // Auto-save Step 1 form data as user types
+    useEffect(() => {
+        const formData: HeaderFormData = {
+            title: watchedFields.title || '',
+            subtitle: watchedFields.subtitle || '',
+            preparedFor: watchedFields.preparedFor || '',
+            preparedBy: watchedFields.preparedBy || '',
+            date: watchedFields.date || new Date().toISOString().split('T')[0],
+            clientLogo: logoPreview || ''
+        };
+
+        // Save to headerData state
+        if (watchedFields.title || watchedFields.subtitle || watchedFields.preparedFor || watchedFields.preparedBy) {
+            setHeaderData(formData);
+        }
+
+        // Save to localStorage
+        const tempData: ReportData = {
+            header: formData,
+            tableOfContents: sections.map(s => s.title).filter(title => title.trim() !== ''),
+            sections
+        };
+        localStorage.setItem('report_data', JSON.stringify(tempData));
+    }, [watchedFields.title, watchedFields.subtitle, watchedFields.preparedFor, watchedFields.preparedBy, watchedFields.date, logoPreview, sections]);
+
+    // Save sections data whenever they change (Step 2)
+    useEffect(() => {
+        if (sections.length > 0) {
+            const tempData: ReportData = {
+                header: headerData || {
+                    title: '',
+                    subtitle: '',
+                    preparedFor: '',
+                    preparedBy: '',
+                    date: new Date().toISOString().split('T')[0],
+                    clientLogo: logoPreview || ''
+                },
+                tableOfContents: sections.map(s => s.title).filter(title => title.trim() !== ''),
+                sections
+            };
+            localStorage.setItem('report_data', JSON.stringify(tempData));
+        }
+    }, [sections, headerData, logoPreview]);
+
+    // Handle browser back/forward for form steps
+    useEffect(() => {
+        const handlePopState = (event: PopStateEvent) => {
+            if (event.state?.formStep) {
+                setCurrentStep(event.state.formStep);
+            }
+        };
+
+        window.addEventListener('popstate', handlePopState);
+
+        // Set initial state
+        if (!window.history.state?.formStep) {
+            window.history.replaceState({ formStep: currentStep, step: 'form' }, '', window.location.pathname);
+        }
+
+        return () => {
+            window.removeEventListener('popstate', handlePopState);
+        };
+    }, []);
 
     const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            // Convert to base64
             const reader = new FileReader();
             reader.onloadend = () => {
                 const base64String = reader.result as string;
@@ -65,6 +151,14 @@ const ReportForm = ({ onComplete, initialData }: ReportFormProps) => {
     const onHeaderSubmit = (data: HeaderFormData) => {
         setHeaderData(data);
         setCurrentStep(2);
+        // Push to browser history
+        window.history.pushState({ formStep: 2, step: 'form' }, '', window.location.pathname);
+    };
+
+    const handleBackToStep1 = () => {
+        setCurrentStep(1);
+        // Push to browser history
+        window.history.pushState({ formStep: 1, step: 'form' }, '', window.location.pathname);
     };
 
     const handleAddSection = () => {
@@ -248,7 +342,7 @@ const ReportForm = ({ onComplete, initialData }: ReportFormProps) => {
                                 type="submit"
                                 className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 font-medium"
                             >
-                                Continue to Sections
+                                Next: Add Sections
                                 <ChevronRight className="w-5 h-5" />
                             </button>
                         </div>
@@ -301,12 +395,14 @@ const ReportForm = ({ onComplete, initialData }: ReportFormProps) => {
 
                     </div>
 
+                    {/* Navigation Buttons */}
                     <div className="flex justify-between">
                         <button
-                            onClick={() => setCurrentStep(1)}
-                            className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                            onClick={handleBackToStep1}
+                            className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium flex items-center gap-2"
                         >
-                            Back to Header
+                            <ArrowLeft className="w-5 h-5" />
+                            Previous: Header
                         </button>
                         <button
                             onClick={handleComplete}
@@ -314,7 +410,7 @@ const ReportForm = ({ onComplete, initialData }: ReportFormProps) => {
                             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <Save className="w-5 h-5" />
-                            Preview Report
+                            Next: Preview Report
                         </button>
                     </div>
                 </div>
