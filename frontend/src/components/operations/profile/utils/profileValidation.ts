@@ -5,12 +5,11 @@ export const personalInfoSchema = z.object({
   middleName: z.string().optional(),
   lastName: z.string().min(2, 'Last name must be at least 2 characters'),
   dateOfBirth: z.string().min(1, 'Date of birth is required'),
-  gender: z.enum(['Male', 'Female', 'Other']),
+  gender: z.enum(['Male', 'Female', 'Other']),  // ✅ Simplified - no errorMap
   bloodGroup: z.string().optional(),
   nationality: z.string().min(2, 'Nationality is required'),
   profilePhoto: z.string().optional(),
 });
-
 
 export const physicalAttributesSchema = z.object({
   height: z.string().min(1, 'Height is required'),
@@ -57,8 +56,13 @@ export const identificationDocsSchema = z.object({
   otherIdPhoto: z.string().optional(),
 });
 
+// ✅ Updated schema with mandatory linkedCases
 export const additionalInfoSchema = z.object({
   notes: z.string().optional(),
   behavioralNotes: z.string().optional(),
   riskLevel: z.enum(['Low', 'Medium', 'High', 'Critical']).optional(),
+  tags: z.array(z.string()).optional(),
+  additionalPhotos: z.array(z.string()).optional(),
+  attachments: z.array(z.string()).optional(),
+  linkedCases: z.array(z.string()).min(1, 'At least one case must be linked'),
 });

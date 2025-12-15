@@ -28,20 +28,20 @@ const ContactInfoStep = ({ initialData, onComplete }: Props) => {
         </h2>
         <p className="text-sm text-gray-600 mt-1">Phone numbers, email addresses, and emergency contacts</p>
       </div>
-      
+
       <form onSubmit={handleSubmit(onComplete)} className="space-y-6">
         {/* Phone Numbers */}
         <div className="border-l-4 border-blue-600 pl-4">
           <h3 className="font-semibold text-gray-900 mb-4">Phone Numbers</h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Primary Phone <span className="text-red-500">*</span>
               </label>
-              <input 
+              <input
                 type="tel"
-                {...register('primaryPhone')} 
+                {...register('primaryPhone')}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="10-digit mobile number"
                 maxLength={10}
@@ -55,9 +55,9 @@ const ContactInfoStep = ({ initialData, onComplete }: Props) => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Secondary Phone
               </label>
-              <input 
+              <input
                 type="tel"
-                {...register('secondaryPhone')} 
+                {...register('secondaryPhone')}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Alternate number"
                 maxLength={10}
@@ -72,15 +72,15 @@ const ContactInfoStep = ({ initialData, onComplete }: Props) => {
         {/* Email Addresses */}
         <div className="border-l-4 border-green-600 pl-4">
           <h3 className="font-semibold text-gray-900 mb-4">Email Addresses</h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Primary Email <span className="text-red-500">*</span>
               </label>
-              <input 
+              <input
                 type="email"
-                {...register('primaryEmail')} 
+                {...register('primaryEmail')}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="email@example.com"
               />
@@ -93,9 +93,9 @@ const ContactInfoStep = ({ initialData, onComplete }: Props) => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Secondary Email
               </label>
-              <input 
+              <input
                 type="email"
-                {...register('secondaryEmail')} 
+                {...register('secondaryEmail')}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="alternate@example.com"
               />
@@ -109,14 +109,14 @@ const ContactInfoStep = ({ initialData, onComplete }: Props) => {
         {/* Emergency Contact */}
         <div className="border-l-4 border-orange-600 pl-4">
           <h3 className="font-semibold text-gray-900 mb-4">Emergency Contact (Optional)</h3>
-          
+
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Contact Person Name
               </label>
-              <input 
-                {...register('emergencyContactName')} 
+              <input
+                {...register('emergencyContactName')}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Full name of emergency contact"
               />
@@ -127,9 +127,9 @@ const ContactInfoStep = ({ initialData, onComplete }: Props) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Contact Phone
                 </label>
-                <input 
+                <input
                   type="tel"
-                  {...register('emergencyContactPhone')} 
+                  {...register('emergencyContactPhone')}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="10-digit mobile"
                   maxLength={10}
@@ -143,7 +143,7 @@ const ContactInfoStep = ({ initialData, onComplete }: Props) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Relationship
                 </label>
-                <select 
+                <select
                   {...register('emergencyContactRelation')}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
@@ -158,12 +158,13 @@ const ContactInfoStep = ({ initialData, onComplete }: Props) => {
         </div>
 
         <div className="pt-4">
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors shadow-md hover:shadow-lg"
           >
-            Continue to Identification Documents
+            Continue to Additional Information
           </button>
+
         </div>
       </form>
     </div>

@@ -16,7 +16,7 @@ interface Props {
 
 const PersonalInfoStep = ({ initialData, onComplete }: Props) => {
   const [photo, setPhoto] = useState<string | undefined>(initialData?.profilePhoto);
-  
+
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<PersonalInfo>({
     resolver: zodResolver(personalInfoSchema),
     defaultValues: initialData || {
@@ -59,17 +59,17 @@ const PersonalInfoStep = ({ initialData, onComplete }: Props) => {
         </h2>
         <p className="text-sm text-gray-600 mt-1">Enter basic personal details of the individual</p>
       </div>
-      
+
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Photo Upload */}
         <div className="flex justify-center">
           <div className="relative">
             {photo ? (
               <div className="relative">
-                <img 
-                  src={photo} 
-                  alt="Profile" 
-                  className="w-36 h-36 rounded-full object-cover border-4 border-blue-200 shadow-lg" 
+                <img
+                  src={photo}
+                  alt="Profile"
+                  className="w-36 h-36 rounded-full object-cover border-4 border-blue-200 shadow-lg"
                 />
                 <button
                   type="button"
@@ -86,11 +86,11 @@ const PersonalInfoStep = ({ initialData, onComplete }: Props) => {
             )}
             <label className="absolute bottom-0 right-0 bg-blue-600 p-3 rounded-full cursor-pointer hover:bg-blue-700 transition-colors shadow-lg">
               <Upload className="w-5 h-5 text-white" />
-              <input 
-                type="file" 
-                accept="image/*" 
-                onChange={handlePhotoUpload} 
-                className="hidden" 
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoUpload}
+                className="hidden"
               />
             </label>
           </div>
@@ -101,8 +101,8 @@ const PersonalInfoStep = ({ initialData, onComplete }: Props) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               First Name <span className="text-red-500">*</span>
             </label>
-            <input 
-              {...register('firstName')} 
+            <input
+              {...register('firstName')}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Enter first name"
             />
@@ -115,19 +115,19 @@ const PersonalInfoStep = ({ initialData, onComplete }: Props) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Middle Name
             </label>
-            <input 
-              {...register('middleName')} 
+            <input
+              {...register('middleName')}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Enter middle name"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Last Name <span className="text-red-500">*</span>
             </label>
-            <input 
-              {...register('lastName')} 
+            <input
+              {...register('lastName')}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Enter last name"
             />
@@ -142,9 +142,9 @@ const PersonalInfoStep = ({ initialData, onComplete }: Props) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Date of Birth <span className="text-red-500">*</span>
             </label>
-            <input 
+            <input
               type="date"
-              {...register('dateOfBirth')} 
+              {...register('dateOfBirth')}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             {errors.dateOfBirth && (
@@ -156,7 +156,7 @@ const PersonalInfoStep = ({ initialData, onComplete }: Props) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Gender <span className="text-red-500">*</span>
             </label>
-            <select 
+            <select
               {...register('gender')}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
@@ -177,7 +177,7 @@ const PersonalInfoStep = ({ initialData, onComplete }: Props) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Blood Group
             </label>
-            <select 
+            <select
               {...register('bloodGroup')}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
@@ -194,8 +194,8 @@ const PersonalInfoStep = ({ initialData, onComplete }: Props) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Nationality <span className="text-red-500">*</span>
             </label>
-            <input 
-              {...register('nationality')} 
+            <input
+              {...register('nationality')}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="e.g., Indian"
             />
@@ -206,12 +206,13 @@ const PersonalInfoStep = ({ initialData, onComplete }: Props) => {
         </div>
 
         <div className="pt-4">
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors shadow-md hover:shadow-lg"
           >
-            Continue to Physical Attributes
+            Continue to Address Information
           </button>
+
         </div>
       </form>
     </div>

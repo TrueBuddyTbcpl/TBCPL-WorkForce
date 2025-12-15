@@ -19,6 +19,25 @@ export interface PhysicalAttributes {
   disabilities?: string;
 }
 
+export interface CaseInfo {
+  caseId: string;
+  caseNumber: string;
+  caseType: string;
+  description?: string;
+  dateReported: string;
+  status: 'Open' | 'Under Investigation' | 'Closed' | 'Pending';
+}
+
+export interface AdditionalInfo {
+  notes?: string;
+  behavioralNotes?: string;
+  riskLevel?: 'Low' | 'Medium' | 'High' | 'Critical';
+  tags?: string[];
+  additionalPhotos?: string[];
+  attachments?: string[];
+  linkedCases: string[];  // ✅ Changed from linkedCases?: string[] to linkedCases: string[]
+}
+
 export interface AddressInfo {
   addressLine1: string;
   addressLine2?: string;
@@ -74,10 +93,10 @@ export interface AdditionalInfo {
 export interface CulpritProfile {
   id: string;
   personal: PersonalInfo;
-  physical: PhysicalAttributes;
+  physical?: PhysicalAttributes;
   address: AddressInfo;
   contact: ContactInfo;
-  identification: IdentificationDocs;
+  identification?: IdentificationDocs;
   additional: AdditionalInfo;
   createdAt: string;
   createdBy: string;

@@ -16,7 +16,7 @@ interface Props {
 
 const AddressInfoStep = ({ initialData, onComplete }: Props) => {
   const [sameAddress, setSameAddress] = useState(initialData?.permanentAddressSame ?? false);
-  
+
   const { register, handleSubmit, formState: { errors } } = useForm<AddressInfo>({
     resolver: zodResolver(addressInfoSchema),
     defaultValues: initialData || {
@@ -41,19 +41,19 @@ const AddressInfoStep = ({ initialData, onComplete }: Props) => {
         </h2>
         <p className="text-sm text-gray-600 mt-1">Current and permanent address details</p>
       </div>
-      
+
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Current Address */}
         <div className="border-l-4 border-blue-600 pl-4">
           <h3 className="font-semibold text-gray-900 mb-4">Current Address</h3>
-          
+
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Address Line 1 <span className="text-red-500">*</span>
               </label>
-              <input 
-                {...register('addressLine1')} 
+              <input
+                {...register('addressLine1')}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="House/Flat No., Street Name"
               />
@@ -66,8 +66,8 @@ const AddressInfoStep = ({ initialData, onComplete }: Props) => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Address Line 2
               </label>
-              <input 
-                {...register('addressLine2')} 
+              <input
+                {...register('addressLine2')}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Locality, Area"
               />
@@ -78,8 +78,8 @@ const AddressInfoStep = ({ initialData, onComplete }: Props) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   City <span className="text-red-500">*</span>
                 </label>
-                <input 
-                  {...register('city')} 
+                <input
+                  {...register('city')}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Enter city"
                 />
@@ -92,7 +92,7 @@ const AddressInfoStep = ({ initialData, onComplete }: Props) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   State <span className="text-red-500">*</span>
                 </label>
-                <select 
+                <select
                   {...register('state')}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
@@ -110,8 +110,8 @@ const AddressInfoStep = ({ initialData, onComplete }: Props) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Pincode <span className="text-red-500">*</span>
                 </label>
-                <input 
-                  {...register('pincode')} 
+                <input
+                  {...register('pincode')}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="6-digit pincode"
                   maxLength={6}
@@ -126,8 +126,8 @@ const AddressInfoStep = ({ initialData, onComplete }: Props) => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Country <span className="text-red-500">*</span>
               </label>
-              <input 
-                {...register('country')} 
+              <input
+                {...register('country')}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="e.g., India"
               />
@@ -156,14 +156,14 @@ const AddressInfoStep = ({ initialData, onComplete }: Props) => {
         {!sameAddress && (
           <div className="border-l-4 border-green-600 pl-4">
             <h3 className="font-semibold text-gray-900 mb-4">Permanent Address</h3>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Address Line 1
                 </label>
-                <input 
-                  {...register('permanentAddress.addressLine1')} 
+                <input
+                  {...register('permanentAddress.addressLine1')}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="House/Flat No., Street Name"
                 />
@@ -173,8 +173,8 @@ const AddressInfoStep = ({ initialData, onComplete }: Props) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Address Line 2
                 </label>
-                <input 
-                  {...register('permanentAddress.addressLine2')} 
+                <input
+                  {...register('permanentAddress.addressLine2')}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Locality, Area"
                 />
@@ -183,8 +183,8 @@ const AddressInfoStep = ({ initialData, onComplete }: Props) => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
-                  <input 
-                    {...register('permanentAddress.city')} 
+                  <input
+                    {...register('permanentAddress.city')}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Enter city"
                   />
@@ -192,7 +192,7 @@ const AddressInfoStep = ({ initialData, onComplete }: Props) => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
-                  <select 
+                  <select
                     {...register('permanentAddress.state')}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
@@ -205,8 +205,8 @@ const AddressInfoStep = ({ initialData, onComplete }: Props) => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Pincode</label>
-                  <input 
-                    {...register('permanentAddress.pincode')} 
+                  <input
+                    {...register('permanentAddress.pincode')}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="6-digit pincode"
                     maxLength={6}
@@ -216,8 +216,8 @@ const AddressInfoStep = ({ initialData, onComplete }: Props) => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
-                <input 
-                  {...register('permanentAddress.country')} 
+                <input
+                  {...register('permanentAddress.country')}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="e.g., India"
                 />
@@ -227,12 +227,13 @@ const AddressInfoStep = ({ initialData, onComplete }: Props) => {
         )}
 
         <div className="pt-4">
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors shadow-md hover:shadow-lg"
           >
             Continue to Contact Information
           </button>
+
         </div>
       </form>
     </div>

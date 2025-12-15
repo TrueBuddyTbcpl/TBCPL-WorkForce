@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Edit, Printer, Share2 } from 'lucide-react';
+import { Edit, Printer, Share2, Briefcase } from 'lucide-react';
 import ProfileHeader from './preview-components/ProfileHeader';
 import ProfileCard from './preview-components/ProfileCard';
 import InfoSection from './preview-components/InfoSection';
 import EditProfileModal from './preview-components/EditProfileModal';
 import type { CulpritProfile } from './types/profile.types';
 import { format } from 'date-fns';
+import { availableCases } from './data/caseOptions';
 
 interface Props {
   data: CulpritProfile;
@@ -15,6 +16,23 @@ interface Props {
 const ProfilePreview = ({ data, onEdit }: Props) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingSection, setEditingSection] = useState<string | null>(null);
+
+  // ✅ Add null checks
+  if (!data || !data.personal || !data.address || !data.contact || !data.additional) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">No profile data available</p>
+          <button
+            onClick={onEdit}
+            className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Create Profile
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const handlePrint = () => {
     window.print();
@@ -150,34 +168,6 @@ const ProfilePreview = ({ data, onEdit }: Props) => {
             />
           </ProfileCard>
 
-          {/* Physical Attributes */}
-          <ProfileCard
-            title="Physical Attributes"
-            onEdit={() => handleSectionEdit('physical')}
-          >
-            <InfoSection
-              items={[
-                { label: 'Height', value: `${data.physical.height} cm` },
-                { label: 'Weight', value: `${data.physical.weight} kg` },
-                { label: 'Eye Color', value: data.physical.eyeColor || 'N/A' },
-                { label: 'Hair Color', value: data.physical.hairColor || 'N/A' },
-                { label: 'Skin Tone', value: data.physical.skinTone || 'N/A' },
-              ]}
-            />
-            {data.physical.identificationMarks && (
-              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-xs font-semibold text-yellow-800 mb-1">Identification Marks:</p>
-                <p className="text-sm text-yellow-900">{data.physical.identificationMarks}</p>
-              </div>
-            )}
-            {data.physical.disabilities && (
-              <div className="mt-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                <p className="text-xs font-semibold text-orange-800 mb-1">Disabilities:</p>
-                <p className="text-sm text-orange-900">{data.physical.disabilities}</p>
-              </div>
-            )}
-          </ProfileCard>
-
           {/* Current Address */}
           <ProfileCard
             title="Current Address"
@@ -232,80 +222,56 @@ const ProfilePreview = ({ data, onEdit }: Props) => {
               </div>
             )}
           </ProfileCard>
-
-          {/* Identification Documents */}
-          <ProfileCard
-            title="Identification Documents"
-            onEdit={() => handleSectionEdit('identification')}
-          >
-            <div className="space-y-3">
-              {data.identification.employeeId && (
-                <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                  <span className="text-sm font-medium text-gray-700">Employee ID:</span>
-                  <span className="text-sm text-gray-900">{data.identification.employeeId}</span>
-                </div>
-              )}
-              {data.identification.aadhaarNumber && (
-                <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                  <span className="text-sm font-medium text-gray-700">Aadhaar:</span>
-                  <span className="text-sm text-gray-900 font-mono">{data.identification.aadhaarNumber}</span>
-                </div>
-              )}
-              {data.identification.panNumber && (
-                <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                  <span className="text-sm font-medium text-gray-700">PAN:</span>
-                  <span className="text-sm text-gray-900 font-mono">{data.identification.panNumber}</span>
-                </div>
-              )}
-              {data.identification.drivingLicense && (
-                <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                  <span className="text-sm font-medium text-gray-700">Driving License:</span>
-                  <span className="text-sm text-gray-900">{data.identification.drivingLicense}</span>
-                </div>
-              )}
-              {data.identification.passportNumber && (
-                <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                  <span className="text-sm font-medium text-gray-700">Passport:</span>
-                  <span className="text-sm text-gray-900 font-mono">{data.identification.passportNumber}</span>
-                </div>
-              )}
-              {data.identification.otherIdType && (
-                <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                  <span className="text-sm font-medium text-gray-700">{data.identification.otherIdType}:</span>
-                  <span className="text-sm text-gray-900">{data.identification.otherIdNumber}</span>
-                </div>
-              )}
-            </div>
-
-            {/* ID Photos */}
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              {data.identification.aadhaarPhoto && (
-                <div>
-                  <p className="text-xs text-gray-600 mb-1">Aadhaar</p>
-                  <img src={data.identification.aadhaarPhoto} alt="Aadhaar" className="w-full h-24 object-cover rounded border" />
-                </div>
-              )}
-              {data.identification.panPhoto && (
-                <div>
-                  <p className="text-xs text-gray-600 mb-1">PAN</p>
-                  <img src={data.identification.panPhoto} alt="PAN" className="w-full h-24 object-cover rounded border" />
-                </div>
-              )}
-              {data.identification.dlPhoto && (
-                <div>
-                  <p className="text-xs text-gray-600 mb-1">Driving License</p>
-                  <img src={data.identification.dlPhoto} alt="DL" className="w-full h-24 object-cover rounded border" />
-                </div>
-              )}
-              {data.identification.passportPhoto && (
-                <div>
-                  <p className="text-xs text-gray-600 mb-1">Passport</p>
-                  <img src={data.identification.passportPhoto} alt="Passport" className="w-full h-24 object-cover rounded border" />
-                </div>
-              )}
-            </div>
-          </ProfileCard>
         </div>
+
+        {/* Linked Cases */}
+        {data.additional.linkedCases && data.additional.linkedCases.length > 0 && (
+          <div className="mt-6">
+            <ProfileCard title={`Linked Cases (${data.additional.linkedCases.length})`}>
+              <div className="space-y-3">
+                {data.additional.linkedCases.map((caseId) => {
+                  const caseInfo = availableCases.find(c => c.value === caseId);
+                  return caseInfo ? (
+                    <div
+                      key={caseId}
+                      className="flex items-center justify-between p-4 bg-gray-50 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <Briefcase className="w-4 h-4 text-blue-600" />
+                          <p className="text-sm font-semibold text-gray-900">
+                            {caseInfo.value}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3 mt-2">
+                          <span className="text-xs text-gray-600">
+                            Type: {caseInfo.caseType}
+                          </span>
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                              caseInfo.status === 'Open'
+                                ? 'bg-green-100 text-green-800'
+                                : caseInfo.status === 'Closed'
+                                ? 'bg-gray-100 text-gray-800'
+                                : caseInfo.status === 'Under Investigation'
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-blue-100 text-blue-800'
+                            }`}
+                          >
+                            {caseInfo.status}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            Reported: {new Date(caseInfo.dateReported).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null;
+                })}
+              </div>
+            </ProfileCard>
+          </div>
+        )}
 
         {/* Additional Information - Full Width */}
         {(data.additional.notes || data.additional.behavioralNotes) && (
