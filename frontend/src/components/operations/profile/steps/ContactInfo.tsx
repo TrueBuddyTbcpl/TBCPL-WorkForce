@@ -14,7 +14,7 @@ interface Props {
 }
 
 const ContactInfoStep = ({ initialData, onComplete }: Props) => {
-  const { register, handleSubmit, formState: { errors } } = useForm<ContactInfo>({
+  const { register, handleSubmit } = useForm<ContactInfo>({
     resolver: zodResolver(contactInfoSchema),
     defaultValues: initialData || {},
   });
@@ -37,7 +37,7 @@ const ContactInfoStep = ({ initialData, onComplete }: Props) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Primary Phone <span className="text-red-500">*</span>
+                Primary Phone
               </label>
               <input
                 type="tel"
@@ -46,9 +46,6 @@ const ContactInfoStep = ({ initialData, onComplete }: Props) => {
                 placeholder="10-digit mobile number"
                 maxLength={10}
               />
-              {errors.primaryPhone && (
-                <p className="text-red-600 text-xs mt-1">{errors.primaryPhone.message}</p>
-              )}
             </div>
 
             <div>
@@ -62,9 +59,6 @@ const ContactInfoStep = ({ initialData, onComplete }: Props) => {
                 placeholder="Alternate number"
                 maxLength={10}
               />
-              {errors.secondaryPhone && (
-                <p className="text-red-600 text-xs mt-1">{errors.secondaryPhone.message}</p>
-              )}
             </div>
           </div>
         </div>
@@ -76,7 +70,7 @@ const ContactInfoStep = ({ initialData, onComplete }: Props) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Primary Email <span className="text-red-500">*</span>
+                Primary Email
               </label>
               <input
                 type="email"
@@ -84,9 +78,6 @@ const ContactInfoStep = ({ initialData, onComplete }: Props) => {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="email@example.com"
               />
-              {errors.primaryEmail && (
-                <p className="text-red-600 text-xs mt-1">{errors.primaryEmail.message}</p>
-              )}
             </div>
 
             <div>
@@ -99,16 +90,13 @@ const ContactInfoStep = ({ initialData, onComplete }: Props) => {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="alternate@example.com"
               />
-              {errors.secondaryEmail && (
-                <p className="text-red-600 text-xs mt-1">{errors.secondaryEmail.message}</p>
-              )}
             </div>
           </div>
         </div>
 
         {/* Emergency Contact */}
         <div className="border-l-4 border-orange-600 pl-4">
-          <h3 className="font-semibold text-gray-900 mb-4">Emergency Contact (Optional)</h3>
+          <h3 className="font-semibold text-gray-900 mb-4">Emergency Contact</h3>
 
           <div className="space-y-4">
             <div>
@@ -134,9 +122,6 @@ const ContactInfoStep = ({ initialData, onComplete }: Props) => {
                   placeholder="10-digit mobile"
                   maxLength={10}
                 />
-                {errors.emergencyContactPhone && (
-                  <p className="text-red-600 text-xs mt-1">{errors.emergencyContactPhone.message}</p>
-                )}
               </div>
 
               <div>
@@ -164,7 +149,6 @@ const ContactInfoStep = ({ initialData, onComplete }: Props) => {
           >
             Continue to Additional Information
           </button>
-
         </div>
       </form>
     </div>

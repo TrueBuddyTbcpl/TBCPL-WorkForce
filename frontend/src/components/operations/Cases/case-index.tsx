@@ -198,7 +198,6 @@ const CaseIndex = () => {
                                     </div>
                                 </div>
                             ))}
-
                         </div>
                     </div>
                 )}

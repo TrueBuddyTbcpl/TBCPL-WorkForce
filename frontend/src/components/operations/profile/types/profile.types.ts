@@ -2,16 +2,16 @@ export interface PersonalInfo {
   firstName: string;
   middleName?: string;
   lastName: string;
-  dateOfBirth: string;
-  gender: 'Male' | 'Female' | 'Other';
+  dateOfBirth?: string;
+  gender?: 'Male' | 'Female' | 'Other';
   bloodGroup?: string;
-  nationality: string;
+  nationality?: string;
   profilePhoto?: string;
 }
 
 export interface PhysicalAttributes {
-  height: string;
-  weight: string;
+  height?: string;
+  weight?: string;
   eyeColor?: string;
   hairColor?: string;
   skinTone?: string;
@@ -19,47 +19,28 @@ export interface PhysicalAttributes {
   disabilities?: string;
 }
 
-export interface CaseInfo {
-  caseId: string;
-  caseNumber: string;
-  caseType: string;
-  description?: string;
-  dateReported: string;
-  status: 'Open' | 'Under Investigation' | 'Closed' | 'Pending';
-}
-
-export interface AdditionalInfo {
-  notes?: string;
-  behavioralNotes?: string;
-  riskLevel?: 'Low' | 'Medium' | 'High' | 'Critical';
-  tags?: string[];
-  additionalPhotos?: string[];
-  attachments?: string[];
-  linkedCases: string[];  // ✅ Changed from linkedCases?: string[] to linkedCases: string[]
-}
-
 export interface AddressInfo {
-  addressLine1: string;
+  addressLine1?: string;
   addressLine2?: string;
-  city: string;
-  state: string;
-  pincode: string;
-  country: string;
-  permanentAddressSame: boolean;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  country?: string;
+  permanentAddressSame?: boolean;
   permanentAddress?: {
-    addressLine1: string;
+    addressLine1?: string;
     addressLine2?: string;
-    city: string;
-    state: string;
-    pincode: string;
-    country: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+    country?: string;
   };
 }
 
 export interface ContactInfo {
-  primaryPhone: string;
+  primaryPhone?: string;
   secondaryPhone?: string;
-  primaryEmail: string;
+  primaryEmail?: string;
   secondaryEmail?: string;
   emergencyContactName?: string;
   emergencyContactPhone?: string;
@@ -88,18 +69,34 @@ export interface AdditionalInfo {
   tags?: string[];
   additionalPhotos?: string[];
   attachments?: string[];
+  linkedCases?: string[];
 }
 
+export interface ProfileData {
+  id?: string;
+  personal?: PersonalInfo;
+  physical?: PhysicalAttributes;
+  address?: AddressInfo;
+  contact?: ContactInfo;
+  identification?: IdentificationDocs;
+  additional?: AdditionalInfo;
+  createdAt?: string;
+  createdBy?: string;
+  lastUpdated?: string;
+}
+
+// ✅ Add this missing interface
 export interface CulpritProfile {
   id: string;
-  personal: PersonalInfo;
+  name?: string;
+  status: string;
+  personal?: PersonalInfo;
   physical?: PhysicalAttributes;
-  address: AddressInfo;
-  contact: ContactInfo;
+  address?: AddressInfo;
+  contact?: ContactInfo;
   identification?: IdentificationDocs;
-  additional: AdditionalInfo;
+  additional?: AdditionalInfo;
   createdAt: string;
   createdBy: string;
   lastUpdated: string;
-  status: 'Active' | 'Archived' | 'Under Review';
 }

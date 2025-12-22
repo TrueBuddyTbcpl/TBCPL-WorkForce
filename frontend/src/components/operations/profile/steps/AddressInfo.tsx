@@ -17,7 +17,7 @@ interface Props {
 const AddressInfoStep = ({ initialData, onComplete }: Props) => {
   const [sameAddress, setSameAddress] = useState(initialData?.permanentAddressSame ?? false);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<AddressInfo>({
+  const { register, handleSubmit } = useForm<AddressInfo>({
     resolver: zodResolver(addressInfoSchema),
     defaultValues: initialData || {
       country: 'India',
@@ -50,16 +50,13 @@ const AddressInfoStep = ({ initialData, onComplete }: Props) => {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Address Line 1 <span className="text-red-500">*</span>
+                Address Line 1
               </label>
               <input
                 {...register('addressLine1')}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="House/Flat No., Street Name"
               />
-              {errors.addressLine1 && (
-                <p className="text-red-600 text-xs mt-1">{errors.addressLine1.message}</p>
-              )}
             </div>
 
             <div>
@@ -76,21 +73,18 @@ const AddressInfoStep = ({ initialData, onComplete }: Props) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  City <span className="text-red-500">*</span>
+                  City
                 </label>
                 <input
                   {...register('city')}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Enter city"
                 />
-                {errors.city && (
-                  <p className="text-red-600 text-xs mt-1">{errors.city.message}</p>
-                )}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  State <span className="text-red-500">*</span>
+                  State
                 </label>
                 <select
                   {...register('state')}
@@ -101,14 +95,11 @@ const AddressInfoStep = ({ initialData, onComplete }: Props) => {
                     <option key={state} value={state}>{state}</option>
                   ))}
                 </select>
-                {errors.state && (
-                  <p className="text-red-600 text-xs mt-1">{errors.state.message}</p>
-                )}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Pincode <span className="text-red-500">*</span>
+                  Pincode
                 </label>
                 <input
                   {...register('pincode')}
@@ -116,24 +107,18 @@ const AddressInfoStep = ({ initialData, onComplete }: Props) => {
                   placeholder="6-digit pincode"
                   maxLength={6}
                 />
-                {errors.pincode && (
-                  <p className="text-red-600 text-xs mt-1">{errors.pincode.message}</p>
-                )}
               </div>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Country <span className="text-red-500">*</span>
+                Country
               </label>
               <input
                 {...register('country')}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="e.g., India"
               />
-              {errors.country && (
-                <p className="text-red-600 text-xs mt-1">{errors.country.message}</p>
-              )}
             </div>
           </div>
         </div>
@@ -233,7 +218,6 @@ const AddressInfoStep = ({ initialData, onComplete }: Props) => {
           >
             Continue to Contact Information
           </button>
-
         </div>
       </form>
     </div>

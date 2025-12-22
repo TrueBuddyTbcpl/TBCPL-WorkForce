@@ -105,11 +105,7 @@ const ProfileForm = ({ onComplete, initialData }: ProfileFormProps) => {
 
   const handleSubmit = () => {
     // Validate linkedCases before submission
-    if (!formData.additional || !formData.additional.linkedCases || formData.additional.linkedCases.length === 0) {
-      alert('Please link at least one case before completing the profile.');
-      setCurrentStep(4);
-      return;
-    }
+    
 
     const profile: CulpritProfile = {
       id: initialData?.id || `PROF-${Date.now()}`,

@@ -1,19 +1,19 @@
 import { z } from 'zod';
 
 export const personalInfoSchema = z.object({
-  firstName: z.string().min(2, 'First name must be at least 2 characters'),
+  firstName: z.string().min(2, 'First name must be at least 2 characters'),  // required
   middleName: z.string().optional(),
   lastName: z.string().min(2, 'Last name must be at least 2 characters'),
-  dateOfBirth: z.string().min(1, 'Date of birth is required'),
-  gender: z.enum(['Male', 'Female', 'Other']),  // ✅ Simplified - no errorMap
+  dateOfBirth: z.string().optional(),
+  gender: z.enum(['Male', 'Female', 'Other']).optional(),
   bloodGroup: z.string().optional(),
-  nationality: z.string().min(2, 'Nationality is required'),
+  nationality: z.string().optional(),
   profilePhoto: z.string().optional(),
 });
 
 export const physicalAttributesSchema = z.object({
-  height: z.string().min(1, 'Height is required'),
-  weight: z.string().min(1, 'Weight is required'),
+  height: z.string().optional(),
+  weight: z.string().optional(),
   eyeColor: z.string().optional(),
   hairColor: z.string().optional(),
   skinTone: z.string().optional(),
@@ -22,30 +22,39 @@ export const physicalAttributesSchema = z.object({
 });
 
 export const addressInfoSchema = z.object({
-  addressLine1: z.string().min(5, 'Address line 1 is required'),
+  addressLine1: z.string().optional(),
   addressLine2: z.string().optional(),
-  city: z.string().min(2, 'City is required'),
-  state: z.string().min(2, 'State is required'),
-  pincode: z.string().regex(/^\d{6}$/, 'Valid 6-digit pincode required'),
-  country: z.string().min(2, 'Country is required'),
-  permanentAddressSame: z.boolean(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  pincode: z.string().optional(),
+  country: z.string().optional(),
+  permanentAddressSame: z.boolean().optional(),
+  permanentAddress: z.object({
+    addressLine1: z.string().optional(),
+    addressLine2: z.string().optional(),
+    city: z.string().optional(),
+    state: z.string().optional(),
+    pincode: z.string().optional(),
+    country: z.string().optional(),
+  }).optional(),
 });
 
+
 export const contactInfoSchema = z.object({
-  primaryPhone: z.string().regex(/^\d{10}$/, 'Valid 10-digit phone required'),
-  secondaryPhone: z.string().regex(/^\d{10}$/, 'Valid 10-digit phone required').optional().or(z.literal('')),
-  primaryEmail: z.string().email('Valid email required'),
-  secondaryEmail: z.string().email('Valid email required').optional().or(z.literal('')),
+  primaryPhone: z.string().optional(),
+  secondaryPhone: z.string().optional(),
+  primaryEmail: z.string().optional(),
+  secondaryEmail: z.string().optional(),
   emergencyContactName: z.string().optional(),
-  emergencyContactPhone: z.string().regex(/^\d{10}$/, 'Valid 10-digit phone required').optional().or(z.literal('')),
+  emergencyContactPhone: z.string().optional(),
   emergencyContactRelation: z.string().optional(),
 });
 
 export const identificationDocsSchema = z.object({
   employeeId: z.string().optional(),
-  aadhaarNumber: z.string().regex(/^\d{12}$/, 'Valid 12-digit Aadhaar required').optional().or(z.literal('')),
+  aadhaarNumber: z.string().optional(),
   aadhaarPhoto: z.string().optional(),
-  panNumber: z.string().regex(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, 'Valid PAN format required (e.g., ABCDE1234F)').optional().or(z.literal('')),
+  panNumber: z.string().optional(),
   panPhoto: z.string().optional(),
   drivingLicense: z.string().optional(),
   dlPhoto: z.string().optional(),
@@ -56,7 +65,6 @@ export const identificationDocsSchema = z.object({
   otherIdPhoto: z.string().optional(),
 });
 
-// ✅ Updated schema with mandatory linkedCases
 export const additionalInfoSchema = z.object({
   notes: z.string().optional(),
   behavioralNotes: z.string().optional(),
@@ -64,5 +72,5 @@ export const additionalInfoSchema = z.object({
   tags: z.array(z.string()).optional(),
   additionalPhotos: z.array(z.string()).optional(),
   attachments: z.array(z.string()).optional(),
-  linkedCases: z.array(z.string()).min(1, 'At least one case must be linked'),
+  linkedCases: z.array(z.string()).optional(),
 });

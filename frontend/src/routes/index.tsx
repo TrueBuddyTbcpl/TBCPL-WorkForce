@@ -12,13 +12,6 @@ const AppRoutes = () => {
       
       {/* Operations Module */}
       <Route path="/operations/report-create" element={<ReportCreate />} />
-      
-      {/* Future routes - uncomment as you build them */}
-      {/* <Route path="/operations/dashboard" element={<OperationsDashboard />} /> */}
-      {/* <Route path="/hr/dashboard" element={<HRDashboard />} /> */}
-      {/* <Route path="/admin/dashboard" element={<AdminDashboard />} /> */}
-      {/* <Route path="/accounts/dashboard" element={<AccountsDashboard />} /> */}
-      {/* <Route path="/technical/dashboard" element={<TechnicalDashboard />} /> */}
       <Route path="/operations/profile" element={<ProfileIndex />} />
       <Route path="/operations/case" element={<CaseIndex />} />
       {/* 404 Not Found */}

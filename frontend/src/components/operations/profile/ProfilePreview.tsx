@@ -8,14 +8,17 @@ import type { CulpritProfile } from './types/profile.types';
 import { format } from 'date-fns';
 import { availableCases } from './data/caseOptions';
 
+
 interface Props {
   data: CulpritProfile;
   onEdit: () => void;
 }
 
+
 const ProfilePreview = ({ data, onEdit }: Props) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingSection, setEditingSection] = useState<string | null>(null);
+
 
   // ✅ Add null checks
   if (!data || !data.personal || !data.address || !data.contact || !data.additional) {
@@ -34,18 +37,22 @@ const ProfilePreview = ({ data, onEdit }: Props) => {
     );
   }
 
+
   const handlePrint = () => {
     window.print();
   };
+
 
   const handleShare = () => {
     alert('Share functionality will be implemented soon!');
   };
 
+
   const handleSectionEdit = (section: string) => {
     setEditingSection(section);
     setIsEditModalOpen(true);
   };
+
 
   const getRiskLevelColor = (level?: string) => {
     switch (level) {
@@ -61,6 +68,7 @@ const ProfilePreview = ({ data, onEdit }: Props) => {
         return 'bg-gray-100 text-gray-800 border-gray-300';
     }
   };
+
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -91,14 +99,17 @@ const ProfilePreview = ({ data, onEdit }: Props) => {
             </button>
           </div>
 
+
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600">Profile ID:</span>
             <span className="font-mono font-semibold text-blue-600">{data.id}</span>
           </div>
         </div>
 
+
         {/* Profile Header */}
         <ProfileHeader data={data} />
+
 
         {/* Status and Risk Badge */}
         <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
@@ -124,12 +135,14 @@ const ProfilePreview = ({ data, onEdit }: Props) => {
               )}
             </div>
 
+
             <div className="text-right text-sm text-gray-600">
               <div>Created: {format(new Date(data.createdAt), 'dd MMM yyyy, hh:mm a')}</div>
               <div>Last Updated: {format(new Date(data.lastUpdated), 'dd MMM yyyy, hh:mm a')}</div>
             </div>
           </div>
         </div>
+
 
         {/* Tags */}
         {data.additional.tags && data.additional.tags.length > 0 && (
@@ -148,6 +161,7 @@ const ProfilePreview = ({ data, onEdit }: Props) => {
           </div>
         )}
 
+
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Personal Information */}
@@ -157,16 +171,22 @@ const ProfilePreview = ({ data, onEdit }: Props) => {
           >
             <InfoSection
               items={[
-                { label: 'First Name', value: data.personal.firstName },
+                { label: 'First Name', value: data.personal.firstName || 'N/A' },
                 { label: 'Middle Name', value: data.personal.middleName || 'N/A' },
-                { label: 'Last Name', value: data.personal.lastName },
-                { label: 'Date of Birth', value: format(new Date(data.personal.dateOfBirth), 'dd MMM yyyy') },
-                { label: 'Gender', value: data.personal.gender },
+                { label: 'Last Name', value: data.personal.lastName || 'N/A' },
+                { 
+                  label: 'Date of Birth', 
+                  value: data.personal.dateOfBirth 
+                    ? format(new Date(data.personal.dateOfBirth), 'dd MMM yyyy') 
+                    : 'N/A' 
+                },
+                { label: 'Gender', value: data.personal.gender || 'N/A' },
                 { label: 'Blood Group', value: data.personal.bloodGroup || 'N/A' },
-                { label: 'Nationality', value: data.personal.nationality },
+                { label: 'Nationality', value: data.personal.nationality || 'N/A' },
               ]}
             />
           </ProfileCard>
+
 
           {/* Current Address */}
           <ProfileCard
@@ -174,12 +194,13 @@ const ProfilePreview = ({ data, onEdit }: Props) => {
             onEdit={() => handleSectionEdit('address')}
           >
             <div className="space-y-2 text-sm text-gray-700">
-              <p>{data.address.addressLine1}</p>
+              <p>{data.address.addressLine1 || 'N/A'}</p>
               {data.address.addressLine2 && <p>{data.address.addressLine2}</p>}
-              <p>{data.address.city}, {data.address.state} - {data.address.pincode}</p>
-              <p>{data.address.country}</p>
+              <p>{data.address.city || 'N/A'}, {data.address.state || 'N/A'} - {data.address.pincode || 'N/A'}</p>
+              <p>{data.address.country || 'N/A'}</p>
             </div>
           </ProfileCard>
+
 
           {/* Permanent Address */}
           {!data.address.permanentAddressSame && data.address.permanentAddress && (
@@ -188,13 +209,14 @@ const ProfilePreview = ({ data, onEdit }: Props) => {
               onEdit={() => handleSectionEdit('address')}
             >
               <div className="space-y-2 text-sm text-gray-700">
-                <p>{data.address.permanentAddress.addressLine1}</p>
+                <p>{data.address.permanentAddress.addressLine1 || 'N/A'}</p>
                 {data.address.permanentAddress.addressLine2 && <p>{data.address.permanentAddress.addressLine2}</p>}
-                <p>{data.address.permanentAddress.city}, {data.address.permanentAddress.state} - {data.address.permanentAddress.pincode}</p>
-                <p>{data.address.permanentAddress.country}</p>
+                <p>{data.address.permanentAddress.city || 'N/A'}, {data.address.permanentAddress.state || 'N/A'} - {data.address.permanentAddress.pincode || 'N/A'}</p>
+                <p>{data.address.permanentAddress.country || 'N/A'}</p>
               </div>
             </ProfileCard>
           )}
+
 
           {/* Contact Information */}
           <ProfileCard
@@ -203,9 +225,9 @@ const ProfilePreview = ({ data, onEdit }: Props) => {
           >
             <InfoSection
               items={[
-                { label: 'Primary Phone', value: data.contact.primaryPhone },
+                { label: 'Primary Phone', value: data.contact.primaryPhone || 'N/A' },
                 { label: 'Secondary Phone', value: data.contact.secondaryPhone || 'N/A' },
-                { label: 'Primary Email', value: data.contact.primaryEmail },
+                { label: 'Primary Email', value: data.contact.primaryEmail || 'N/A' },
                 { label: 'Secondary Email', value: data.contact.secondaryEmail || 'N/A' },
               ]}
             />
@@ -214,7 +236,7 @@ const ProfilePreview = ({ data, onEdit }: Props) => {
                 <p className="text-xs font-semibold text-red-800 mb-2">Emergency Contact:</p>
                 <InfoSection
                   items={[
-                    { label: 'Name', value: data.contact.emergencyContactName },
+                    { label: 'Name', value: data.contact.emergencyContactName || 'N/A' },
                     { label: 'Phone', value: data.contact.emergencyContactPhone || 'N/A' },
                     { label: 'Relation', value: data.contact.emergencyContactRelation || 'N/A' },
                   ]}
@@ -223,6 +245,7 @@ const ProfilePreview = ({ data, onEdit }: Props) => {
             )}
           </ProfileCard>
         </div>
+
 
         {/* Linked Cases */}
         {data.additional.linkedCases && data.additional.linkedCases.length > 0 && (
@@ -273,6 +296,7 @@ const ProfilePreview = ({ data, onEdit }: Props) => {
           </div>
         )}
 
+
         {/* Additional Information - Full Width */}
         {(data.additional.notes || data.additional.behavioralNotes) && (
           <div className="mt-6">
@@ -300,6 +324,7 @@ const ProfilePreview = ({ data, onEdit }: Props) => {
           </div>
         )}
 
+
         {/* Additional Photos */}
         {data.additional.additionalPhotos && data.additional.additionalPhotos.length > 0 && (
           <div className="mt-6">
@@ -319,12 +344,14 @@ const ProfilePreview = ({ data, onEdit }: Props) => {
           </div>
         )}
 
+
         {/* Footer */}
         <div className="mt-8 text-center text-sm text-gray-500 print:mt-12">
           <p>This profile was generated by Culprit Profile Management System</p>
           <p className="mt-1">Created by: {data.createdBy} | Profile ID: {data.id}</p>
         </div>
       </div>
+
 
       {/* Edit Modal */}
       {isEditModalOpen && (
@@ -336,5 +363,6 @@ const ProfilePreview = ({ data, onEdit }: Props) => {
     </div>
   );
 };
+
 
 export default ProfilePreview;

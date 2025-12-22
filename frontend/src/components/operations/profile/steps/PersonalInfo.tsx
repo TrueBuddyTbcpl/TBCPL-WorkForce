@@ -140,21 +140,18 @@ const PersonalInfoStep = ({ initialData, onComplete }: Props) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Date of Birth <span className="text-red-500">*</span>
+              Date of Birth
             </label>
             <input
               type="date"
               {...register('dateOfBirth')}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
-            {errors.dateOfBirth && (
-              <p className="text-red-600 text-xs mt-1">{errors.dateOfBirth.message}</p>
-            )}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Gender <span className="text-red-500">*</span>
+              Gender
             </label>
             <select
               {...register('gender')}
@@ -166,9 +163,6 @@ const PersonalInfoStep = ({ initialData, onComplete }: Props) => {
                 </option>
               ))}
             </select>
-            {errors.gender && (
-              <p className="text-red-600 text-xs mt-1">{errors.gender.message}</p>
-            )}
           </div>
         </div>
 
@@ -192,16 +186,13 @@ const PersonalInfoStep = ({ initialData, onComplete }: Props) => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Nationality <span className="text-red-500">*</span>
+              Nationality
             </label>
             <input
               {...register('nationality')}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="e.g., Indian"
             />
-            {errors.nationality && (
-              <p className="text-red-600 text-xs mt-1">{errors.nationality.message}</p>
-            )}
           </div>
         </div>
 
