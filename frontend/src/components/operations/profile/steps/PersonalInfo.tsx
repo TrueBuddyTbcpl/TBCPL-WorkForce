@@ -1,212 +1,171 @@
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
-import { Upload, User, X } from 'lucide-react';
-import { personalInfoSchema } from '../utils/profileValidation';
-import { genderOptions, bloodGroupOptions } from '../data/profileOptions';
+import { Upload, X } from 'lucide-react';
 import type { PersonalInfo } from '../types/profile.types';
 
 interface Props {
-  initialData?: PersonalInfo | null;
-  onComplete: (data: PersonalInfo) => void;
-  onBack: () => void;
-  isFirstStep: boolean;
-  isLastStep: boolean;
+  data?: PersonalInfo;
+  onNext: (data: PersonalInfo) => void;
+  onBack?: () => void;
 }
 
-const PersonalInfoStep = ({ initialData, onComplete }: Props) => {
-  const [photo, setPhoto] = useState<string | undefined>(initialData?.profilePhoto);
-
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm<PersonalInfo>({
-    resolver: zodResolver(personalInfoSchema),
-    defaultValues: initialData || {
-      gender: 'Male',
-      nationality: 'Indian',
-    },
+const PersonalInfoStep = ({ data, onNext, onBack }: Props) => {
+  const { register, handleSubmit, setValue } = useForm<PersonalInfo>({
+    defaultValues: data || {},
   });
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [imagePreview, setImagePreview] = useState<string | null>(data?.profilePhoto || null);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert('File size should be less than 5MB');
-        return;
-      }
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPhoto(reader.result as string);
-        setValue('profilePhoto', reader.result as string);
+        const base64String = reader.result as string;
+        setImagePreview(base64String);
+        setValue('profilePhoto', base64String);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const removePhoto = () => {
-    setPhoto(undefined);
-    setValue('profilePhoto', undefined);
-  };
-
-  const onSubmit = (data: PersonalInfo) => {
-    onComplete({ ...data, profilePhoto: photo });
+  const removeImage = () => {
+    setImagePreview(null);
+    setValue('profilePhoto', '');
   };
 
   return (
-    <div className="p-8">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <User className="w-7 h-7 text-blue-600" />
-          Personal Information
-        </h2>
-        <p className="text-sm text-gray-600 mt-1">Enter basic personal details of the individual</p>
-      </div>
-
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* Photo Upload */}
-        <div className="flex justify-center">
-          <div className="relative">
-            {photo ? (
+    <form onSubmit={handleSubmit(onNext)} className="space-y-6">
+      <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
+        
+        {/* Profile Photo Upload */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">Profile Photo</label>
+          <div className="flex items-center gap-4">
+            {imagePreview ? (
               <div className="relative">
-                <img
-                  src={photo}
-                  alt="Profile"
-                  className="w-36 h-36 rounded-full object-cover border-4 border-blue-200 shadow-lg"
-                />
+                <img src={imagePreview} alt="Preview" className="w-32 h-32 rounded-lg object-cover border-2 border-gray-300" />
                 <button
                   type="button"
-                  onClick={removePhoto}
-                  className="absolute -top-2 -right-2 bg-red-500 p-2 rounded-full hover:bg-red-600 transition-colors shadow-lg"
+                  onClick={removeImage}
+                  className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
                 >
-                  <X className="w-4 h-4 text-white" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
             ) : (
-              <div className="w-36 h-36 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center border-4 border-dashed border-gray-300">
-                <User className="w-16 h-16 text-gray-400" />
+              <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+                <Upload className="w-8 h-8 text-gray-400" />
               </div>
             )}
-            <label className="absolute bottom-0 right-0 bg-blue-600 p-3 rounded-full cursor-pointer hover:bg-blue-700 transition-colors shadow-lg">
-              <Upload className="w-5 h-5 text-white" />
+            <div>
               <input
                 type="file"
                 accept="image/*"
-                onChange={handlePhotoUpload}
+                onChange={handleImageChange}
                 className="hidden"
+                id="profile-photo"
               />
-            </label>
+              <label
+                htmlFor="profile-photo"
+                className="cursor-pointer px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 inline-block"
+              >
+                {imagePreview ? 'Change Photo' : 'Upload Photo'}
+              </label>
+              <p className="text-xs text-gray-500 mt-2">JPG, PNG or GIF (MAX. 5MB)</p>
+            </div>
           </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              First Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              {...register('firstName')}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter first name"
-            />
-            {errors.firstName && (
-              <p className="text-red-600 text-xs mt-1">{errors.firstName.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Middle Name
-            </label>
-            <input
-              {...register('middleName')}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter middle name"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Last Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              {...register('lastName')}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter last name"
-            />
-            {errors.lastName && (
-              <p className="text-red-600 text-xs mt-1">{errors.lastName.message}</p>
-            )}
-          </div>
+          <input type="hidden" {...register('profilePhoto')} />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Date of Birth
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              First Name <span className="text-red-600">*</span>
             </label>
+            <input
+              type="text"
+              {...register('firstName', { required: true })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter first name"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
+            <input
+              type="text"
+              {...register('middleName')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter middle name (optional)"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Last Name <span className="text-red-600">*</span>
+            </label>
+            <input
+              type="text"
+              {...register('lastName', { required: true })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter last name"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
             <input
               type="date"
               {...register('dateOfBirth')}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Gender
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
             <select
               {...register('gender')}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
-              {genderOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Blood Group
-            </label>
-            <select
-              {...register('bloodGroup')}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">Select blood group</option>
-              {bloodGroupOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
+              <option value="">Select Gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Nationality
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nationality</label>
             <input
+              type="text"
               {...register('nationality')}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="e.g., Indian"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter nationality"
             />
           </div>
         </div>
+      </div>
 
-        <div className="pt-4">
+      <div className="flex justify-between">
+        {onBack && (
           <button
-            type="submit"
-            className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors shadow-md hover:shadow-lg"
+            type="button"
+            onClick={onBack}
+            className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
           >
-            Continue to Address Information
+            Back
           </button>
-
-        </div>
-      </form>
-    </div>
+        )}
+        <button
+          type="submit"
+          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 ml-auto"
+        >
+          Next Step
+        </button>
+      </div>
+    </form>
   );
 };
 

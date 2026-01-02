@@ -1,157 +1,116 @@
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Phone } from 'lucide-react';
-import { contactInfoSchema } from '../utils/profileValidation';
-import { relationOptions } from '../data/profileOptions';
 import type { ContactInfo } from '../types/profile.types';
 
 interface Props {
-  initialData?: ContactInfo | null;
-  onComplete: (data: ContactInfo) => void;
-  onBack: () => void;
-  isFirstStep: boolean;
-  isLastStep: boolean;
+  data?: ContactInfo;
+  onNext: (data: ContactInfo) => void;
+  onBack?: () => void;
 }
 
-const ContactInfoStep = ({ initialData, onComplete }: Props) => {
+const ContactInfoStep = ({ data, onNext, onBack }: Props) => {
   const { register, handleSubmit } = useForm<ContactInfo>({
-    resolver: zodResolver(contactInfoSchema),
-    defaultValues: initialData || {},
+    defaultValues: data || {},
   });
 
   return (
-    <div className="p-8">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <Phone className="w-7 h-7 text-blue-600" />
-          Contact Information
-        </h2>
-        <p className="text-sm text-gray-600 mt-1">Phone numbers, email addresses, and emergency contacts</p>
+    <form onSubmit={handleSubmit(onNext)} className="space-y-6">
+      <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Primary Phone</label>
+            <input
+              type="tel"
+              {...register('primaryPhone')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter primary phone number"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Secondary Phone</label>
+            <input
+              type="tel"
+              {...register('secondaryPhone')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter secondary phone (optional)"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Primary Email</label>
+            <input
+              type="email"
+              {...register('primaryEmail')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter primary email"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Secondary Email</label>
+            <input
+              type="email"
+              {...register('secondaryEmail')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter secondary email (optional)"
+            />
+          </div>
+        </div>
+
+        <h4 className="text-md font-semibold text-gray-800 mb-3 mt-6">Emergency Contact</h4>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-red-50 rounded-lg">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Contact Name</label>
+            <input
+              type="text"
+              {...register('emergencyContactName')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+              placeholder="Emergency contact name"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Contact Phone</label>
+            <input
+              type="tel"
+              {...register('emergencyContactPhone')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+              placeholder="Emergency contact phone"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Relation</label>
+            <input
+              type="text"
+              {...register('emergencyContactRelation')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+              placeholder="e.g., Father, Mother, Spouse"
+            />
+          </div>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit(onComplete)} className="space-y-6">
-        {/* Phone Numbers */}
-        <div className="border-l-4 border-blue-600 pl-4">
-          <h3 className="font-semibold text-gray-900 mb-4">Phone Numbers</h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Primary Phone
-              </label>
-              <input
-                type="tel"
-                {...register('primaryPhone')}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="10-digit mobile number"
-                maxLength={10}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Secondary Phone
-              </label>
-              <input
-                type="tel"
-                {...register('secondaryPhone')}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Alternate number"
-                maxLength={10}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Email Addresses */}
-        <div className="border-l-4 border-green-600 pl-4">
-          <h3 className="font-semibold text-gray-900 mb-4">Email Addresses</h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Primary Email
-              </label>
-              <input
-                type="email"
-                {...register('primaryEmail')}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="email@example.com"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Secondary Email
-              </label>
-              <input
-                type="email"
-                {...register('secondaryEmail')}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="alternate@example.com"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Emergency Contact */}
-        <div className="border-l-4 border-orange-600 pl-4">
-          <h3 className="font-semibold text-gray-900 mb-4">Emergency Contact</h3>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Contact Person Name
-              </label>
-              <input
-                {...register('emergencyContactName')}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Full name of emergency contact"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Contact Phone
-                </label>
-                <input
-                  type="tel"
-                  {...register('emergencyContactPhone')}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="10-digit mobile"
-                  maxLength={10}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Relationship
-                </label>
-                <select
-                  {...register('emergencyContactRelation')}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Select relationship</option>
-                  {relationOptions.map(relation => (
-                    <option key={relation} value={relation}>{relation}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="pt-4">
+      <div className="flex justify-between">
+        {onBack && (
           <button
-            type="submit"
-            className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors shadow-md hover:shadow-lg"
+            type="button"
+            onClick={onBack}
+            className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
           >
-            Continue to Additional Information
+            Back
           </button>
-        </div>
-      </form>
-    </div>
+        )}
+        <button
+          type="submit"
+          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 ml-auto"
+        >
+          Next Step
+        </button>
+      </div>
+    </form>
   );
 };
 
