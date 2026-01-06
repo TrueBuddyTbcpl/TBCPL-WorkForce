@@ -6,6 +6,8 @@ import CaseDetailView from '../components/operations/Cases/CaseDetailView';
 import Dashboard from '../components/operations/dashboard/dashboard-index';
 import ProfileForm from '../components/operations/profile/ProfileForm';
 import ReportDashboard from '../components/operations/report-create/report-dashboard';
+import AdminDashboard from '../components/admin/admin-dashboard';
+import EmployeeProfile from '../components/admin/EmployeeProfile';
 
 // Wrapper component for ProfileForm
 const ProfileFormWrapper = () => {
@@ -13,7 +15,7 @@ const ProfileFormWrapper = () => {
 
   const handleSubmit = (data: any) => {
     console.log('Profile submitted:', data);
-    
+
     const existingProfiles = JSON.parse(localStorage.getItem('culprit_profiles') || '[]');
     existingProfiles.push({
       ...data,
@@ -21,11 +23,11 @@ const ProfileFormWrapper = () => {
       createdDate: new Date().toISOString(),
     });
     localStorage.setItem('culprit_profiles', JSON.stringify(existingProfiles));
-    
+
     localStorage.removeItem('profile_draft');
     localStorage.removeItem('profile_form_step');
     localStorage.removeItem('profile_timestamp');
-    
+
     alert('Profile created successfully!');
     navigate('/operations/profile');
   };
@@ -34,14 +36,14 @@ const ProfileFormWrapper = () => {
     const confirmCancel = window.confirm(
       'Are you sure you want to cancel? Any unsaved changes will be lost.'
     );
-    
+
     if (confirmCancel) {
       navigate('/operations/dashboard');
     }
   };
 
   return (
-    <ProfileForm 
+    <ProfileForm
       onSubmit={handleSubmit}
       onCancel={handleCancel}
     />
@@ -52,8 +54,8 @@ const AppRoutes = () => {
   return (
     <Routes>
       {/* Default redirect */}
-      <Route path="/" element={<Navigate to="/operations/dashboard" replace />} />
-      
+      <Route path="/" element={<Navigate to="/admin" replace />} />
+
       {/* Operations Module */}
       <Route path="/operations/dashboard" element={<Dashboard />} />
       <Route path="/operations/report-create" element={<ReportCreate />} />
@@ -62,15 +64,17 @@ const AppRoutes = () => {
       <Route path="/operations/case" element={<CaseIndex />} />
       <Route path="/operations/case-index/:caseId" element={<CaseDetailView />} />
       <Route path="/operations/reports" element={<ReportDashboard />} />
-      
+      <Route path="/admin" element={<AdminDashboard />} />
+      <Route path="/admin/employee/:employeeId" element={<EmployeeProfile />} />
+
       {/* 404 Not Found */}
-      <Route 
-        path="*" 
+      <Route
+        path="*"
         element={
           <div className="flex items-center justify-center h-screen">
             <h1 className="text-2xl font-bold text-gray-700">404 - Page Not Found</h1>
           </div>
-        } 
+        }
       />
     </Routes>
   );
