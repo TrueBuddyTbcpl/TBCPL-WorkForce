@@ -8,6 +8,7 @@ import ProfileForm from '../components/operations/profile/ProfileForm';
 import ReportDashboard from '../components/operations/report-create/report-dashboard';
 import AdminDashboard from '../components/admin/admin-dashboard';
 import EmployeeProfile from '../components/admin/EmployeeProfile';
+import Login from '../components/auth/Login';
 
 // Wrapper component for ProfileForm
 const ProfileFormWrapper = () => {
@@ -54,7 +55,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       {/* Default redirect */}
-      <Route path="/" element={<Navigate to="/admin" replace />} />
+      <Route path="/" element={<Navigate to="/login" replace />} />
 
       {/* Operations Module */}
       <Route path="/operations/dashboard" element={<Dashboard />} />
@@ -65,6 +66,7 @@ const AppRoutes = () => {
       <Route path="/operations/case-index/:caseId" element={<CaseDetailView />} />
       <Route path="/operations/reports" element={<ReportDashboard />} />
       <Route path="/admin" element={<AdminDashboard />} />
+      <Route path="/login" element={<Login />} />
       <Route path="/admin/employee/:employeeId" element={<EmployeeProfile />} />
 
       {/* 404 Not Found */}

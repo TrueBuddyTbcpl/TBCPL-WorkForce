@@ -294,7 +294,7 @@ const CasesView: React.FC<{ cases: any[] }> = ({ cases }) => {
           {cases.map((caseItem) => (
             <div
               key={caseItem.id}
-              onClick={() => navigate(`/operations/case/view/${caseItem.id}`)}
+              onClick={() => navigate(`/operations/case-index/${caseItem.id}`)}
               className="border border-gray-200 rounded-lg p-4 hover:shadow-md hover:border-blue-300 transition cursor-pointer"
             >
               <div className="flex items-start justify-between">

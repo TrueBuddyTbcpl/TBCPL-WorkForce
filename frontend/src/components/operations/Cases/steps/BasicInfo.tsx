@@ -1,14 +1,13 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { FileText, Calendar, Building2 } from 'lucide-react';
-import { basicInfoSchema } from '../utils/caseValidation';
-import { clientNames, clientProducts, priorityLevels, caseStatuses } from '../data/caseOptions';
-import type { CaseBasicInfo } from '../types/case.types';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { FileText, Calendar,  Building2, Package } from 'lucide-react';
+import { basicInfoSchema, type BasicInfoFormData } from '../utils/caseValidation';
+import { clientsData } from '../data/clientOptions';
 
 interface Props {
-  initialData?: CaseBasicInfo | null;
-  onComplete: (data: CaseBasicInfo) => void;
+  initialData?: BasicInfoFormData | null;
+  onComplete: (data: BasicInfoFormData) => void;
   onBack: () => void;
   isFirstStep: boolean;
   isLastStep: boolean;
@@ -16,47 +15,54 @@ interface Props {
 
 const BasicInfo = ({ initialData, onComplete }: Props) => {
   const [selectedClient, setSelectedClient] = useState<string>(initialData?.clientName || '');
-  const [availableProducts, setAvailableProducts] = useState<string[]>(
-    initialData?.clientName ? clientProducts[initialData.clientName] || [] : []
-  );
+  const [availableProducts, setAvailableProducts] = useState<Array<{id: string; name: string}>>([]);
 
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<CaseBasicInfo>({
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<BasicInfoFormData>({
     resolver: zodResolver(basicInfoSchema),
     defaultValues: initialData || {
-      caseNumber: `CASE-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`,
+      caseNumber: `CASE-${Date.now()}`,
+      caseTitle: '',
       clientName: '',
       clientProduct: '',
-      priority: 'Medium',
-      status: 'Open',
-      reportedDate: new Date().toISOString().split('T')[0],
+      priority: 'medium',
+      status: 'open',
+      description: '',
+      dateOpened: new Date().toISOString().split('T')[0],
     },
   });
 
-  const priority = watch('priority');
-  // ✅ Removed unused: const clientName = watch('clientName');
+  const clientName = watch('clientName');
 
-  // Handle client change
-  const handleClientChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const client = e.target.value;
-    setSelectedClient(client);
-    setValue('clientName', client);
-    
-    // Update available products
-    if (client && clientProducts[client]) {
-      setAvailableProducts(clientProducts[client]);
-      setValue('clientProduct', ''); // Reset product selection
+  useEffect(() => {
+    if (clientName) {
+      const client = clientsData.find(c => c.name === clientName);
+      if (client) {
+        setAvailableProducts(client.products);
+        setSelectedClient(clientName);
+        // Reset product selection when client changes
+        setValue('clientProduct', '');
+      }
     } else {
       setAvailableProducts([]);
+      setSelectedClient('');
     }
+  }, [clientName, setValue]);
+
+  const generateCaseNumber = () => {
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 1000);
+    const newCaseNumber = `CASE-${timestamp}-${random}`;
+    setValue('caseNumber', newCaseNumber);
   };
 
-  const getPriorityColor = (level: string) => {
-    switch (level) {
-      case 'Low': return 'border-green-500 bg-green-50 text-green-700';
-      case 'Medium': return 'border-yellow-500 bg-yellow-50 text-yellow-700';
-      case 'High': return 'border-orange-500 bg-orange-50 text-orange-700';
-      case 'Critical': return 'border-red-500 bg-red-50 text-red-700';
-      default: return 'border-gray-300';
+  
+
+  const getStatusLabel = (status: 'open' | 'in-progress' | 'on-hold' | 'closed') => {
+    switch (status) {
+      case 'in-progress': return 'In Progress';
+      case 'on-hold': return 'On Hold';
+      case 'open': return 'Open';
+      case 'closed': return 'Closed';
     }
   };
 
@@ -67,145 +73,157 @@ const BasicInfo = ({ initialData, onComplete }: Props) => {
           <FileText className="w-7 h-7 text-blue-600" />
           Basic Case Information
         </h2>
-        <p className="text-sm text-gray-600 mt-1">Enter the fundamental details of the case</p>
+        <p className="text-sm text-gray-600 mt-1">Enter case details and client information</p>
       </div>
 
       <form onSubmit={handleSubmit(onComplete)} className="space-y-6">
-        {/* Case Number & Reported Date */}
+        {/* Case Number and Title */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Case Number <span className="text-red-500">*</span>
             </label>
-            <input
-              {...register('caseNumber')}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
-              placeholder="CASE-2025-001"
-              readOnly
-            />
-            <p className="text-xs text-gray-500 mt-1">Auto-generated case number</p>
+            <div className="flex gap-2">
+              <input
+                {...register('caseNumber')}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
+                placeholder="Auto-generated case number"
+                readOnly
+              />
+              <button
+                type="button"
+                onClick={generateCaseNumber}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm"
+              >
+                Generate
+              </button>
+            </div>
+            {errors.caseNumber && (
+              <p className="text-red-600 text-xs mt-1">{errors.caseNumber.message}</p>
+            )}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Reported Date <span className="text-red-500">*</span>
+              Case Title <span className="text-red-500">*</span>
             </label>
-            <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="date"
-                {...register('reportedDate')}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            {errors.reportedDate && (
-              <p className="text-red-600 text-xs mt-1">{errors.reportedDate.message}</p>
+            <input
+              {...register('caseTitle')}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Enter case title"
+            />
+            {errors.caseTitle && (
+              <p className="text-red-600 text-xs mt-1">{errors.caseTitle.message}</p>
             )}
           </div>
         </div>
 
-        {/* Client Name */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-blue-600" />
-            Client Name <span className="text-red-500">*</span>
-          </label>
-          <select
-            {...register('clientName')}
-            onChange={handleClientChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="">Select client name</option>
-            {clientNames.map(client => (
-              <option key={client} value={client}>{client}</option>
-            ))}
-          </select>
-          {errors.clientName && (
-            <p className="text-red-600 text-xs mt-1">{errors.clientName.message}</p>
-          )}
-        </div>
+        {/* Client Details Section */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <Building2 className="w-5 h-5 text-blue-600" />
+            Client Information
+          </h3>
 
-        {/* Client Product (Dependent on Client Name) */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Client Product <span className="text-red-500">*</span>
-          </label>
-          <select
-            {...register('clientProduct')}
-            disabled={!selectedClient || availableProducts.length === 0}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-          >
-            <option value="">
-              {!selectedClient 
-                ? 'First select a client name' 
-                : availableProducts.length === 0 
-                ? 'No products available for this client'
-                : 'Select client product'}
-            </option>
-            {availableProducts.map(product => (
-              <option key={product} value={product}>{product}</option>
-            ))}
-          </select>
-          {errors.clientProduct && (
-            <p className="text-red-600 text-xs mt-1">{errors.clientProduct.message}</p>
-          )}
-          {selectedClient && availableProducts.length > 0 && (
-            <p className="text-xs text-gray-500 mt-1">
-              Showing products for {selectedClient}
-            </p>
-          )}
-        </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Client Name Dropdown */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Client Name <span className="text-red-500">*</span>
+              </label>
+              <select
+                {...register('clientName')}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Select Client</option>
+                {clientsData.map((client) => (
+                  <option key={client.id} value={client.name}>
+                    {client.name}
+                  </option>
+                ))}
+              </select>
+              {errors.clientName && (
+                <p className="text-red-600 text-xs mt-1">{errors.clientName.message}</p>
+              )}
+            </div>
 
-        {/* Status */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Status <span className="text-red-500">*</span>
-          </label>
-          <select
-            {...register('status')}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            {caseStatuses.map(status => (
-              <option key={status} value={status}>{status}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Priority Level */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Priority Level <span className="text-red-500">*</span>
-          </label>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {priorityLevels.map((level) => (
-              <label
-                key={level}
-                className={`relative flex items-center justify-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                  priority === level ? getPriorityColor(level) : 'border-gray-300 hover:border-gray-400'
+            {/* Client Product Dropdown */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                <Package className="w-4 h-4 text-blue-600" />
+                Client Product <span className="text-red-500">*</span>
+              </label>
+              <select
+                {...register('clientProduct')}
+                disabled={!selectedClient || availableProducts.length === 0}
+                className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  !selectedClient || availableProducts.length === 0 ? 'bg-gray-100 cursor-not-allowed' : ''
                 }`}
               >
-                <input
-                  type="radio"
-                  value={level}
-                  {...register('priority')}
-                  className="sr-only"
-                />
-                <span className="text-sm font-semibold">{level}</span>
-              </label>
-            ))}
+                <option value="">
+                  {!selectedClient ? 'Select client first' : 'Select Product'}
+                </option>
+                {availableProducts.map((product) => (
+                  <option key={product.id} value={product.name}>
+                    {product.name}
+                  </option>
+                ))}
+              </select>
+              {errors.clientProduct && (
+                <p className="text-red-600 text-xs mt-1">{errors.clientProduct.message}</p>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Description */}
+        {/* Date Opened (Disabled) */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Case Description <span className="text-red-500">*</span>
+            <Calendar className="inline w-4 h-4 mr-1" />
+            Date Opened <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="date"
+            {...register('dateOpened')}
+            disabled
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
+          />
+          <p className="text-xs text-gray-500 mt-1">Auto-set to today's date</p>
+        </div>
+
+        {/* Priority and Status */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Status <span className="text-red-500">*</span>
+            </label>
+            <select
+              {...register('status')}
+              disabled
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
+            >
+              {(['open', 'in-progress', 'on-hold', 'closed'] as const).map((status) => (
+                <option key={status} value={status}>
+                  {getStatusLabel(status)}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">Default status is 'Open'</p>
+          </div>
+        </div>
+
+        {/* Description (Optional) */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Case Description (Optional)
           </label>
           <textarea
             {...register('description')}
-            rows={5}
+            rows={4}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Provide detailed description of the case, incident, and circumstances..."
+            placeholder="Provide additional details about the case (optional)..."
           />
           {errors.description && (
             <p className="text-red-600 text-xs mt-1">{errors.description.message}</p>
@@ -218,7 +236,7 @@ const BasicInfo = ({ initialData, onComplete }: Props) => {
             type="submit"
             className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors shadow-md hover:shadow-lg"
           >
-            Continue to Client Details
+            Continue to Location Details
           </button>
         </div>
       </form>

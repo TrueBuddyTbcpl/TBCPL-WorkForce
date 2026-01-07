@@ -1,20 +1,23 @@
 import { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, CheckCircle, RotateCcw } from 'lucide-react';
 import BasicInfo from './steps/BasicInfo';
-import ClientDetailsStep from './steps/ClientDetails';
 import TeamAssignment from './steps/TeamAssignment';
-import type { CaseData } from './types/case.types';
+import type { BasicInfoFormData, InvestigationFormData } from './utils/caseValidation';
 import { useBrowserNavigation } from '../../../hooks/useBrowserNavigation';
 
+interface FormDataState {
+  basicInfo: BasicInfoFormData | null;
+  investigation: InvestigationFormData | null;
+}
+
 interface CaseFormProps {
-  onComplete: (data: CaseData) => void;
-  initialData?: CaseData | null;
+  onComplete?: (data: any) => void;
+  initialData?: any | null;
 }
 
 const CaseForm = ({ onComplete, initialData }: CaseFormProps) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormDataState>({
     basicInfo: initialData?.basicInfo || null,
-    clientDetails: initialData?.clientDetails || null,
     investigation: initialData?.investigation || null,
   });
 
@@ -22,10 +25,9 @@ const CaseForm = ({ onComplete, initialData }: CaseFormProps) => {
   const [autoSaveIndicator, setAutoSaveIndicator] = useState(false);
 
   const steps = [
-    { id: 1, name: 'Basic Info', key: 'basicInfo', component: BasicInfo },
-    { id: 2, name: 'Client Details', key: 'clientDetails', component: ClientDetailsStep },
-    { id: 3, name: 'Team Assignment', key: 'investigation', component: TeamAssignment },
-  ];
+    { id: 1, name: 'Basic Information', key: 'basicInfo', component: BasicInfo },
+    { id: 2, name: 'Team Assignment', key: 'investigation', component: TeamAssignment },
+  ] as const;
 
   // Use browser navigation hook
   const { navigateToStep, clearHistory } = useBrowserNavigation({
@@ -41,6 +43,7 @@ const CaseForm = ({ onComplete, initialData }: CaseFormProps) => {
     formDataRef.current = formData;
   }, [formData]);
 
+  // Load saved data on mount
   useEffect(() => {
     const savedData = localStorage.getItem('case-form-draft');
     if (savedData && !initialData) {
@@ -53,8 +56,9 @@ const CaseForm = ({ onComplete, initialData }: CaseFormProps) => {
     }
   }, [initialData]);
 
+  // Save to localStorage whenever form data changes
   useEffect(() => {
-    if (formData.basicInfo || formData.clientDetails || formData.investigation) {
+    if (formData.basicInfo || formData.investigation) {
       localStorage.setItem('case-form-draft', JSON.stringify(formData));
       setAutoSaveIndicator(true);
       const timer = setTimeout(() => setAutoSaveIndicator(false), 2000);
@@ -64,7 +68,11 @@ const CaseForm = ({ onComplete, initialData }: CaseFormProps) => {
 
   const handleStepComplete = (stepKey: string, data: any) => {
     setFormData(prev => ({ ...prev, [stepKey]: data }));
-    if (currentStep < 3) {
+    
+    // If it's the last step, submit the form
+    if (currentStep === steps.length) {
+      handleSubmit({ ...formData, [stepKey]: data });
+    } else {
       navigateToStep(currentStep + 1);
     }
   };
@@ -76,22 +84,23 @@ const CaseForm = ({ onComplete, initialData }: CaseFormProps) => {
   };
 
   const handleNextStep = () => {
-    if (currentStep < 3 && isStepComplete(currentStep)) {
+    if (currentStep < steps.length && isStepComplete(currentStep)) {
       navigateToStep(currentStep + 1);
     }
   };
 
-  const handleSubmit = () => {
-    if (!formData.basicInfo || !formData.clientDetails || !formData.investigation) {
+  const handleSubmit = (finalData?: FormDataState) => {
+    const dataToSubmit = finalData || formData;
+    
+    if (!dataToSubmit.basicInfo || !dataToSubmit.investigation) {
       alert('Please complete all steps before submitting');
       return;
     }
 
-    const caseData: CaseData = {
+    const caseData = {
       id: initialData?.id || `CASE-${Date.now()}`,
-      basicInfo: formData.basicInfo,
-      clientDetails: formData.clientDetails,
-      investigation: formData.investigation,
+      basicInfo: dataToSubmit.basicInfo,
+      investigation: dataToSubmit.investigation,
       documents: initialData?.documents || [],
       updates: initialData?.updates || [],
       createdAt: initialData?.createdAt || new Date().toISOString(),
@@ -101,7 +110,20 @@ const CaseForm = ({ onComplete, initialData }: CaseFormProps) => {
 
     localStorage.removeItem('case-form-draft');
     clearHistory();
-    onComplete(caseData);
+    
+    console.log('Case created successfully:', caseData);
+    
+    if (onComplete) {
+      onComplete(caseData);
+    } else {
+      alert('Case created successfully!');
+      // Reset form
+      setFormData({
+        basicInfo: null,
+        investigation: null,
+      });
+      navigateToStep(1);
+    }
   };
 
   const handleClearForm = () => {
@@ -109,19 +131,16 @@ const CaseForm = ({ onComplete, initialData }: CaseFormProps) => {
       localStorage.removeItem('case-form-draft');
       setFormData({
         basicInfo: null,
-        clientDetails: null,
         investigation: null,
       });
       navigateToStep(1);
     }
   };
 
-  const CurrentStepComponent = steps[currentStep - 1].component;
-  const currentStepKey = steps[currentStep - 1].key;
 
   const isStepComplete = (stepId: number) => {
-    const stepKey = steps[stepId - 1].key;
-    return formData[stepKey as keyof typeof formData] !== null;
+    const stepKey = steps[stepId - 1].key as keyof FormDataState;
+    return formData[stepKey] !== null;
   };
 
   return (
@@ -154,7 +173,12 @@ const CaseForm = ({ onComplete, initialData }: CaseFormProps) => {
               <div className="flex flex-col items-center flex-1">
                 <button
                   type="button"
-                  onClick={() => (isStepComplete(step.id - 1) || currentStep >= step.id) ? navigateToStep(step.id) : null}
+                  onClick={() => {
+                    // Allow navigation to completed steps or current step
+                    if (isStepComplete(step.id) || currentStep >= step.id) {
+                      navigateToStep(step.id);
+                    }
+                  }}
                   disabled={step.id > 1 && !isStepComplete(step.id - 1) && currentStep < step.id}
                   className={`w-12 h-12 rounded-full flex items-center justify-center font-semibold transition-all ${
                     currentStep === step.id
@@ -179,7 +203,7 @@ const CaseForm = ({ onComplete, initialData }: CaseFormProps) => {
               {index < steps.length - 1 && (
                 <div className={`h-1 flex-1 mx-2 transition-all ${
                   isStepComplete(step.id) ? 'bg-green-500' : 'bg-gray-300'
-                }`} />
+                }`} style={{ marginBottom: '2.5rem' }} />
               )}
             </div>
           ))}
@@ -188,18 +212,24 @@ const CaseForm = ({ onComplete, initialData }: CaseFormProps) => {
 
       {/* Current Step Form */}
       <div className="bg-white rounded-lg shadow-sm border">
-        <CurrentStepComponent
-          initialData={formData[currentStepKey as keyof typeof formData] as any}
-          onComplete={(data: any) => {
-            handleStepComplete(currentStepKey, data);
-            if (currentStep === 3) {
-              handleSubmit();
-            }
-          }}
-          onBack={handlePreviousStep}
-          isFirstStep={currentStep === 1}
-          isLastStep={currentStep === 3}
-        />
+        {currentStep === 1 && (
+          <BasicInfo
+            initialData={formData.basicInfo}
+            onComplete={(data) => handleStepComplete('basicInfo', data)}
+            onBack={handlePreviousStep}
+            isFirstStep={true}
+            isLastStep={false}
+          />
+        )}
+        {currentStep === 2 && (
+          <TeamAssignment
+            initialData={formData.investigation}
+            onComplete={(data) => handleStepComplete('investigation', data)}
+            onBack={handlePreviousStep}
+            isFirstStep={false}
+            isLastStep={true}
+          />
+        )}
       </div>
 
       {/* Navigation Buttons */}
@@ -213,7 +243,7 @@ const CaseForm = ({ onComplete, initialData }: CaseFormProps) => {
           <ChevronLeft className="w-5 h-5" /> Previous Step
         </button>
         
-        {currentStep < 3 && (
+        {currentStep < steps.length && (
           <button
             type="button"
             onClick={handleNextStep}

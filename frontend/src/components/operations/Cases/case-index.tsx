@@ -1,52 +1,68 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FileText, Eye, FolderOpen } from 'lucide-react';
 import CaseForm from './CaseForm';
 import CasePreview from './CasePreview';
 import CaseDashboard from './CaseDashboard';
 import type { CaseData } from './types/case.types';
+import { mockCases, type MockCase } from '../../../data/mockData/mockCases';
+import { useNavigate } from 'react-router-dom';
 
 type ViewMode = 'list' | 'form' | 'preview' | 'dashboard';
 
 const CaseIndex = () => {
     const [viewMode, setViewMode] = useState<ViewMode>('list');
-    const [cases, setCases] = useState<CaseData[]>([]);
-    const [selectedCase, setSelectedCase] = useState<CaseData | null>(null);
+    const [cases, setCases] = useState<MockCase[]>([]);
+    const [selectedCase] = useState<CaseData | null>(null);
 
-    const handleCaseCreated = (newCase: CaseData) => {
-        setCases(prev => [...prev, newCase]);
-        setSelectedCase(newCase);
+    // Load mock cases directly
+    useEffect(() => {
+        setCases(mockCases);
+    }, []);
+
+    const handleCaseCreated = () => {
+        // Handle new case creation
         setViewMode('preview');
     };
 
-    const handleCaseUpdated = (updatedCase: CaseData) => {
-        setCases(prev => prev.map(c => c.id === updatedCase.id ? updatedCase : c));
-        setSelectedCase(updatedCase);
+    const handleCaseUpdated = () => {
+        // Handle case updates
     };
+    const navigate = useNavigate();
 
-    const handleViewCase = (caseData: CaseData) => {
-        setSelectedCase(caseData);
-        setViewMode('preview');
-    };
+const handleViewCase = (caseData: MockCase) => {
+    // ✅ Always use /operations/case
+    navigate(`/operations/case-index/${caseData.id}`);
+};
 
-    const getStatusColor = (status: string) => {
+    const getStatusColor = (status: 'open' | 'in-progress' | 'on-hold' | 'closed') => {
         switch (status) {
-            case 'Open': return 'bg-blue-100 text-blue-800';
-            case 'Under Investigation': return 'bg-yellow-100 text-yellow-800';
-            case 'On Hold': return 'bg-gray-100 text-gray-800';
-            case 'Closed': return 'bg-green-100 text-green-800';
-            case 'Pending': return 'bg-orange-100 text-orange-800';
-            default: return 'bg-gray-100 text-gray-800';
+            case 'open': return 'bg-blue-100 text-blue-800';
+            case 'in-progress': return 'bg-yellow-100 text-yellow-800';
+            case 'on-hold': return 'bg-gray-100 text-gray-800';
+            case 'closed': return 'bg-green-100 text-green-800';
         }
     };
 
-    const getPriorityColor = (priority: string) => {
-        switch (priority) {
-            case 'Low': return 'bg-green-100 text-green-800';
-            case 'Medium': return 'bg-yellow-100 text-yellow-800';
-            case 'High': return 'bg-orange-100 text-orange-800';
-            case 'Critical': return 'bg-red-100 text-red-800';
-            default: return 'bg-gray-100 text-gray-800';
+    const getStatusLabel = (status: 'open' | 'in-progress' | 'on-hold' | 'closed') => {
+        switch (status) {
+            case 'open': return 'Open';
+            case 'in-progress': return 'Under Investigation';
+            case 'on-hold': return 'On Hold';
+            case 'closed': return 'Closed';
         }
+    };
+
+    const getPriorityColor = (priority: 'low' | 'medium' | 'high' | 'critical') => {
+        switch (priority) {
+            case 'low': return 'bg-green-100 text-green-800';
+            case 'medium': return 'bg-yellow-100 text-yellow-800';
+            case 'high': return 'bg-orange-100 text-orange-800';
+            case 'critical': return 'bg-red-100 text-red-800';
+        }
+    };
+
+    const getPriorityLabel = (priority: 'low' | 'medium' | 'high' | 'critical') => {
+        return priority.charAt(0).toUpperCase() + priority.slice(1);
     };
 
     // Render based on view mode
@@ -111,19 +127,19 @@ const CaseIndex = () => {
                     </div>
                     <div className="bg-white border border-gray-200 rounded-lg p-4">
                         <div className="text-2xl font-bold text-yellow-600">
-                            {cases.filter(c => c.basicInfo.status === 'Under Investigation').length}
+                            {cases.filter(c => c.status === 'in-progress').length}
                         </div>
                         <div className="text-sm text-gray-600 mt-1">Under Investigation</div>
                     </div>
                     <div className="bg-white border border-gray-200 rounded-lg p-4">
                         <div className="text-2xl font-bold text-green-600">
-                            {cases.filter(c => c.basicInfo.status === 'Closed').length}
+                            {cases.filter(c => c.status === 'closed').length}
                         </div>
                         <div className="text-sm text-gray-600 mt-1">Closed Cases</div>
                     </div>
                     <div className="bg-white border border-gray-200 rounded-lg p-4">
                         <div className="text-2xl font-bold text-red-600">
-                            {cases.filter(c => c.basicInfo.priority === 'Critical').length}
+                            {cases.filter(c => c.priority === 'critical').length}
                         </div>
                         <div className="text-sm text-gray-600 mt-1">Critical Priority</div>
                     </div>
@@ -145,7 +161,7 @@ const CaseIndex = () => {
                 ) : (
                     <div className="bg-white rounded-lg shadow-sm border">
                         <div className="p-4 border-b border-gray-200">
-                            <h2 className="text-lg font-semibold text-gray-900">All Cases</h2>
+                            <h2 className="text-lg font-semibold text-gray-900">All Cases ({cases.length})</h2>
                         </div>
                         <div className="divide-y divide-gray-200">
                             {cases.map((caseData) => (
@@ -157,32 +173,30 @@ const CaseIndex = () => {
                                     <div className="flex items-start justify-between">
                                         <div className="flex-1">
                                             <div className="flex items-center gap-3 mb-2">
-                                                {/* ✅ Updated: Show Client Name as title */}
                                                 <h3 className="text-lg font-semibold text-gray-900">
-                                                    {caseData.basicInfo.clientName}
+                                                    {caseData.client.name}
                                                 </h3>
-                                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(caseData.basicInfo.status)}`}>
-                                                    {caseData.basicInfo.status}
+                                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(caseData.status)}`}>
+                                                    {getStatusLabel(caseData.status)}
                                                 </span>
-                                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(caseData.basicInfo.priority)}`}>
-                                                    {caseData.basicInfo.priority}
+                                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(caseData.priority)}`}>
+                                                    {getPriorityLabel(caseData.priority)}
                                                 </span>
                                             </div>
-                                            {/* ✅ Updated: Show Client Product */}
                                             <p className="text-sm text-blue-600 font-medium mb-2">
-                                                Product: {caseData.basicInfo.clientProduct}
+                                                Product: {caseData.client.productName}
                                             </p>
                                             <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                                                {caseData.basicInfo.description}
+                                                {caseData.description}
                                             </p>
                                             <div className="flex items-center gap-4 text-sm text-gray-600">
-                                                <span>Case #: {caseData.basicInfo.caseNumber}</span>
+                                                <span>Case #: {caseData.caseNumber}</span>
                                                 <span>•</span>
-                                                <span>Client: {caseData.clientDetails.clientName}</span>
+                                                <span>Title: {caseData.title}</span>
                                                 <span>•</span>
-                                                <span>Lead: {caseData.clientDetails.leadType}</span>
+                                                <span>Assigned: {caseData.assignedTo.name}</span>
                                                 <span>•</span>
-                                                <span>Team: {caseData.investigation.assignedEmployees.length} members</span>
+                                                <span>Profiles: {caseData.profilesLinked}</span>
                                             </div>
                                         </div>
                                         <button

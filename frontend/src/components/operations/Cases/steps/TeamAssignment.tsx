@@ -1,15 +1,14 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
-import { Users, Calendar, AlertCircle } from 'lucide-react';
-import { investigationSchema } from '../utils/caseValidation';
-import { availableEmployees, availableCulprits } from '../data/caseOptions';
-import type { InvestigationDetails } from '../types/case.types';
+import { Users, Calendar, AlertCircle, Target } from 'lucide-react';
+import { investigationSchema, type InvestigationFormData } from '../utils/caseValidation';
+import { availableEmployees, availableCulprits, leadTypes } from '../data/caseOptions';
 import MultiSelectDropdown from '../../../common/MultiSelectDropdown';
 
 interface Props {
-  initialData?: InvestigationDetails | null;
-  onComplete: (data: InvestigationDetails) => void;
+  initialData?: InvestigationFormData | null;
+  onComplete: (data: InvestigationFormData) => void; // ✅ Use InvestigationFormData
   onBack: () => void;
   isFirstStep: boolean;
   isLastStep: boolean;
@@ -23,13 +22,16 @@ const TeamAssignment = ({ initialData, onComplete }: Props) => {
     initialData?.linkedCulprits || []
   );
 
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm<InvestigationDetails>({
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<InvestigationFormData>({
     resolver: zodResolver(investigationSchema),
     defaultValues: initialData || {
+      leadType: 'Client Lead',
       assignedEmployees: [],
-      linkedCulprits: [],  // ✅ Now required, not optional
+      linkedCulprits: [],
     },
   });
+
+  const leadType = watch('leadType');
 
   const handleEmployeeChange = (employees: string[]) => {
     setAssignedEmployees(employees);
@@ -41,7 +43,7 @@ const TeamAssignment = ({ initialData, onComplete }: Props) => {
     setValue('linkedCulprits', culprits);
   };
 
-  const onSubmit = (data: InvestigationDetails) => {
+  const onSubmit = (data: InvestigationFormData) => {
     onComplete({
       ...data,
       assignedEmployees,
@@ -74,16 +76,58 @@ const TeamAssignment = ({ initialData, onComplete }: Props) => {
           <Users className="w-7 h-7 text-blue-600" />
           Team Assignment & Investigation Setup
         </h2>
-        <p className="text-sm text-gray-600 mt-1">Assign team members and link culprit profiles</p>
+        <p className="text-sm text-gray-600 mt-1">Configure lead type, assign team members, and link culprit profiles</p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        
+        {/* Lead Type */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+            <Target className="w-4 h-4 text-blue-600" />
+            Lead Type <span className="text-red-500">*</span>
+          </label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {leadTypes.map((type) => (
+              <label
+                key={type}
+                className={`relative flex items-center justify-center p-6 border-2 rounded-lg cursor-pointer transition-all ${
+                  leadType === type
+                    ? 'border-blue-600 bg-blue-50'
+                    : 'border-gray-300 hover:border-gray-400'
+                }`}
+              >
+                <input
+                  type="radio"
+                  value={type}
+                  {...register('leadType')}
+                  className="sr-only"
+                />
+                <div className="text-center">
+                  <div className={`text-3xl mb-2 ${leadType === type ? 'text-blue-600' : 'text-gray-400'}`}>
+                    {type === 'Client Lead' ? '🏢' : '🔍'}
+                  </div>
+                  <span className={`text-sm font-semibold ${leadType === type ? 'text-blue-700' : 'text-gray-700'}`}>
+                    {type}
+                  </span>
+                </div>
+              </label>
+            ))}
+          </div>
+          <p className="text-xs text-gray-500 mt-2">
+            Select whether this case originated from a client request or Trubuddy's internal investigation
+          </p>
+          {errors.leadType && (
+            <p className="text-red-600 text-xs mt-1">{errors.leadType.message}</p>
+          )}
+        </div>
+
         {/* Assigned Employees */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Assign Team Members <span className="text-red-500">*</span>
           </label>
-          
+
           {errors.assignedEmployees && (
             <div className="mb-3 flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
               <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />

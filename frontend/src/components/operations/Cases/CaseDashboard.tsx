@@ -17,30 +17,48 @@ const CaseDashboard = ({ caseData, onBack }: Props) => {
   };
 
   const getLinkedCulprits = () => {
+    // ✅ Fixed: Handle optional linkedCulprits
+    if (!caseData.investigation.linkedCulprits) return [];
     return caseData.investigation.linkedCulprits.map(culpritId =>
       availableCulprits.find(c => c.id === culpritId)
     ).filter(Boolean);
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Open': return 'bg-blue-100 text-blue-800';
-      case 'Under Investigation': return 'bg-yellow-100 text-yellow-800';
-      case 'On Hold': return 'bg-gray-100 text-gray-800';
-      case 'Closed': return 'bg-green-100 text-green-800';
-      case 'Pending': return 'bg-orange-100 text-orange-800';
+    const lowercaseStatus = status.toLowerCase();
+    switch (lowercaseStatus) {
+      case 'open': return 'bg-blue-100 text-blue-800';
+      case 'in-progress': return 'bg-yellow-100 text-yellow-800';
+      case 'on-hold': return 'bg-gray-100 text-gray-800';
+      case 'closed': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
+  const getStatusLabel = (status: string) => {
+    const lowercaseStatus = status.toLowerCase();
+    switch (lowercaseStatus) {
+      case 'open': return 'Open';
+      case 'in-progress': return 'Under Investigation';
+      case 'on-hold': return 'On Hold';
+      case 'closed': return 'Closed';
+      default: return status;
+    }
+  };
+
   const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'Low': return 'bg-green-100 text-green-800 border-green-300';
-      case 'Medium': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      case 'High': return 'bg-orange-100 text-orange-800 border-orange-300';
-      case 'Critical': return 'bg-red-100 text-red-800 border-red-300';
+    const lowercasePriority = priority.toLowerCase();
+    switch (lowercasePriority) {
+      case 'low': return 'bg-green-100 text-green-800 border-green-300';
+      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'high': return 'bg-orange-100 text-orange-800 border-orange-300';
+      case 'critical': return 'bg-red-100 text-red-800 border-red-300';
       default: return 'bg-gray-100 text-gray-800 border-gray-300';
     }
+  };
+
+  const getPriorityLabel = (priority: string) => {
+    return priority.charAt(0).toUpperCase() + priority.slice(1);
   };
 
   return (
@@ -66,13 +84,13 @@ const CaseDashboard = ({ caseData, onBack }: Props) => {
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600">Status:</span>
               <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(caseData.basicInfo.status)}`}>
-                {caseData.basicInfo.status}
+                {getStatusLabel(caseData.basicInfo.status)}
               </span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600">Priority:</span>
               <span className={`px-3 py-1 rounded-full text-sm font-semibold border ${getPriorityColor(caseData.basicInfo.priority)}`}>
-                {caseData.basicInfo.priority}
+                {getPriorityLabel(caseData.basicInfo.priority)}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -93,6 +111,14 @@ const CaseDashboard = ({ caseData, onBack }: Props) => {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Case Details</h3>
               <div className="space-y-3">
                 <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Case Number:</span>
+                  <span className="text-sm font-medium text-gray-900">{caseData.basicInfo.caseNumber}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Case Title:</span>
+                  <span className="text-sm font-medium text-gray-900">{caseData.basicInfo.caseTitle}</span>
+                </div>
+                <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Client Name:</span>
                   <span className="text-sm font-medium text-gray-900">{caseData.basicInfo.clientName}</span>
                 </div>
@@ -101,11 +127,19 @@ const CaseDashboard = ({ caseData, onBack }: Props) => {
                   <span className="text-sm font-medium text-gray-900">{caseData.basicInfo.clientProduct}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Reported Date:</span>
+                  <span className="text-sm text-gray-600">Date Opened:</span>
                   <span className="text-sm font-medium text-gray-900">
-                    {format(new Date(caseData.basicInfo.reportedDate), 'dd MMM yyyy')}
+                    {format(new Date(caseData.basicInfo.dateOpened), 'dd MMM yyyy')} {/* ✅ Fixed */}
                   </span>
                 </div>
+                {caseData.basicInfo.dateClosed && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Date Closed:</span>
+                    <span className="text-sm font-medium text-gray-900">
+                      {format(new Date(caseData.basicInfo.dateClosed), 'dd MMM yyyy')}
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Created By:</span>
                   <span className="text-sm font-medium text-gray-900">{caseData.createdBy}</span>
@@ -123,7 +157,11 @@ const CaseDashboard = ({ caseData, onBack }: Props) => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Lead Type:</span>
-                  <span className="text-sm font-medium text-gray-900">{caseData.clientDetails.leadType}</span>
+                  <span className="text-sm font-medium text-gray-900">{caseData.investigation.leadType}</span> {/* ✅ Fixed */}
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Product/Service:</span>
+                  <span className="text-sm font-medium text-gray-900">{caseData.clientDetails.productService}</span>
                 </div>
                 {caseData.clientDetails.clientContact && (
                   <div className="flex justify-between">

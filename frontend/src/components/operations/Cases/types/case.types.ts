@@ -1,19 +1,21 @@
 export interface CaseBasicInfo {
   caseNumber: string;
-  clientName: string;  // ✅ Changed from caseTitle to clientName
-  clientProduct: string;  // ✅ Changed from caseType to clientProduct
-  priority: 'Low' | 'Medium' | 'High' | 'Critical';
+  caseTitle: string;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  status: 'open' | 'in-progress' | 'on-hold' | 'closed';
+  caseType: string;
+  clientName: string; // ✅ Added
+  clientProduct: string; // ✅ Added
   description: string;
-  reportedDate: string;
-  status: 'Open' | 'Under Investigation' | 'On Hold' | 'Closed' | 'Pending';
+  dateOpened: string;
+  dateClosed?: string;
 }
 
 export interface ClientDetails {
   clientName: string;
+  productService: string;
   clientContact?: string;
   clientEmail?: string;
-  productService: string;
-  leadType: 'Client Lead' | 'Trubuddy Lead';
 }
 
 export interface TeamMember {
@@ -24,8 +26,9 @@ export interface TeamMember {
 }
 
 export interface InvestigationDetails {
+  leadType: 'Client Lead' | 'Trubuddy Lead';
   assignedEmployees: string[];
-  linkedCulprits: string[];
+  linkedCulprits?: string[];
   estimatedCompletionDate?: string;
   actualCompletionDate?: string;
 }

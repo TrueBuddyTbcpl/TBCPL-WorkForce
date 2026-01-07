@@ -35,24 +35,40 @@ const CasePreview = ({ data, onEdit, onOpenDashboard }: Props) => {
   };
 
   const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'Low': return 'bg-green-100 text-green-800 border-green-300';
-      case 'Medium': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      case 'High': return 'bg-orange-100 text-orange-800 border-orange-300';
-      case 'Critical': return 'bg-red-100 text-red-800 border-red-300';
+    const lowercasePriority = priority.toLowerCase();
+    switch (lowercasePriority) {
+      case 'low': return 'bg-green-100 text-green-800 border-green-300';
+      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'high': return 'bg-orange-100 text-orange-800 border-orange-300';
+      case 'critical': return 'bg-red-100 text-red-800 border-red-300';
       default: return 'bg-gray-100 text-gray-800 border-gray-300';
     }
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Open': return 'bg-blue-100 text-blue-800';
-      case 'Under Investigation': return 'bg-yellow-100 text-yellow-800';
-      case 'On Hold': return 'bg-gray-100 text-gray-800';
-      case 'Closed': return 'bg-green-100 text-green-800';
-      case 'Pending': return 'bg-orange-100 text-orange-800';
+    const lowercaseStatus = status.toLowerCase();
+    switch (lowercaseStatus) {
+      case 'open': return 'bg-blue-100 text-blue-800';
+      case 'in-progress': return 'bg-yellow-100 text-yellow-800';
+      case 'on-hold': return 'bg-gray-100 text-gray-800';
+      case 'closed': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const getStatusLabel = (status: string) => {
+    const lowercaseStatus = status.toLowerCase();
+    switch (lowercaseStatus) {
+      case 'open': return 'Open';
+      case 'in-progress': return 'Under Investigation';
+      case 'on-hold': return 'On Hold';
+      case 'closed': return 'Closed';
+      default: return status;
+    }
+  };
+
+  const getPriorityLabel = (priority: string) => {
+    return priority.charAt(0).toUpperCase() + priority.slice(1);
   };
 
   const getAssignedEmployees = () => {
@@ -62,6 +78,8 @@ const CasePreview = ({ data, onEdit, onOpenDashboard }: Props) => {
   };
 
   const getLinkedCulprits = () => {
+    // ✅ Fixed: Handle optional linkedCulprits
+    if (!data.investigation.linkedCulprits) return [];
     return data.investigation.linkedCulprits.map(culpritId =>
       availableCulprits.find(c => c.id === culpritId)
     ).filter(Boolean);
@@ -113,14 +131,12 @@ const CasePreview = ({ data, onEdit, onOpenDashboard }: Props) => {
         <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              {/* ✅ Updated: Show Client Name as main heading */}
               <div className="flex items-center gap-3 mb-2">
                 <h1 className="text-3xl font-bold text-gray-900">{data.basicInfo.clientName}</h1>
                 <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
                   Client
                 </span>
               </div>
-              {/* ✅ Updated: Show Client Product */}
               <p className="text-lg text-blue-600 font-medium mb-3">
                 Product: {data.basicInfo.clientProduct}
               </p>
@@ -132,19 +148,19 @@ const CasePreview = ({ data, onEdit, onOpenDashboard }: Props) => {
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600">Status:</span>
               <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(data.basicInfo.status)}`}>
-                {data.basicInfo.status}
+                {getStatusLabel(data.basicInfo.status)}
               </span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600">Priority:</span>
               <span className={`px-3 py-1 rounded-full text-sm font-semibold border ${getPriorityColor(data.basicInfo.priority)}`}>
-                {data.basicInfo.priority}
+                {getPriorityLabel(data.basicInfo.priority)}
               </span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600">Lead Type:</span>
               <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
-                {data.clientDetails.leadType}
+                {data.investigation.leadType} {/* ✅ Fixed: Get from investigation */}
               </span>
             </div>
           </div>
@@ -153,7 +169,7 @@ const CasePreview = ({ data, onEdit, onOpenDashboard }: Props) => {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
                 <Calendar className="w-4 h-4" />
-                <span>Reported: {format(new Date(data.basicInfo.reportedDate), 'dd MMM yyyy')}</span>
+                <span>Opened: {format(new Date(data.basicInfo.dateOpened), 'dd MMM yyyy')}</span> {/* ✅ Fixed: Use dateOpened */}
               </div>
               <div>Created: {format(new Date(data.createdAt), 'dd MMM yyyy, hh:mm a')}</div>
             </div>
@@ -176,7 +192,7 @@ const CasePreview = ({ data, onEdit, onOpenDashboard }: Props) => {
               </div>
               <div>
                 <span className="text-sm text-gray-600">Lead Type:</span>
-                <p className="text-sm font-medium text-gray-900">{data.clientDetails.leadType}</p>
+                <p className="text-sm font-medium text-gray-900">{data.investigation.leadType}</p> {/* ✅ Fixed */}
               </div>
               <div>
                 <span className="text-sm text-gray-600">Product/Service Under Investigation:</span>
@@ -209,15 +225,27 @@ const CasePreview = ({ data, onEdit, onOpenDashboard }: Props) => {
                 <p className="text-sm font-medium text-gray-900">{data.basicInfo.caseNumber}</p>
               </div>
               <div>
+                <span className="text-sm text-gray-600">Case Title:</span>
+                <p className="text-sm font-medium text-gray-900">{data.basicInfo.caseTitle}</p>
+              </div>
+              <div>
                 <span className="text-sm text-gray-600">Client Product:</span>
                 <p className="text-sm font-medium text-gray-900">{data.basicInfo.clientProduct}</p>
               </div>
               <div>
-                <span className="text-sm text-gray-600">Case Reported:</span>
+                <span className="text-sm text-gray-600">Case Opened:</span>
                 <p className="text-sm font-medium text-gray-900">
-                  {format(new Date(data.basicInfo.reportedDate), 'dd MMM yyyy')}
+                  {format(new Date(data.basicInfo.dateOpened), 'dd MMM yyyy')} {/* ✅ Fixed */}
                 </p>
               </div>
+              {data.basicInfo.dateClosed && (
+                <div>
+                  <span className="text-sm text-gray-600">Case Closed:</span>
+                  <p className="text-sm font-medium text-gray-900">
+                    {format(new Date(data.basicInfo.dateClosed), 'dd MMM yyyy')}
+                  </p>
+                </div>
+              )}
               {data.investigation.estimatedCompletionDate && (
                 <div>
                   <span className="text-sm text-gray-600">Estimated Completion:</span>
