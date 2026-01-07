@@ -10,7 +10,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist -r https://github.com/TrueBuddyTbcpl/TBCPL-WorkForce.git"
+    "deploy": "gh-pages -d dist -r git@github.com-work:TrueBuddyTbcpl/TBCPL-WorkForce.git"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
