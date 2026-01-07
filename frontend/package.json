@@ -3,14 +3,12 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://truebuddytbcpl.github.io/TBCPL-WorkForce",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist -r git@github.com-work:TrueBuddyTbcpl/TBCPL-WorkForce.git"
+    "predeploy": "npm run build"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
