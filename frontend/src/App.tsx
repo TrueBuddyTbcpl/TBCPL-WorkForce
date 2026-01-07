@@ -5,6 +5,7 @@ function App() {
 
   return (
     <BrowserRouter basename="/TBCPL-WorkForce">
+      {/**st checking */}
       <AppRoutes />
     </BrowserRouter>
   )
