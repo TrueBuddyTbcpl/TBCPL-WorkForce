@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Search, Filter, X, ChevronDown } from 'lucide-react';
 import ProfileForm from './ProfileForm';
 import ProfilePreview from './ProfilePreview';
 import ProfileCard from './ProfileCard';
 import type { CulpritProfile } from './types/profile.types';
+import { mockProfiles } from '../../../data/mockData/mockProfiles'; // ✅ Import mock data
 
 const ProfileIndex = () => {
   const [showForm, setShowForm] = useState(false);
@@ -33,6 +34,19 @@ const ProfileIndex = () => {
     tag: '',
   });
 
+  // ✅ Load profiles from mock data on component mount
+  useEffect(() => {
+    const convertedProfiles: CulpritProfile[] = mockProfiles.map(profile => ({
+      ...profile,
+      personal: {
+        ...profile.personal,
+        gender: profile.personal.gender as 'Male' | 'Female' | 'Other' | undefined,
+      },
+    })) as CulpritProfile[];
+    
+    setProfiles(convertedProfiles);
+  }, []);
+
   const handleCreateNew = () => {
     setSelectedProfile(null);
     setShowForm(true);
@@ -48,9 +62,19 @@ const ProfileIndex = () => {
     console.log('Profile submitted:', profile);
     
     if (selectedProfile?.id) {
-      setProfiles(profiles.map(p => p.id === profile.id ? profile : p));
+      // Update existing profile
+      const updatedProfiles = profiles.map(p => p.id === profile.id ? profile : p);
+      setProfiles(updatedProfiles);
+      
+      // ✅ Save to localStorage
+      localStorage.setItem('culprit_profiles', JSON.stringify(updatedProfiles));
     } else {
-      setProfiles([...profiles, profile]);
+      // Add new profile
+      const newProfiles = [...profiles, profile];
+      setProfiles(newProfiles);
+      
+      // ✅ Save to localStorage
+      localStorage.setItem('culprit_profiles', JSON.stringify(newProfiles));
     }
     
     setSelectedProfile(profile);
@@ -231,11 +255,18 @@ const ProfileIndex = () => {
           <div className="mb-6 flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Profile Management</h1>
-              <p className="text-gray-600 mt-1">Manage culprit profiles and information</p>
+              <p className="text-gray-600 mt-1">
+                Manage culprit profiles and information
+                {profiles.length > 0 && (
+                  <span className="ml-2 text-blue-600 font-semibold">
+                    ({profiles.length} {profiles.length === 1 ? 'profile' : 'profiles'})
+                  </span>
+                )}
+              </p>
             </div>
             <button
               onClick={handleCreateNew}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
             >
               <Plus className="w-5 h-5" />
               Create New Profile
@@ -253,6 +284,14 @@ const ProfileIndex = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
             <button 
               onClick={() => setShowFilters(!showFilters)}
@@ -571,13 +610,14 @@ const ProfileIndex = () => {
           {profiles.length > 0 && (
             <div className="mb-4 flex justify-between items-center">
               <p className="text-sm text-gray-600">
-                Showing <span className="font-semibold">{filteredProfiles.length}</span> of <span className="font-semibold">{profiles.length}</span> profiles
+                Showing <span className="font-semibold text-blue-600">{filteredProfiles.length}</span> of <span className="font-semibold">{profiles.length}</span> profiles
               </p>
               {hasActiveFilters && (
                 <button
                   onClick={clearFilters}
-                  className="text-sm text-blue-600 hover:text-blue-700"
+                  className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
                 >
+                  <X className="w-4 h-4" />
                   Reset filters
                 </button>
               )}
@@ -586,7 +626,7 @@ const ProfileIndex = () => {
 
           {/* Profiles Grid */}
           {profiles.length === 0 ? (
-            <div className="text-center py-12">
+            <div className="text-center py-12 bg-white rounded-lg border">
               <div className="text-gray-400 mb-4">
                 <Plus className="w-16 h-16 mx-auto" />
               </div>
@@ -599,20 +639,7 @@ const ProfileIndex = () => {
                 Create First Profile
               </button>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredProfiles.map((profile) => (
-                <ProfileCard
-                  key={profile.id}
-                  profile={profile}
-                  onEdit={() => handleEdit(profile)}
-                  onView={() => handleViewProfile(profile)}
-                />
-              ))}
-            </div>
-          )}
-
-          {filteredProfiles.length === 0 && profiles.length > 0 && (
+          ) : filteredProfiles.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-lg border">
               <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">No profiles match your criteria</h3>
@@ -625,6 +652,17 @@ const ProfileIndex = () => {
                   Clear all filters
                 </button>
               )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredProfiles.map((profile) => (
+                <ProfileCard
+                  key={profile.id}
+                  profile={profile}
+                  onEdit={() => handleEdit(profile)}
+                  onView={() => handleViewProfile(profile)}
+                />
+              ))}
             </div>
           )}
         </div>

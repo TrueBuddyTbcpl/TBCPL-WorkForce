@@ -6,6 +6,7 @@ import {
   Clock, CheckCircle, XCircle, ChevronDown, Link, UserPlus
 } from 'lucide-react';
 import { dashboardStorage } from '../dashboard/utils/dashboardStorage';
+import CaseForm from './CaseForm';  // ✅ Import CaseForm
 import type { Case } from '../dashboard/types/dashboard.types';
 
 // ========================================
@@ -22,17 +23,14 @@ const LinkProfileDropdown: React.FC<LinkProfileDropdownProps> = ({ caseId, navig
   const [linkedProfiles, setLinkedProfiles] = useState<string[]>([]);
 
   useEffect(() => {
-    // Load existing profiles from localStorage
     const loadedProfiles = JSON.parse(localStorage.getItem('culprit_profiles') || '[]');
     setProfiles(loadedProfiles);
 
-    // Load linked profiles for this case
     const caseLinks = JSON.parse(localStorage.getItem('case_profile_links') || '{}');
     setLinkedProfiles(caseLinks[caseId] || []);
   }, [caseId]);
 
   const handleLinkProfile = (profileId: string) => {
-    // Add profile to linked profiles
     const caseLinks = JSON.parse(localStorage.getItem('case_profile_links') || '{}');
     const currentLinks = caseLinks[caseId] || [];
     
@@ -41,7 +39,6 @@ const LinkProfileDropdown: React.FC<LinkProfileDropdownProps> = ({ caseId, navig
       localStorage.setItem('case_profile_links', JSON.stringify(caseLinks));
       setLinkedProfiles(caseLinks[caseId]);
       
-      // Update case profilesLinked count
       const cases = dashboardStorage.getCases();
       const updatedCases = cases.map((c: any) => {
         if (c.id === caseId) {
@@ -67,7 +64,6 @@ const LinkProfileDropdown: React.FC<LinkProfileDropdownProps> = ({ caseId, navig
       localStorage.setItem('case_profile_links', JSON.stringify(caseLinks));
       setLinkedProfiles(caseLinks[caseId]);
       
-      // Update case profilesLinked count
       const cases = dashboardStorage.getCases();
       const updatedCases = cases.map((c: any) => {
         if (c.id === caseId) {
@@ -105,7 +101,6 @@ const LinkProfileDropdown: React.FC<LinkProfileDropdownProps> = ({ caseId, navig
             onClick={() => setIsOpen(false)}
           />
           <div className="absolute left-0 right-0 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg z-20 max-h-80 overflow-y-auto">
-            {/* Linked Profiles Section */}
             {linked.length > 0 && (
               <div className="p-2 border-b border-gray-200">
                 <p className="text-xs font-semibold text-gray-600 uppercase px-2 py-1">
@@ -133,7 +128,6 @@ const LinkProfileDropdown: React.FC<LinkProfileDropdownProps> = ({ caseId, navig
               </div>
             )}
 
-            {/* Available Profiles Section */}
             {availableProfiles.length > 0 ? (
               <div className="p-2">
                 <p className="text-xs font-semibold text-gray-600 uppercase px-2 py-1">
@@ -163,7 +157,6 @@ const LinkProfileDropdown: React.FC<LinkProfileDropdownProps> = ({ caseId, navig
               )
             )}
 
-            {/* Add New Profile Button */}
             <div className="p-2 border-t border-gray-200 bg-gray-50">
               <button
                 onClick={() => {
@@ -189,24 +182,22 @@ const LinkProfileDropdown: React.FC<LinkProfileDropdownProps> = ({ caseId, navig
 const CaseDetailView: React.FC = () => {
   const { caseId } = useParams<{ caseId: string }>();
   const navigate = useNavigate();
+  const [viewMode, setViewMode] = useState<'view' | 'edit'>('view');  // ✅ Add view mode
   const [caseData, setCaseData] = useState<Case | null>(null);
   const [reportData, setReportData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (caseId) {
-      // Load case from localStorage
       const loadedCase = dashboardStorage.getCaseById(caseId);
       setCaseData(loadedCase);
 
-      // Load associated report data safely
       try {
         const reportDataString = localStorage.getItem('report_data');
         
         if (reportDataString) {
           const parsedReportData = JSON.parse(reportDataString);
           
-          // Check if it's an array or a single object
           if (Array.isArray(parsedReportData)) {
             const associatedReport = parsedReportData.find((r: any) => r.caseId === caseId);
             setReportData(associatedReport);
@@ -224,6 +215,26 @@ const CaseDetailView: React.FC = () => {
       setLoading(false);
     }
   }, [caseId]);
+
+  // ✅ Handle edit button click
+  const handleEdit = () => {
+    setViewMode('edit');
+  };
+
+  // ✅ Handle form completion
+  const handleFormComplete = () => {
+    setViewMode('view');
+    // Reload case data
+    if (caseId) {
+      const loadedCase = dashboardStorage.getCaseById(caseId);
+      setCaseData(loadedCase);
+    }
+  };
+
+  // ✅ Handle cancel edit
+  const handleCancelEdit = () => {
+    setViewMode('view');
+  };
 
   const handleDelete = () => {
     if (window.confirm('Are you sure you want to delete this case? This action cannot be undone.')) {
@@ -268,6 +279,30 @@ const CaseDetailView: React.FC = () => {
     );
   }
 
+  // ✅ Show edit form when in edit mode
+  if (viewMode === 'edit') {
+    return (
+      <div>
+        <div className="bg-white border-b sticky top-0 z-20">
+          <div className="max-w-7xl mx-auto px-4 py-3">
+            <button
+              onClick={handleCancelEdit}
+              className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Cancel Edit
+            </button>
+          </div>
+        </div>
+        
+        <CaseForm
+          onComplete={handleFormComplete}
+          initialData={caseData as any}  // Convert Case to CaseData
+        />
+      </div>
+    );
+  }
+
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'open': return 'bg-green-100 text-green-800';
@@ -303,7 +338,7 @@ const CaseDetailView: React.FC = () => {
 
           <div className="flex gap-2">
             <button
-              onClick={() => navigate(`/operations/case/edit/${caseData.id}`)}
+              onClick={handleEdit}  // ✅ Fixed: Use handleEdit instead of navigate
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
             >
               <Edit className="w-4 h-4" />
@@ -591,7 +626,7 @@ const CaseDetailView: React.FC = () => {
               <div className="space-y-2">
                 <button 
                   className="w-full flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm"
-                  onClick={() => navigate(`/operations/case/edit/${caseData.id}`)}
+                  onClick={handleEdit}  // ✅ Fixed: Use handleEdit
                 >
                   <Edit className="w-4 h-4" />
                   Edit Case Details

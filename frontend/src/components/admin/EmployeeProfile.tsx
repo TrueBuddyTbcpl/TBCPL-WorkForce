@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { Employee } from '../../data/mockData/mockEmployees';
-import { getEmployeeById } from '../../data/mockData/mockEmployees'; // ✅ Regular import (not type)
+import { getEmployeeById } from '../../data/mockData/mockEmployees';
 import { getCasesByEmployee } from '../../data/mockData/mockCases';
 import { getProfilesByEmployee } from '../../data/mockData/mockProfiles';
 import { getReportsByEmployee } from '../../data/mockData/mockReports';
@@ -186,7 +186,7 @@ const EmployeeProfile: React.FC = () => {
               {cases.map((caseItem) => (
                 <div
                   key={caseItem.id}
-                  onClick={() => navigate(`/operations/case/view/${caseItem.id}`)}
+                  onClick={() => navigate(`/operations/case/${caseItem.id}`)}
                   className="border border-gray-200 rounded-lg p-4 hover:shadow-md hover:border-blue-300 transition cursor-pointer"
                 >
                   <div className="flex items-start justify-between">
@@ -211,7 +211,7 @@ const EmployeeProfile: React.FC = () => {
                           {caseItem.priority}
                         </span>
                         <span className="text-gray-600">
-                          {caseItem.changeHistory.length} changes
+                          {caseItem.changeHistory?.length || 0} changes
                         </span>
                       </div>
                     </div>
@@ -222,9 +222,10 @@ const EmployeeProfile: React.FC = () => {
           </div>
         )}
 
-        {/* Change History for Cases */}
+        {/* Change History for Cases - Pass navigate function */}
         {employee.department === 'Operations' && cases.length > 0 && (
           <ChangeHistoryViewer 
+            employee={employee}
             cases={cases}
             profiles={profiles}
             reports={reports}

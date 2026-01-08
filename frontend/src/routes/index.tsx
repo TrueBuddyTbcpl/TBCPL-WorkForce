@@ -9,6 +9,7 @@ import ReportDashboard from '../components/operations/report-create/report-dashb
 import AdminDashboard from '../components/admin/admin-dashboard';
 import EmployeeProfile from '../components/admin/EmployeeProfile';
 import Login from '../components/auth/Login';
+import EmployeeChangeHistoryReport from '../components/admin/EmployeeChangeHistoryReport';
 
 // Wrapper component for ProfileForm
 const ProfileFormWrapper = () => {
@@ -68,6 +69,7 @@ const AppRoutes = () => {
       <Route path="/admin" element={<AdminDashboard />} />
       <Route path="/login" element={<Login />} />
       <Route path="/admin/employee/:employeeId" element={<EmployeeProfile />} />
+      <Route path="/admin/employee-change-report" element={<EmployeeChangeHistoryReport />}/>
 
       {/* 404 Not Found */}
       <Route

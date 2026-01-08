@@ -2,10 +2,12 @@ import { z } from 'zod';
 
 // Basic Info Schema (Step 1) - Combined with Client Details
 export const basicInfoSchema = z.object({
+  caseType: z.enum(['investigation', 'surveillance', 'background-check']).optional(),  // ✅ Added
   caseNumber: z.string().min(1, 'Case number is required'),
   caseTitle: z.string().min(1, 'Case title is required'),
   clientName: z.string().min(1, 'Client name is required'),
   clientProduct: z.string().min(1, 'Client product is required'),
+  clientLogo: z.string().optional(),  // ✅ Added
   priority: z.enum(['low', 'medium', 'high', 'critical']),
   status: z.enum(['open', 'in-progress', 'on-hold', 'closed']),
   description: z.string().optional(),
@@ -17,6 +19,15 @@ export const basicInfoSchema = z.object({
 export const investigationSchema = z.object({
   leadType: z.enum(['Client Lead', 'Trubuddy Lead']),
   assignedEmployees: z.array(z.string()).min(1, 'At least one employee must be assigned'),
+  assignedEmployeesDetails: z.array(  // ✅ Added
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      email: z.string(),
+      phone: z.string(),
+      role: z.string(),
+    })
+  ).optional(),
   linkedCulprits: z.array(z.string()).optional(),
   estimatedCompletionDate: z.string().optional(),
   actualCompletionDate: z.string().optional(),
