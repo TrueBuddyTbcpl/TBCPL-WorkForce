@@ -62,6 +62,7 @@ const AppRoutes = () => {
       <Route path="/operations/dashboard" element={<Dashboard />} />
       <Route path="/operations/report-create" element={<ReportCreate />} />
       <Route path="/operations/profile" element={<ProfileIndex />} />
+      <Route path="/operations/profile/create" element={<ProfileForm />} />
       <Route path="/operations/profile-form" element={<ProfileFormWrapper />} />
       <Route path="/operations/case" element={<CaseIndex />} />
       <Route path="/operations/case-index/:caseId" element={<CaseDetailView />} />
