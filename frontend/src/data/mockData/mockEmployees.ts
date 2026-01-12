@@ -8,6 +8,7 @@ export interface Employee {
   managerId?: string;
   joinDate: string;
   avatar?: string;
+  reportingManager?: string; // ID of the reporting manager
   isManager: boolean;
   assignedCases: string[];
   reportsCreated: number;
@@ -25,6 +26,7 @@ export const mockEmployees: Employee[] = [
     department: 'Operations',
     joinDate: '2023-01-15',
     isManager: true,
+    reportingManager: undefined, // ✅ Top-level manager - no reporting manager
     assignedCases: [],
     reportsCreated: 0,
     profilesCreated: 0,
@@ -37,6 +39,7 @@ export const mockEmployees: Employee[] = [
     role: 'Senior Investigator',
     department: 'Operations',
     managerId: 'emp001',
+    reportingManager: 'emp001', // ✅ Reports to Rajesh Kumar
     joinDate: '2023-03-20',
     isManager: false,
     assignedCases: ['case001', 'case002', 'case003'],
@@ -51,6 +54,7 @@ export const mockEmployees: Employee[] = [
     role: 'Investigator',
     department: 'Operations',
     managerId: 'emp001',
+    reportingManager: 'emp001', // ✅ Reports to Rajesh Kumar
     joinDate: '2023-06-10',
     isManager: false,
     assignedCases: ['case004', 'case005'],
@@ -65,6 +69,7 @@ export const mockEmployees: Employee[] = [
     role: 'Junior Investigator',
     department: 'Operations',
     managerId: 'emp001',
+    reportingManager: 'emp001', // ✅ Reports to Rajesh Kumar
     joinDate: '2024-01-05',
     isManager: false,
     assignedCases: ['case006', 'case007'],
@@ -79,6 +84,7 @@ export const mockEmployees: Employee[] = [
     role: 'Field Investigator',
     department: 'Operations',
     managerId: 'emp001',
+    reportingManager: 'emp001', // ✅ Reports to Rajesh Kumar
     joinDate: '2023-09-15',
     isManager: false,
     assignedCases: ['case008', 'case009', 'case010'],
@@ -96,6 +102,7 @@ export const mockEmployees: Employee[] = [
     department: 'HR',
     joinDate: '2022-11-01',
     isManager: true,
+    reportingManager: undefined, // ✅ Top-level manager - no reporting manager
     assignedCases: [],
     reportsCreated: 0,
     profilesCreated: 0,
@@ -108,6 +115,7 @@ export const mockEmployees: Employee[] = [
     role: 'HR Executive',
     department: 'HR',
     managerId: 'emp006',
+    reportingManager: 'emp006', // ✅ Reports to Anjali Mehta
     joinDate: '2023-04-12',
     isManager: false,
     assignedCases: [],
@@ -125,6 +133,7 @@ export const mockEmployees: Employee[] = [
     department: 'Account',
     joinDate: '2022-08-20',
     isManager: true,
+    reportingManager: undefined, // ✅ Top-level manager - no reporting manager
     assignedCases: [],
     reportsCreated: 0,
     profilesCreated: 0,
@@ -137,6 +146,7 @@ export const mockEmployees: Employee[] = [
     role: 'Accountant',
     department: 'Account',
     managerId: 'emp008',
+    reportingManager: 'emp008', // ✅ Reports to Kavita Joshi
     joinDate: '2023-07-01',
     isManager: false,
     assignedCases: [],
@@ -144,6 +154,18 @@ export const mockEmployees: Employee[] = [
     profilesCreated: 0,
   },
 ];
+
+// ✅ Helper function to get employee's reporting manager details
+export const getReportingManager = (employeeId: string): Employee | undefined => {
+  const employee = mockEmployees.find(emp => emp.id === employeeId);
+  if (!employee?.reportingManager) return undefined;
+  return mockEmployees.find(emp => emp.id === employee.reportingManager);
+};
+
+// ✅ Helper function to get all employees reporting to a manager
+export const getDirectReports = (managerId: string): Employee[] => {
+  return mockEmployees.filter(emp => emp.reportingManager === managerId);
+};
 
 export const getEmployeesByDepartment = (department: string) => {
   return mockEmployees.filter(emp => emp.department === department);

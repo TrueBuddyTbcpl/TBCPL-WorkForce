@@ -8,13 +8,15 @@ import { getReportsByEmployee } from '../../data/mockData/mockReports';
 import ChangeHistoryViewer from './ChangeHistoryViewer';
 import { 
   ArrowLeft, Mail, Phone, Calendar, Briefcase, 
-  FileText, UserCheck, TrendingUp 
+  FileText, UserCheck, User, Shield,
+  Building2
 } from 'lucide-react';
 
 const EmployeeProfile: React.FC = () => {
   const { employeeId } = useParams<{ employeeId: string }>();
   const navigate = useNavigate();
   const [employee, setEmployee] = useState<Employee | null>(null);
+  const [reportingManager, setReportingManager] = useState<Employee | null>(null);
   const [cases, setCases] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
   const [reports, setReports] = useState<any[]>([]);
@@ -28,6 +30,12 @@ const EmployeeProfile: React.FC = () => {
         setCases(getCasesByEmployee(employeeId));
         setProfiles(getProfilesByEmployee(employeeId));
         setReports(getReportsByEmployee(employeeId));
+      }
+
+      // ✅ Load reporting manager if exists
+      if (emp?.reportingManager) {
+        const manager = getEmployeeById(emp.reportingManager);
+        setReportingManager(manager || null);
       }
     }
   }, [employeeId]);
@@ -62,7 +70,7 @@ const EmployeeProfile: React.FC = () => {
           </button>
           
           <div className="flex items-center gap-4">
-            <div className={`w-20 h-20 rounded-full flex items-center justify-center text-white font-bold text-3xl ${
+            <div className={`w-20 h-20 rounded-full flex items-center justify-center text-white font-bold text-3xl shadow-lg ${
               employee.isManager 
                 ? 'bg-gradient-to-br from-purple-500 to-purple-600' 
                 : 'bg-gradient-to-br from-blue-500 to-blue-600'
@@ -73,7 +81,8 @@ const EmployeeProfile: React.FC = () => {
               <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                 {employee.name}
                 {employee.isManager && (
-                  <span className="text-sm px-3 py-1 bg-purple-100 text-purple-800 rounded-full font-medium">
+                  <span className="text-sm px-3 py-1 bg-purple-100 text-purple-800 rounded-full font-medium flex items-center gap-1">
+                    <Shield className="w-3 h-3" />
                     Manager
                   </span>
                 )}
@@ -86,10 +95,12 @@ const EmployeeProfile: React.FC = () => {
 
       <div className="p-6">
         {/* Contact & Basic Info */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow-sm border p-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition">
             <div className="flex items-center gap-3">
-              <Mail className="w-5 h-5 text-blue-600" />
+              <div className="bg-blue-50 p-2 rounded-lg">
+                <Mail className="w-5 h-5 text-blue-600" />
+              </div>
               <div>
                 <p className="text-xs text-gray-600">Email</p>
                 <p className="text-sm font-medium text-gray-900 truncate">{employee.email}</p>
@@ -97,9 +108,11 @@ const EmployeeProfile: React.FC = () => {
             </div>
           </div>
           
-          <div className="bg-white rounded-lg shadow-sm border p-4">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition">
             <div className="flex items-center gap-3">
-              <Phone className="w-5 h-5 text-green-600" />
+              <div className="bg-green-50 p-2 rounded-lg">
+                <Phone className="w-5 h-5 text-green-600" />
+              </div>
               <div>
                 <p className="text-xs text-gray-600">Phone</p>
                 <p className="text-sm font-medium text-gray-900">{employee.phone}</p>
@@ -107,9 +120,11 @@ const EmployeeProfile: React.FC = () => {
             </div>
           </div>
           
-          <div className="bg-white rounded-lg shadow-sm border p-4">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition">
             <div className="flex items-center gap-3">
-              <Calendar className="w-5 h-5 text-purple-600" />
+              <div className="bg-purple-50 p-2 rounded-lg">
+                <Calendar className="w-5 h-5 text-purple-600" />
+              </div>
               <div>
                 <p className="text-xs text-gray-600">Join Date</p>
                 <p className="text-sm font-medium text-gray-900">
@@ -123,9 +138,11 @@ const EmployeeProfile: React.FC = () => {
             </div>
           </div>
           
-          <div className="bg-white rounded-lg shadow-sm border p-4">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition">
             <div className="flex items-center gap-3">
-              <TrendingUp className="w-5 h-5 text-orange-600" />
+              <div className="bg-orange-50 p-2 rounded-lg">
+                <Building2 className="w-5 h-5 text-orange-600" />
+              </div>
               <div>
                 <p className="text-xs text-gray-600">Department</p>
                 <p className="text-sm font-medium text-gray-900">{employee.department}</p>
@@ -134,40 +151,70 @@ const EmployeeProfile: React.FC = () => {
           </div>
         </div>
 
+        {/* ✅ Reporting Manager Section */}
+        {reportingManager && (
+          <div className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg border border-indigo-200 p-6 mb-6">
+            <div className="flex items-center gap-4">
+              <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-lg">
+                {reportingManager.name.charAt(0)}
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <User className="w-4 h-4 text-indigo-600" />
+                  <p className="text-sm font-medium text-indigo-600 uppercase tracking-wide">
+                    Reports To
+                  </p>
+                </div>
+                <h3 className="text-lg font-bold text-gray-900">{reportingManager.name}</h3>
+                <p className="text-sm text-gray-600">{reportingManager.role} - {reportingManager.department}</p>
+              </div>
+              <button
+                onClick={() => navigate(`/admin/employee/${reportingManager.id}`)}
+                className="px-4 py-2 bg-white border border-indigo-200 text-indigo-600 rounded-lg hover:bg-indigo-50 transition font-medium text-sm"
+              >
+                View Profile
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Statistics - Operations Only */}
         {employee.department === 'Operations' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-white rounded-lg shadow-sm border p-6">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Cases Assigned</p>
+                  <p className="text-sm text-gray-600 mb-1">Cases Assigned</p>
                   <p className="text-3xl font-bold text-blue-600">{cases.length}</p>
+                  <p className="text-xs text-gray-500 mt-1">Total cases handled</p>
                 </div>
-                <div className="bg-blue-100 p-3 rounded-lg">
+                <div className="bg-blue-100 p-4 rounded-lg">
                   <Briefcase className="w-8 h-8 text-blue-600" />
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border p-6">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Profiles Created</p>
+                  <p className="text-sm text-gray-600 mb-1">Profiles Created</p>
                   <p className="text-3xl font-bold text-purple-600">{profiles.length}</p>
+                  <p className="text-xs text-gray-500 mt-1">Culprit profiles</p>
                 </div>
-                <div className="bg-purple-100 p-3 rounded-lg">
+                <div className="bg-purple-100 p-4 rounded-lg">
                   <UserCheck className="w-8 h-8 text-purple-600" />
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border p-6">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Reports Generated</p>
+                  <p className="text-sm text-gray-600 mb-1">Reports Generated</p>
                   <p className="text-3xl font-bold text-green-600">{reports.length}</p>
+                  <p className="text-xs text-gray-500 mt-1">Investigation reports</p>
                 </div>
-                <div className="bg-green-100 p-3 rounded-lg">
+                <div className="bg-green-100 p-4 rounded-lg">
                   <FileText className="w-8 h-8 text-green-600" />
                 </div>
               </div>
@@ -177,7 +224,7 @@ const EmployeeProfile: React.FC = () => {
 
         {/* Assigned Cases */}
         {employee.department === 'Operations' && cases.length > 0 && (
-          <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
               <Briefcase className="w-5 h-5 text-blue-600" />
               Assigned Cases ({cases.length})
@@ -193,7 +240,7 @@ const EmployeeProfile: React.FC = () => {
                     <div className="flex-1">
                       <h3 className="font-semibold text-gray-900 mb-1">{caseItem.title}</h3>
                       <p className="text-sm text-gray-600 mb-2">{caseItem.caseNumber}</p>
-                      <div className="flex items-center gap-3 text-xs">
+                      <div className="flex items-center gap-3 text-xs flex-wrap">
                         <span className={`px-2 py-1 rounded-full font-medium ${
                           caseItem.status === 'open' ? 'bg-green-100 text-green-800' :
                           caseItem.status === 'closed' ? 'bg-gray-100 text-gray-800' :
@@ -222,7 +269,15 @@ const EmployeeProfile: React.FC = () => {
           </div>
         )}
 
-        {/* Change History for Cases - Pass navigate function */}
+        {/* No Cases Message */}
+        {employee.department === 'Operations' && cases.length === 0 && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-6 text-center">
+            <Briefcase className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500">No cases assigned yet</p>
+          </div>
+        )}
+
+        {/* Change History for Cases */}
         {employee.department === 'Operations' && cases.length > 0 && (
           <ChangeHistoryViewer 
             employee={employee}

@@ -8,6 +8,7 @@ import ProfileForm from '../components/operations/profile/ProfileForm';
 import ReportDashboard from '../components/operations/report-create/report-dashboard';
 import AdminDashboard from '../components/admin/admin-dashboard';
 import EmployeeProfile from '../components/admin/EmployeeProfile';
+import AdminEmployeeProfile from '../components/operations/EmployeeProfile';
 import Login from '../components/auth/Login';
 import EmployeeChangeHistoryReport from '../components/admin/EmployeeChangeHistoryReport';
 
@@ -56,7 +57,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       {/* Default redirect */}
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/" element={<Navigate to="/admin/login" replace />} />
 
       {/* Operations Module */}
       <Route path="/operations/dashboard" element={<Dashboard />} />
@@ -68,9 +69,10 @@ const AppRoutes = () => {
       <Route path="/operations/case-index/:caseId" element={<CaseDetailView />} />
       <Route path="/operations/reports" element={<ReportDashboard />} />
       <Route path="/admin" element={<AdminDashboard />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/admin/employee/:employeeId" element={<EmployeeProfile />} />
+      <Route path="/admin/login" element={<Login />} />
+      <Route path="/admin/employee/:employeeId" element={<AdminEmployeeProfile />} />
       <Route path="/admin/employee-change-report" element={<EmployeeChangeHistoryReport />}/>
+      <Route path="/operations/employee/profile" element={<EmployeeProfile />} />
 
       {/* 404 Not Found */}
       <Route
