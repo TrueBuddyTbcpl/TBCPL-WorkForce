@@ -11,6 +11,7 @@ import EmployeeProfile from '../components/admin/EmployeeProfile';
 import AdminEmployeeProfile from '../components/operations/EmployeeProfile';
 import Login from '../components/auth/Login';
 import EmployeeChangeHistoryReport from '../components/admin/EmployeeChangeHistoryReport';
+import NotFound from './NotFound';
 
 // Wrapper component for ProfileForm
 const ProfileFormWrapper = () => {
@@ -77,11 +78,7 @@ const AppRoutes = () => {
       {/* 404 Not Found */}
       <Route
         path="*"
-        element={
-          <div className="flex items-center justify-center h-screen">
-            <h1 className="text-2xl font-bold text-gray-700">404 - Page Not Found</h1>
-          </div>
-        }
+        element={<NotFound />}
       />
     </Routes>
   );
