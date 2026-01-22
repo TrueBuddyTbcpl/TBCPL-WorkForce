@@ -13,6 +13,12 @@ import Login from '../components/auth/Login';
 import EmployeeChangeHistoryReport from '../components/admin/EmployeeChangeHistoryReport';
 import NotFound from './NotFound';
 
+// ✅ Import Pre-Report Components
+import { PreReportList } from '../components/operations/pre-report/PreReportList';
+import { CreatePreReport } from '../components/operations/pre-report/CreatePreReport';
+import { EditPreReport } from '../components/operations/pre-report/EditPreReport';
+import { PreReportDetails } from '../components/operations/pre-report/PreReportDetails';
+
 // Wrapper component for ProfileForm
 const ProfileFormWrapper = () => {
   const navigate = useNavigate();
@@ -58,7 +64,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       {/* Default redirect */}
-      <Route path="/" element={<Navigate to="/admin/login" replace />} />
+      <Route path="/" element={<Navigate to="/operations/pre-report" replace />} />
 
       {/* Operations Module */}
       <Route path="/operations/dashboard" element={<Dashboard />} />
@@ -69,17 +75,24 @@ const AppRoutes = () => {
       <Route path="/operations/case" element={<CaseIndex />} />
       <Route path="/operations/case-index/:caseId" element={<CaseDetailView />} />
       <Route path="/operations/reports" element={<ReportDashboard />} />
+
+      {/* ✅ Pre-Report Routes */}
+      <Route path="/operations/pre-report" element={<PreReportList />} />
+      <Route path="/operations/pre-report/create" element={<CreatePreReport />} />
+      <Route path="/operations/pre-report/:reportId" element={<PreReportDetails />} />
+      <Route path="/operations/pre-report/:reportId/edit" element={<EditPreReport />} />
+
+      {/* Admin Module */}
       <Route path="/admin" element={<AdminDashboard />} />
       <Route path="/admin/login" element={<Login />} />
       <Route path="/admin/employee/:employeeId" element={<AdminEmployeeProfile />} />
-      <Route path="/admin/employee-change-report" element={<EmployeeChangeHistoryReport />}/>
+      <Route path="/admin/employee-change-report" element={<EmployeeChangeHistoryReport />} />
+      
+      {/* Employee Profile */}
       <Route path="/operations/employee/profile" element={<EmployeeProfile />} />
 
       {/* 404 Not Found */}
-      <Route
-        path="*"
-        element={<NotFound />}
-      />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };
