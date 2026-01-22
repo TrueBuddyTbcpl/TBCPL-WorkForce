@@ -3,12 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import { useClients, useProducts } from '../../../hooks/prereport/useDropdowns';
+import { useClients } from '../../../hooks/prereport/useDropdowns';
+import { useProducts } from '../../../hooks/prereport/useProducts';
 import { useCreatePreReport } from '../../../hooks/prereport/useCreatePreReport';
 import { initializeReportSchema } from '../../../schemas/prereport.schemas';
 import { LeadType } from '../../../utils/constants';
 import type { InitializeReportInput } from '../../../schemas/prereport.schemas';
-import type { Client, Product } from '../../../types/prereport.types';
 
 export const CreatePreReport = () => {
   const navigate = useNavigate();
@@ -16,7 +16,9 @@ export const CreatePreReport = () => {
   const [selectedProductIds, setSelectedProductIds] = useState<number[]>([]);
 
   const { data: clients, isLoading: clientsLoading } = useClients();
-  const { data: products, isLoading: productsLoading } = useProducts(selectedClientId);
+  const { data: products, isLoading: productsLoading } = useProducts(
+    selectedClientId ? String(selectedClientId) : null
+  );
   const createMutation = useCreatePreReport();
 
   const {
@@ -45,27 +47,18 @@ export const CreatePreReport = () => {
     }
   }, [watchClientId, selectedClientId, setValue]);
 
-  // ✅ Handle product checkbox change
-  const handleProductToggle = (productId: number) => {
-    setSelectedProductIds((prev) => {
-      const newSelection = prev.includes(productId)
-        ? prev.filter((id) => id !== productId)
-        : [...prev, productId];
-      
-      setValue('productIds', newSelection);
-      return newSelection;
-    });
-  };
+
 
   const onSubmit = async (data: InitializeReportInput) => {
     try {
       console.log('Submitting data:', data); // ✅ Debug log
-      
+
       const payload = {
-        ...data,
-        leadType: data.leadType as any,
+        leadType: data.leadType as 'CLIENT_LEAD' | 'TRUEBUDDY_LEAD',  // ✅ cast
+        clientId: String(data.clientId),
+        productIds: data.productIds.map(String),
       };
-      
+
       const result = await createMutation.mutateAsync(payload);
       navigate(`/operations/pre-report/${result.reportId}/edit`);
     } catch (error) {
@@ -99,15 +92,14 @@ export const CreatePreReport = () => {
             <select
               {...register('clientId', { valueAsNumber: true })}
               disabled={clientsLoading}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                errors.clientId ? 'border-red-500' : 'border-gray-300'
-              } ${clientsLoading ? 'bg-gray-50 cursor-not-allowed' : 'bg-white'}`}
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${errors.clientId ? 'border-red-500' : 'border-gray-300'
+                } ${clientsLoading ? 'bg-gray-50 cursor-not-allowed' : 'bg-white'}`}
             >
               <option value="">
                 {clientsLoading ? 'Loading clients...' : 'Select a client'}
               </option>
-              {clients?.map((client: Client) => (
-                <option key={client.clientId} value={client.clientId}>
+              {clients?.map((client) => (
+                <option key={client.id} value={String(client.clientId)}>
                   {client.clientName}
                 </option>
               ))}
@@ -136,24 +128,14 @@ export const CreatePreReport = () => {
                 </div>
               </div>
             ) : (
-              <div className={`border rounded-lg p-3 max-h-64 overflow-y-auto ${
-                errors.productIds ? 'border-red-500' : 'border-gray-300'
-              }`}>
+              <div className={`border rounded-lg p-3 max-h-64 overflow-y-auto ${errors.productIds ? 'border-red-500' : 'border-gray-300'
+                }`}>
                 {products && products.length > 0 ? (
                   <div className="space-y-2">
-                    {products.map((product: Product) => (
-                      <label
-                        key={product.productId}
-                        className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded cursor-pointer transition-colors"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedProductIds.includes(product.productId)}
-                          onChange={() => handleProductToggle(product.productId)}
-                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
-                        />
-                        <span className="text-sm text-gray-700 flex-1">{product.productName}</span>
-                      </label>
+                    {products?.map((product) => (
+                      <option key={product.id} value={String(product.id)}>
+                        {product.productName}
+                      </option>
                     ))}
                   </div>
                 ) : (
@@ -194,7 +176,7 @@ export const CreatePreReport = () => {
                   </p>
                 </div>
               </label>
-              
+
               <label className="flex items-start gap-3 p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-all">
                 <input
                   type="radio"

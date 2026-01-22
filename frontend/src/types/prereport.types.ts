@@ -26,6 +26,7 @@ export interface PreReport {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 }
 
 // Initialize Request

@@ -7,6 +7,7 @@ interface PreReportDetailsSidebarProps {
   leadType: string;
   clientName?: string;
   productCount?: number;
+  onStepClick?: (step: number) => void;
 }
 
 export const PreReportDetailsSidebar: React.FC<PreReportDetailsSidebarProps> = ({

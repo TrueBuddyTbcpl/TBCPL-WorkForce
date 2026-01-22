@@ -11,10 +11,17 @@ import type { TrueBuddyLeadData } from '../../../../../types/prereport.types';
 interface Step2Props {
   data: TrueBuddyLeadData;
   onNext: (data: Partial<TrueBuddyLeadData>) => Promise<void>;
-  onBack: () => void;
+  onBack: () => void | Promise<void>;
+  onSkip?: () => void | Promise<void>; // ✅ add this line
 }
 
-const TrueBuddyStep2Scope: React.FC<Step2Props> = ({ data, onNext, onBack }) => {
+
+const TrueBuddyStep2Scope: React.FC<Step2Props> = ({
+  data,
+  onNext,
+  onBack, // ✅ add this
+}) => {
+
   const {
     control,
     handleSubmit,

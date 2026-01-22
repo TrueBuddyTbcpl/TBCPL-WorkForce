@@ -14,6 +14,7 @@ dist-ssr
 
 # API Configuration
 src/services/api/apiClient.ts
+src/lib/api-client.ts
 
 # Editor directories and files
 .vscode/*
@@ -25,3 +26,9 @@ src/services/api/apiClient.ts
 *.njsproj
 *.sln
 *.sw?
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.production

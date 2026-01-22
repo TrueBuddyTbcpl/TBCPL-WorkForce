@@ -10,10 +10,12 @@ import type { ClientLeadData } from '../../../../../types/prereport.types';
 interface Step2ScopeProps {
   prereportId: number;
   reportId: string;
-  data?: ClientLeadData | null;
-  onNext: () => void;
-  onPrevious: () => void;
+  data: ClientLeadData | null | undefined;
+  onNext: (stepData?: any) => Promise<void>;
+  onPrevious: () => Promise<void>;
+  onSkip?: () => Promise<void> | void; // ✅ add this line
 }
+
 
 export const Step2Scope = ({
   prereportId,

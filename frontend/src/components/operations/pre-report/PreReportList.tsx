@@ -4,6 +4,7 @@ import { Plus, Loader2 } from 'lucide-react';
 import { usePreReports, useDeleteReport } from '../../../hooks/prereport/usePreReports';
 import { PreReportCard } from './PreReportCard';
 import { PreReportListFilters } from './PreReportListFilters';
+import type { PreReport } from '../../../types/prereport.types';
 
 export const PreReportList = () => {
   const navigate = useNavigate();
@@ -11,7 +12,7 @@ export const PreReportList = () => {
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedLeadType, setSelectedLeadType] = useState('');
 
-  const { data, isLoading, isError } = usePreReports(page, 10);
+  const { data, isLoading, isError } = usePreReports({ page, size: 10 });
   const deleteReportMutation = useDeleteReport();
 
   const handleDelete = (reportId: string) => {
@@ -74,12 +75,30 @@ export const PreReportList = () => {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {data.reports.map((report) => (
-              <PreReportCard key={report.id} report={report} onDelete={handleDelete} />
+              // ✅ FIXED: Add missing props for PreReportCard
+              <PreReportCard
+                key={report.id}
+                report={{
+                  ...report,
+                  currentStep: 1,
+                  updatedAt: report.createdAt || '',
+                  clientId: report.clientId ? Number(report.clientId) : 0,
+                  productIds: report.productIds ? report.productIds.map(id => Number(id)) : [],
+                  productNames: report.productNames || [],
+                  leadType: (report.leadType as 'CLIENT_LEAD' | 'TRUEBUDDY_LEAD'),
+                  reportStatus: report.reportStatus as any,  // ✅ fix reportStatus
+                } as PreReport}  // ✅ final cast to PreReport
+                onDelete={handleDelete}
+              />
+
+
+
+
             ))}
           </div>
 
           {/* Pagination */}
-          {data.totalPages > 1 && (
+          {data.pagination?.totalPages! > 1 && (  // ✅ FIXED: data.pagination?.totalPages
             <div className="flex items-center justify-center gap-2 mt-8">
               <button
                 onClick={() => setPage((p) => Math.max(0, p - 1))}
@@ -89,11 +108,11 @@ export const PreReportList = () => {
                 Previous
               </button>
               <span className="text-gray-700">
-                Page {page + 1} of {data.totalPages}
+                Page {page + 1} of {data.pagination?.totalPages || 1}  // ✅ FIXED
               </span>
               <button
-                onClick={() => setPage((p) => Math.min(data.totalPages - 1, p + 1))}
-                disabled={page >= data.totalPages - 1}
+                onClick={() => setPage((p) => Math.min((data.pagination?.totalPages || 1) - 1, p + 1))}  // ✅ FIXED
+                disabled={page >= (data.pagination?.totalPages || 1) - 1}  // ✅ FIXED
                 className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
               >
                 Next

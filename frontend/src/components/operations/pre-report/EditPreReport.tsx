@@ -1,10 +1,12 @@
+// src/components/operations/pre-report/EditPreReport.tsx
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
 import { usePreReportDetail } from '../../../hooks/prereport/usePreReportDetail';
+import { useUpdatePreReportStep } from '../../../hooks/prereport/useUpdatePreReportStep';
+import { useSubmitPreReport } from '../../../hooks/prereport/useSubmitPreReport';
 import { PreReportDetailsSidebar } from './PreReportDetailsSidebar';
 import { getStepTitle } from '../../../utils/helpers';
-import { isStepComplete } from '../../../utils/stepValidation';
 
 // Import Client Lead step components
 import { Step1BasicInfo as ClientLeadStep1BasicInfo } from './steps/client-lead/Step1BasicInfo';
@@ -35,9 +37,11 @@ export const EditPreReport = () => {
   const { reportId } = useParams<{ reportId: string }>();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const { data, isLoading, isError } = usePreReportDetail(reportId!);
+  const updateStepMutation = useUpdatePreReportStep();
+  const submitReportMutation = useSubmitPreReport();
 
   if (isLoading) {
     return (
@@ -51,7 +55,9 @@ export const EditPreReport = () => {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <p className="text-red-600 text-lg font-semibold mb-2">Error loading report</p>
+          <p className="text-gray-600 mb-4">Unable to fetch report details</p>
           <button
             onClick={() => navigate('/operations/pre-report')}
             className="text-blue-600 hover:underline"
@@ -65,43 +71,75 @@ export const EditPreReport = () => {
 
   const { preReport, clientLeadData, trueBuddyLeadData } = data;
   const totalSteps = preReport.leadType === 'CLIENT_LEAD' ? 10 : 11;
-
-  // ✅ Check if this is the last step
   const isLastStep = currentStep === totalSteps;
 
+  // ✅ Handle step navigation and data saving
   const handleNext = async (stepData?: any) => {
-    console.log('handleNext called', { currentStep, totalSteps, isLastStep, stepData });
+    console.log('handleNext called', { 
+      currentStep, 
+      totalSteps, 
+      isLastStep, 
+      stepData,
+      hasData: stepData && Object.keys(stepData).length > 0 
+    });
+
+    setError(null);
 
     try {
-      setIsSubmitting(true);
+      // ✅ Save step data if provided (not skipped)
+      if (stepData && Object.keys(stepData).length > 0) {
+        console.log('Saving step data to backend...');
+        
+        await updateStepMutation.mutateAsync({
+          reportId: reportId!,
+          step: currentStep,
+          leadType: preReport.leadType,
+          data: stepData,
+        });
+        
+        console.log('Step saved successfully');
+      } else {
+        console.log('Step skipped - no data to save');
+      }
 
       // ✅ If it's the last step, submit the entire report
       if (isLastStep) {
         console.log('Submitting final report...');
         
-        // TODO: Replace with actual API call
-        // await submitPreReport(preReport.id);
+        await submitReportMutation.mutateAsync(reportId!);
         
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        alert('Pre-report submitted successfully!');
+        alert('✅ Pre-report submitted successfully!');
         navigate(`/operations/pre-report/${reportId}`);
       } else {
-        // ✅ Otherwise, just move to next step
+        // ✅ Otherwise, move to next step
         console.log('Moving to next step...');
         setCurrentStep((s) => Math.min(totalSteps, s + 1));
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in handleNext:', error);
-      alert('Failed to save. Please try again.');
-    } finally {
-      setIsSubmitting(false);
+      const errorMessage = error?.response?.data?.message || 'Failed to save. Please try again.';
+      setError(errorMessage);
+      alert(`❌ ${errorMessage}`);
     }
   };
 
   const handlePrevious = async () => {
     setCurrentStep((s) => Math.max(1, s - 1));
+    setError(null);
+  };
+
+  // ✅ Handle skip step
+  const handleSkip = async () => {
+    console.log('Skipping step', currentStep);
+    
+    if (isLastStep) {
+      alert('⚠️ Cannot skip the last step. Please review and submit.');
+      return;
+    }
+    
+    // Move to next without saving
+    setCurrentStep((s) => Math.min(totalSteps, s + 1));
+    setError(null);
   };
 
   const renderStepContent = () => {
@@ -127,6 +165,7 @@ export const EditPreReport = () => {
           data={clientLeadData || undefined}
           onNext={handleNext}
           onPrevious={handlePrevious}
+          onSkip={handleSkip}
         />
       ) : null;
     } else {
@@ -149,20 +188,23 @@ export const EditPreReport = () => {
           data={trueBuddyLeadData ?? {}}
           onNext={handleNext}
           onBack={handlePrevious}
+          onSkip={handleSkip}
         />
       ) : null;
     }
   };
 
+  const isProcessing = updateStepMutation.isPending || submitReportMutation.isPending;
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Loading Overlay */}
-      {isSubmitting && (
+      {isProcessing && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 flex flex-col items-center gap-3">
             <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
             <p className="text-gray-700 font-medium">
-              {isLastStep ? 'Submitting report...' : 'Saving...'}
+              {submitReportMutation.isPending ? 'Submitting report...' : 'Saving step...'}
             </p>
           </div>
         </div>
@@ -178,6 +220,15 @@ export const EditPreReport = () => {
             <ArrowLeft className="w-5 h-5" />
             Back to Details
           </button>
+          
+          {/* Error Alert */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-800">{error}</p>
+            </div>
+          )}
+
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">{preReport.reportId}</h1>
@@ -187,15 +238,8 @@ export const EditPreReport = () => {
               <div className="text-sm text-gray-600 font-medium">
                 Step {currentStep} of {totalSteps}
               </div>
-              <div className="flex items-center gap-2 text-sm">
-                {isStepComplete(currentStep, preReport.leadType, clientLeadData, trueBuddyLeadData) ? (
-                  <>
-                    <Check className="w-4 h-4 text-green-600" />
-                    <span className="text-green-600 font-medium">Completed</span>
-                  </>
-                ) : (
-                  <span className="text-yellow-600 font-medium">In Progress</span>
-                )}
+              <div className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-700">
+                {preReport.status}
               </div>
             </div>
           </div>
@@ -224,6 +268,7 @@ export const EditPreReport = () => {
               leadType={preReport.leadType}
               clientName={preReport.clientName}
               productCount={preReport.productIds?.length || 0}
+              onStepClick={(step) => setCurrentStep(step)}
             />
           </div>
 
@@ -236,8 +281,8 @@ export const EditPreReport = () => {
                 </h2>
                 <p className="text-sm text-gray-500 mt-1">
                   {isLastStep 
-                    ? 'Review and submit your pre-report' 
-                    : 'Complete this step to proceed to the next'}
+                    ? '⚠️ Review and submit your pre-report' 
+                    : '✏️ Fill in the details or skip to continue'}
                 </p>
               </div>
               <div className="p-6">
