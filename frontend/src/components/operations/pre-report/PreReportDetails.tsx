@@ -6,11 +6,14 @@ import { PreReportStatusBadge } from './PreReportStatusBadge';
 import { formatDate, formatLeadType } from '../../../utils/formatters';
 import { getStepTitle } from '../../../utils/helpers';
 import { getCompletionPercentage } from '../../../utils/stepValidation';
+import { exportPreReportToPDF, type PreReportPDFData } from '../../../utils/preReportPdfExport';
+import { toast } from 'sonner';
 
 export const PreReportDetails = () => {
   const { reportId } = useParams<{ reportId: string }>();
   const navigate = useNavigate();
   const [expandedSteps, setExpandedSteps] = useState<number[]>([]);
+  const [isExporting, setIsExporting] = useState(false);
 
   const { data, isLoading, isError } = usePreReportDetail(reportId!);
 
@@ -20,6 +23,215 @@ export const PreReportDetails = () => {
         ? prev.filter(s => s !== stepNum)
         : [...prev, stepNum]
     );
+  };
+
+  // Handle PDF Export
+  const handleExportPDF = async () => {
+    if (!data) return;
+
+    setIsExporting(true);
+    try {
+      const { preReport, clientLeadData, trueBuddyLeadData } = data;
+
+      // Convert lead type to match PDF export type
+      const pdfLeadType = preReport.leadType === 'TRUEBUDDY_LEAD' ? 'TRUE_BUDDY_LEAD' : 'CLIENT_LEAD';
+
+      // Prepare PDF data
+      const pdfData: PreReportPDFData = {
+        reportId: preReport.reportId,
+        clientName: preReport.clientName,
+        leadType: pdfLeadType,
+        status: preReport.reportStatus,
+        createdAt: preReport.createdAt,
+        updatedAt: preReport.updatedAt,
+        products: preReport.productNames?.map((name: string) => ({
+          name,
+          category: 'N/A',
+          status: 'ACTIVE',
+        })),
+      };
+
+      // Add lead-specific data
+      if (preReport.leadType === 'CLIENT_LEAD' && clientLeadData) {
+        pdfData.clientLeadData = {
+          investigationDate: clientLeadData.dateInfoReceived,
+          investigatorName: clientLeadData.clientSpocName,
+          location: clientLeadData.city || clientLeadData.state || 'N/A',
+          scopeOfWork: [
+            clientLeadData.scopeDueDiligence && 'Due Diligence',
+            clientLeadData.scopeIprRetailer && 'IPR Retailer',
+            clientLeadData.scopeIprSupplier && 'IPR Supplier',
+            clientLeadData.scopeIprManufacturer && 'IPR Manufacturer',
+            clientLeadData.scopeOnlinePurchase && 'Online Purchase',
+            clientLeadData.scopeOfflinePurchase && 'Offline Purchase',
+          ]
+            .filter(Boolean)
+            .join(', ') || 'N/A',
+          objectives: Array.isArray(clientLeadData.scopeCustomIds)
+            ? clientLeadData.scopeCustomIds.join(', ')
+            : typeof clientLeadData.scopeCustomIds === 'string'
+              ? clientLeadData.scopeCustomIds
+              : clientLeadData.scopeCustomIds
+                ? String(clientLeadData.scopeCustomIds)
+                : 'N/A',
+
+          targetName: clientLeadData.entityName || clientLeadData.suspectName,
+          targetAddress: [
+            clientLeadData.addressLine1,
+            clientLeadData.addressLine2,
+            clientLeadData.city,
+            clientLeadData.state,
+            clientLeadData.pincode,
+          ]
+            .filter(Boolean)
+            .join(', '),
+          targetContact: Array.isArray(clientLeadData.contactNumbers)
+            ? clientLeadData.contactNumbers.join(', ')
+            : typeof clientLeadData.contactNumbers === 'string'
+              ? clientLeadData.contactNumbers
+              : clientLeadData.contactNumbers
+                ? String(clientLeadData.contactNumbers)
+                : undefined,
+          verificationMethod: [
+            clientLeadData.verificationClientDiscussion && 'Client Discussion',
+            clientLeadData.verificationOsint && 'OSINT',
+            clientLeadData.verificationMarketplace && 'Marketplace',
+            clientLeadData.verificationPretextCalling && 'Pretext Calling',
+            clientLeadData.verificationProductReview && 'Product Review',
+          ]
+            .filter(Boolean)
+            .join(', '),
+          verificationStatus: 'Completed',
+          verifiedBy: clientLeadData.clientSpocName,
+          observations: [
+            clientLeadData.obsIdentifiableTarget && `Identifiable Target: ${clientLeadData.obsIdentifiableTarget}`,
+            clientLeadData.obsTraceability && `Traceability: ${clientLeadData.obsTraceability}`,
+            clientLeadData.obsProductVisibility && `Product Visibility: ${clientLeadData.obsProductVisibility}`,
+            clientLeadData.obsCounterfeitingIndications && `Counterfeiting Indications: ${clientLeadData.obsCounterfeitingIndications}`,
+          ]
+            .filter(Boolean)
+            .join('\n\n'),
+          findings: clientLeadData.obsEvidentiary_gaps || 'N/A',
+          qualityRating: [
+            clientLeadData.qaCompleteness && 'Complete',
+            clientLeadData.qaAccuracy && 'Accurate',
+            clientLeadData.qaIndependentInvestigation && 'Independent',
+          ]
+            .filter(Boolean)
+            .join(', '),
+          qualityNotes: [
+            clientLeadData.qaPriorConfrontation && 'Prior Confrontation',
+            clientLeadData.qaContaminationRisk && 'Contamination Risk',
+          ]
+            .filter(Boolean)
+            .join(', '),
+          riskLevel: clientLeadData.assessmentOverall || 'N/A',
+          assessmentSummary: clientLeadData.assessmentRationale,
+          recommendations: [
+            clientLeadData.recMarketSurvey && '• Market Survey',
+            clientLeadData.recCovertInvestigation && '• Covert Investigation',
+            clientLeadData.recTestPurchase && '• Test Purchase',
+            clientLeadData.recEnforcementAction && '• Enforcement Action',
+            clientLeadData.recAdditionalInfo && `• Additional Info: ${clientLeadData.recAdditionalInfo}`,
+            clientLeadData.recClosureHold && '• Closure/Hold',
+          ]
+            .filter(Boolean)
+            .join('\n'),
+          actionItems: (() => {
+            const info = clientLeadData.recAdditionalInfo;
+            if (typeof info === 'boolean') {
+              return info ? 'Yes' : 'No';
+            } else if (info !== null && info !== undefined) {
+              return String(info);
+            }
+            return undefined;
+          })(),
+
+          additionalRemarks: clientLeadData.remarks,
+          disclaimer: clientLeadData.customDisclaimer,
+        };
+      } else if (preReport.leadType === 'TRUEBUDDY_LEAD' && trueBuddyLeadData) {
+        pdfData.trueBuddyLeadData = {
+          investigationDate: trueBuddyLeadData.dateInternalLeadGeneration,
+          investigatorName: trueBuddyLeadData.clientSpocName,
+          location: trueBuddyLeadData.broadGeography || 'N/A',
+          scopeOfWork: [
+            trueBuddyLeadData.scopeIprSupplier && 'IPR Supplier',
+            trueBuddyLeadData.scopeIprManufacturer && 'IPR Manufacturer',
+            trueBuddyLeadData.scopeIprStockist && 'IPR Stockist',
+            trueBuddyLeadData.scopeMarketVerification && 'Market Verification',
+            trueBuddyLeadData.scopeEtp && 'ETP',
+            trueBuddyLeadData.scopeEnforcement && 'Enforcement',
+          ]
+            .filter(Boolean)
+            .join(', '),
+          objectives: `Product: ${trueBuddyLeadData.productCategory || 'N/A'}, Infringement: ${trueBuddyLeadData.infringementType || 'N/A'}`,
+          intelligenceGathered: [
+            trueBuddyLeadData.intelNature && `Nature: ${trueBuddyLeadData.intelNature}`,
+            trueBuddyLeadData.suspectedActivity && `Activity: ${trueBuddyLeadData.suspectedActivity}`,
+            trueBuddyLeadData.productSegment && `Segment: ${trueBuddyLeadData.productSegment}`,
+            trueBuddyLeadData.supplyChainStage && `Supply Chain: ${trueBuddyLeadData.supplyChainStage}`,
+          ]
+            .filter(Boolean)
+            .join('\n'),
+          sources: [
+            trueBuddyLeadData.repeatIntelligence ? 'Repeat Intelligence' : null,
+            trueBuddyLeadData.multiBrandRisk ? 'Multi-Brand Risk' : null,
+          ]
+            .filter(Boolean)
+            .join(', ') || undefined,
+          verificationMethod: [
+            trueBuddyLeadData.verificationIntelCorroboration && 'Intel Corroboration',
+            trueBuddyLeadData.verificationOsint && 'OSINT',
+            trueBuddyLeadData.verificationPatternMapping && 'Pattern Mapping',
+            trueBuddyLeadData.verificationJurisdiction && 'Jurisdiction Check',
+          ]
+            .filter(Boolean)
+            .join(', '),
+          verificationStatus: 'Completed',
+          observations: [
+            trueBuddyLeadData.obsOperationScale && `Operation Scale: ${trueBuddyLeadData.obsOperationScale}`,
+            trueBuddyLeadData.obsCounterfeitLikelihood && `Counterfeit Likelihood: ${trueBuddyLeadData.obsCounterfeitLikelihood}`,
+            trueBuddyLeadData.obsBrandExposure && `Brand Exposure: ${trueBuddyLeadData.obsBrandExposure}`,
+            trueBuddyLeadData.obsEnforcementSensitivity && `Enforcement Sensitivity: ${trueBuddyLeadData.obsEnforcementSensitivity}`,
+          ]
+            .filter(Boolean)
+            .join('\n\n'),
+          riskAssessment: [
+            trueBuddyLeadData.riskSourceReliability && `Source Reliability: ${trueBuddyLeadData.riskSourceReliability}`,
+            trueBuddyLeadData.riskClientConflict ? 'Client Conflict Present' : null,
+            trueBuddyLeadData.riskImmediateAction ? 'Immediate Action Required' : null,
+            trueBuddyLeadData.riskControlledValidation ? 'Controlled Validation Needed' : null,
+            trueBuddyLeadData.riskPrematureDisclosure ? 'Risk of Premature Disclosure' : null,
+          ]
+            .filter(Boolean)
+            .join('\n') || undefined,
+          riskLevel: trueBuddyLeadData.assessmentOverall || 'N/A',
+          overallAssessment: trueBuddyLeadData.assessmentRationale,
+          recommendations: [
+            trueBuddyLeadData.recCovertValidation && '• Covert Validation',
+            trueBuddyLeadData.recEtp && '• ETP',
+            trueBuddyLeadData.recMarketReconnaissance && '• Market Reconnaissance',
+            trueBuddyLeadData.recEnforcementDeferred && '• Enforcement Deferred',
+            trueBuddyLeadData.recContinuedMonitoring && '• Continued Monitoring',
+            trueBuddyLeadData.recClientSegregation && '• Client Segregation',
+          ]
+            .filter(Boolean)
+            .join('\n'),
+          confidentialityNotes: trueBuddyLeadData.confidentialityNote,
+          remarks: trueBuddyLeadData.remarks,
+          disclaimer: trueBuddyLeadData.customDisclaimer,
+        };
+      }
+
+      await exportPreReportToPDF(pdfData);
+      toast.success('PDF exported successfully!');
+    } catch (error) {
+      console.error('PDF export error:', error);
+      toast.error('Failed to export PDF. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   if (isLoading) {
@@ -91,12 +303,12 @@ export const PreReportDetails = () => {
   const getStepData = (stepNum: number) => {
     const isClientLead = preReport.leadType === 'CLIENT_LEAD';
     const sourceData = isClientLead ? clientLeadData : trueBuddyLeadData;
-    
+
     if (!sourceData) return null;
 
     const fields = getStepFields(stepNum, isClientLead);
     const stepData: Record<string, any> = {};
-    
+
     fields.forEach(field => {
       const value = sourceData[field as keyof typeof sourceData];
       if (value !== undefined && value !== null && value !== '') {
@@ -118,12 +330,12 @@ export const PreReportDetails = () => {
   // Render field helper
   const renderField = (label: string, value: any) => {
     if (value === null || value === undefined || value === '') return null;
-    
+
     // Skip createdAt and updatedAt fields
     if (label.toLowerCase().includes('created at') || label.toLowerCase().includes('updated at')) {
       return null;
     }
-    
+
     // Handle boolean values
     if (typeof value === 'boolean') {
       return (
@@ -240,11 +452,11 @@ export const PreReportDetails = () => {
     return (
       <div className="mt-3 bg-gray-50 rounded-lg p-4 space-y-1">
         {Object.entries(stepData)
-          .filter(([key]) => 
+          .filter(([key]) =>
             // Filter out internal/metadata fields
-            key !== 'id' && 
-            key !== 'prereportId' && 
-            key !== 'createdAt' && 
+            key !== 'id' &&
+            key !== 'prereportId' &&
+            key !== 'createdAt' &&
             key !== 'updatedAt'
           )
           .map(([key, value]) =>
@@ -282,11 +494,24 @@ export const PreReportDetails = () => {
               Edit
             </button>
             <button
-              onClick={() => navigate(`/operations/pre-report/${reportId}/pdf`)}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              onClick={handleExportPDF}
+              disabled={isExporting}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isExporting
+                ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
             >
-              <Download className="w-4 h-4" />
-              Export PDF
+              {isExporting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  Export PDF
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -332,9 +557,9 @@ export const PreReportDetails = () => {
         <div className="mt-6">
           <p className="text-sm font-medium text-gray-700 mb-2">Products:</p>
           <div className="flex flex-wrap gap-2">
-            {preReport.productNames.map((product, idx) => (
+            {preReport.productNames.map((product: string, productIdx: number) => (
               <span
-                key={idx}
+                key={productIdx}
                 className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-sm text-blue-700"
               >
                 {product}
@@ -357,9 +582,8 @@ export const PreReportDetails = () => {
             return (
               <div
                 key={stepNum}
-                className={`border rounded-lg transition-all ${
-                  isCompleted ? 'border-green-200 bg-green-50/30' : 'border-gray-200'
-                }`}
+                className={`border rounded-lg transition-all ${isCompleted ? 'border-green-200 bg-green-50/30' : 'border-gray-200'
+                  }`}
               >
                 {/* Step Header */}
                 <button
@@ -368,11 +592,10 @@ export const PreReportDetails = () => {
                 >
                   <div className="flex items-center gap-3">
                     <div
-                      className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full font-semibold ${
-                        isCompleted
-                          ? 'bg-green-500 text-white'
-                          : 'bg-gray-200 text-gray-600'
-                      }`}
+                      className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full font-semibold ${isCompleted
+                        ? 'bg-green-500 text-white'
+                        : 'bg-gray-200 text-gray-600'
+                        }`}
                     >
                       {stepNum}
                     </div>
@@ -389,9 +612,8 @@ export const PreReportDetails = () => {
                   </div>
                   <div className="flex items-center gap-3">
                     <span
-                      className={`text-sm font-medium ${
-                        isCompleted ? 'text-green-600' : 'text-gray-400'
-                      }`}
+                      className={`text-sm font-medium ${isCompleted ? 'text-green-600' : 'text-gray-400'
+                        }`}
                     >
                       {isCompleted ? 'Completed' : 'Pending'}
                     </span>
