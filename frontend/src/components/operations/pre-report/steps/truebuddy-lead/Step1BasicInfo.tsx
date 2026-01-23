@@ -5,8 +5,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import type {
   TrueBuddyLeadStep1Input,
 } from '../../../../../schemas/prereport.schemas';
-import {trueBuddyLeadStep1Schema} from '../../../../../schemas/prereport.schemas';
-  
+import { trueBuddyLeadStep1Schema } from '../../../../../schemas/prereport.schemas';
+
 import {
   ProductCategory,
   InfringementType,
@@ -18,12 +18,15 @@ interface Step1Props {
   data: TrueBuddyLeadData;
   onNext: (data: Partial<TrueBuddyLeadData>) => Promise<void>;
   onBack?: () => void;
+  onSkip: () => void;
 }
 
-const TrueBuddyStep1BasicInfo: React.FC<Step1Props> = ({ data, onNext, onBack }) => {
+const TrueBuddyStep1BasicInfo: React.FC<Step1Props> = ({ data, onNext, onBack, onSkip, }) => {
   const {
     control,
     handleSubmit,
+
+
     formState: { errors, isSubmitting },
   } = useForm<TrueBuddyLeadStep1Input>({
     resolver: zodResolver(trueBuddyLeadStep1Schema),
@@ -38,24 +41,24 @@ const TrueBuddyStep1BasicInfo: React.FC<Step1Props> = ({ data, onNext, onBack })
     },
   });
 
-const onSubmit = async (formData: TrueBuddyLeadStep1Input) => {
-  try {
-    // Cast enum strings to proper types
-    const typedData: Partial<TrueBuddyLeadData> = {
-      dateInternalLeadGeneration: formData.dateInternalLeadGeneration,
-      productCategory: formData.productCategory as ProductCategory,
-      infringementType: formData.infringementType as InfringementType,
-      broadGeography: formData.broadGeography,
-      clientSpocName: formData.clientSpocName,
-      clientSpocDesignation: formData.clientSpocDesignation,
-      natureOfEntity: formData.natureOfEntity as NatureOfEntity,
-    };
-    
-    await onNext(typedData);
-  } catch (error) {
-    console.error('Error submitting Step 1:', error);
-  }
-};
+  const onSubmit = async (formData: TrueBuddyLeadStep1Input) => {
+    try {
+      // Cast enum strings to proper types
+      const typedData: Partial<TrueBuddyLeadData> = {
+        dateInternalLeadGeneration: formData.dateInternalLeadGeneration,
+        productCategory: formData.productCategory as ProductCategory,
+        infringementType: formData.infringementType as InfringementType,
+        broadGeography: formData.broadGeography,
+        clientSpocName: formData.clientSpocName,
+        clientSpocDesignation: formData.clientSpocDesignation,
+        natureOfEntity: formData.natureOfEntity as NatureOfEntity,
+      };
+
+      await onNext(typedData);
+    } catch (error) {
+      console.error('Error submitting Step 1:', error);
+    }
+  };
 
 
   return (
@@ -78,9 +81,8 @@ const onSubmit = async (formData: TrueBuddyLeadStep1Input) => {
                 <input
                   type="date"
                   {...field}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    errors.dateInternalLeadGeneration ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.dateInternalLeadGeneration ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 />
               )}
             />
@@ -100,9 +102,8 @@ const onSubmit = async (formData: TrueBuddyLeadStep1Input) => {
               render={({ field }) => (
                 <select
                   {...field}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    errors.productCategory ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.productCategory ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 >
                   <option value="">Select Product Category</option>
                   {Object.values(ProductCategory).map((category) => (
@@ -129,9 +130,8 @@ const onSubmit = async (formData: TrueBuddyLeadStep1Input) => {
               render={({ field }) => (
                 <select
                   {...field}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    errors.infringementType ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.infringementType ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 >
                   <option value="">Select Infringement Type</option>
                   {Object.values(InfringementType).map((type) => (
@@ -160,9 +160,8 @@ const onSubmit = async (formData: TrueBuddyLeadStep1Input) => {
                   type="text"
                   {...field}
                   placeholder="e.g., Northern India, Maharashtra"
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    errors.broadGeography ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.broadGeography ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 />
               )}
             />
@@ -184,9 +183,8 @@ const onSubmit = async (formData: TrueBuddyLeadStep1Input) => {
                   type="text"
                   {...field}
                   placeholder="Enter client SPOC name"
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    errors.clientSpocName ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.clientSpocName ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 />
               )}
             />
@@ -208,9 +206,8 @@ const onSubmit = async (formData: TrueBuddyLeadStep1Input) => {
                   type="text"
                   {...field}
                   placeholder="Enter designation"
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    errors.clientSpocDesignation ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.clientSpocDesignation ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 />
               )}
             />
@@ -230,9 +227,8 @@ const onSubmit = async (formData: TrueBuddyLeadStep1Input) => {
               render={({ field }) => (
                 <select
                   {...field}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    errors.natureOfEntity ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.natureOfEntity ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 >
                   <option value="">Select Nature of Entity</option>
                   {Object.values(NatureOfEntity).map((entity) => (
@@ -259,6 +255,14 @@ const onSubmit = async (formData: TrueBuddyLeadStep1Input) => {
                 Back
               </button>
             )}
+            {/* Skip Button */}
+            <button
+              type="button"
+              onClick={onSkip}
+              className="px-6 py-3 border-2 border-yellow-400 text-yellow-700 font-medium rounded-lg hover:bg-yellow-50 transition-colors"
+            >
+              Skip Step
+            </button>
             <button
               type="submit"
               disabled={isSubmitting}

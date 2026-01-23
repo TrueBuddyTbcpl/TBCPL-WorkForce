@@ -13,6 +13,7 @@ interface Step7AssessmentProps {
   data?: ClientLeadData | null;
   onNext: () => void;
   onPrevious: () => void;
+  onSkip: () => void;
 }
 
 export const Step7Assessment = ({
@@ -21,6 +22,7 @@ export const Step7Assessment = ({
   data,
   onNext,
   onPrevious,
+  onSkip,
 }: Step7AssessmentProps) => {
   const updateMutation = useUpdateStep();
 
@@ -119,6 +121,14 @@ export const Step7Assessment = ({
         >
           <ArrowLeft className="w-4 h-4" />
           Previous
+        </button>
+        {/* Skip Button */}
+        <button
+          type="button"
+          onClick={onSkip}
+          className="px-6 py-3 border-2 border-yellow-400 text-yellow-700 font-medium rounded-lg hover:bg-yellow-50 transition-colors"
+        >
+          Skip Step
         </button>
         <button
           type="submit"

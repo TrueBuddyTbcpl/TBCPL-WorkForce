@@ -5,16 +5,17 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import type {
   TrueBuddyLeadStep9Input,
 } from '../../../../../schemas/prereport.schemas';
-import {trueBuddyLeadStep9Schema} from '../../../../../schemas/prereport.schemas';
+import { trueBuddyLeadStep9Schema } from '../../../../../schemas/prereport.schemas';
 import type { TrueBuddyLeadData } from '../../../../../types/prereport.types';
 
 interface Step9Props {
   data: TrueBuddyLeadData;
   onNext: (data: Partial<TrueBuddyLeadData>) => Promise<void>;
   onBack: () => void;
+  onSkip: () => void;
 }
 
-const TrueBuddyStep9Confidentiality: React.FC<Step9Props> = ({ data, onNext, onBack }) => {
+const TrueBuddyStep9Confidentiality: React.FC<Step9Props> = ({ data, onNext, onBack, onSkip }) => {
   const {
     control,
     handleSubmit,
@@ -102,7 +103,7 @@ const TrueBuddyStep9Confidentiality: React.FC<Step9Props> = ({ data, onNext, onB
                 </h3>
                 <div className="mt-2 text-sm text-red-700">
                   <p>
-                    TrueBuddy leads contain highly sensitive information. Ensure proper confidentiality measures 
+                    TrueBuddy leads contain highly sensitive information. Ensure proper confidentiality measures
                     are documented and followed throughout the investigation lifecycle.
                   </p>
                 </div>
@@ -163,9 +164,8 @@ Example:
 • Operational security: [specify handling protocols]
 • Information retention: [specify storage and access controls]
 • Breach reporting: [specify escalation procedures]"
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none font-mono text-sm ${
-                      errors.confidentialityNote ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none font-mono text-sm ${errors.confidentialityNote ? 'border-red-500' : 'border-gray-300'
+                      }`}
                   />
                   <div className="flex justify-between items-center mt-2">
                     <div>
@@ -173,13 +173,12 @@ Example:
                         <p className="text-sm text-red-600">{errors.confidentialityNote.message}</p>
                       )}
                     </div>
-                    <p className={`text-xs font-medium ${
-                      charCount < 10 
-                        ? 'text-red-600' 
-                        : charCount < 50 
-                        ? 'text-yellow-600' 
-                        : 'text-green-600'
-                    }`}>
+                    <p className={`text-xs font-medium ${charCount < 10
+                        ? 'text-red-600'
+                        : charCount < 50
+                          ? 'text-yellow-600'
+                          : 'text-green-600'
+                      }`}>
                       {charCount} characters (minimum 10 required)
                     </p>
                   </div>
@@ -228,6 +227,14 @@ Example:
             >
               Back
             </button>
+            {/* Skip Button */}
+            <button
+              type="button"
+              onClick={onSkip}
+              className="px-6 py-3 border-2 border-yellow-400 text-yellow-700 font-medium rounded-lg hover:bg-yellow-50 transition-colors"
+            >
+              Skip Step
+            </button>
             <button
               type="submit"
               disabled={isSubmitting}
@@ -260,8 +267,8 @@ Example:
             <h3 className="text-sm font-medium text-white">Security Reminder</h3>
             <div className="mt-2 text-sm text-gray-300">
               <p>
-                <strong>TrueBuddy leads are highly confidential.</strong> Unauthorized disclosure may compromise 
-                investigations, endanger sources, damage client relationships, and violate legal obligations. 
+                <strong>TrueBuddy leads are highly confidential.</strong> Unauthorized disclosure may compromise
+                investigations, endanger sources, damage client relationships, and violate legal obligations.
                 Ensure all team members handling this intelligence understand and follow the documented protocols.
               </p>
             </div>

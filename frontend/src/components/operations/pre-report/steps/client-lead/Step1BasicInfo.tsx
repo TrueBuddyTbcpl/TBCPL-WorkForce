@@ -13,6 +13,7 @@ interface Step1BasicInfoProps {
   data?: ClientLeadData | null;
   onNext: () => void;
   onPrevious?: () => void;
+  onSkip: () => void;
 }
 
 export const Step1BasicInfo = ({
@@ -20,6 +21,7 @@ export const Step1BasicInfo = ({
   reportId,
   data,
   onNext,
+  onSkip,
 }: Step1BasicInfoProps) => {
   const updateMutation = useUpdateStep();
 
@@ -102,6 +104,14 @@ export const Step1BasicInfo = ({
 
       {/* Actions */}
       <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
+        {/* Skip Button */}
+        <button
+          type="button"
+          onClick={onSkip}
+          className="px-6 py-3 border-2 border-yellow-400 text-yellow-700 font-medium rounded-lg hover:bg-yellow-50 transition-colors"
+        >
+          Skip Step
+        </button>
         <button
           type="submit"
           disabled={updateMutation.isPending}

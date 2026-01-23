@@ -7,6 +7,7 @@ import { useUpdatePreReportStep } from '../../../hooks/prereport/useUpdatePreRep
 import { useSubmitPreReport } from '../../../hooks/prereport/useSubmitPreReport';
 import { PreReportDetailsSidebar } from './PreReportDetailsSidebar';
 import { getStepTitle } from '../../../utils/helpers';
+import { toast } from 'sonner';
 
 // Import Client Lead step components
 import { Step1BasicInfo as ClientLeadStep1BasicInfo } from './steps/client-lead/Step1BasicInfo';
@@ -75,12 +76,12 @@ export const EditPreReport = () => {
 
   // ✅ Handle step navigation and data saving
   const handleNext = async (stepData?: any) => {
-    console.log('handleNext called', { 
-      currentStep, 
-      totalSteps, 
-      isLastStep, 
+    console.log('handleNext called', {
+      currentStep,
+      totalSteps,
+      isLastStep,
       stepData,
-      hasData: stepData && Object.keys(stepData).length > 0 
+      hasData: stepData && Object.keys(stepData).length > 0
     });
 
     setError(null);
@@ -89,15 +90,16 @@ export const EditPreReport = () => {
       // ✅ Save step data if provided (not skipped)
       if (stepData && Object.keys(stepData).length > 0) {
         console.log('Saving step data to backend...');
-        
+
         await updateStepMutation.mutateAsync({
           reportId: reportId!,
           step: currentStep,
           leadType: preReport.leadType,
           data: stepData,
         });
-        
+
         console.log('Step saved successfully');
+        toast.success(`Step ${currentStep} saved successfully`);
       } else {
         console.log('Step skipped - no data to save');
       }
@@ -105,41 +107,50 @@ export const EditPreReport = () => {
       // ✅ If it's the last step, submit the entire report
       if (isLastStep) {
         console.log('Submitting final report...');
-        
+
         await submitReportMutation.mutateAsync(reportId!);
-        
-        alert('✅ Pre-report submitted successfully!');
+
+        toast.success('Pre-report submitted successfully!');
         navigate(`/operations/pre-report/${reportId}`);
       } else {
         // ✅ Otherwise, move to next step
         console.log('Moving to next step...');
         setCurrentStep((s) => Math.min(totalSteps, s + 1));
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } catch (error: any) {
       console.error('Error in handleNext:', error);
       const errorMessage = error?.response?.data?.message || 'Failed to save. Please try again.';
       setError(errorMessage);
-      alert(`❌ ${errorMessage}`);
+      toast.error(errorMessage);
     }
   };
 
   const handlePrevious = async () => {
     setCurrentStep((s) => Math.max(1, s - 1));
     setError(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // ✅ Handle skip step
   const handleSkip = async () => {
     console.log('Skipping step', currentStep);
-    
+
     if (isLastStep) {
-      alert('⚠️ Cannot skip the last step. Please review and submit.');
+      toast.warning('Cannot skip the last step', {
+        description: 'Please review and submit your pre-report'
+      });
       return;
     }
-    
+
     // Move to next without saving
     setCurrentStep((s) => Math.min(totalSteps, s + 1));
     setError(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    toast.info(`Step ${currentStep} skipped`, {
+      description: 'You can come back to fill this step later'
+    });
   };
 
   const renderStepContent = () => {
@@ -157,7 +168,7 @@ export const EditPreReport = () => {
         10: ClientLeadStep10Disclaimer,
       };
       const StepComponent = stepComponents[currentStep as keyof typeof stepComponents];
-      
+
       return StepComponent ? (
         <StepComponent
           prereportId={preReport.id}
@@ -194,6 +205,7 @@ export const EditPreReport = () => {
     }
   };
 
+
   const isProcessing = updateStepMutation.isPending || submitReportMutation.isPending;
 
   return (
@@ -220,7 +232,7 @@ export const EditPreReport = () => {
             <ArrowLeft className="w-5 h-5" />
             Back to Details
           </button>
-          
+
           {/* Error Alert */}
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
@@ -280,8 +292,8 @@ export const EditPreReport = () => {
                   {getStepTitle(preReport.leadType, currentStep)}
                 </h2>
                 <p className="text-sm text-gray-500 mt-1">
-                  {isLastStep 
-                    ? '⚠️ Review and submit your pre-report' 
+                  {isLastStep
+                    ? '⚠️ Review and submit your pre-report'
                     : '✏️ Fill in the details or skip to continue'}
                 </p>
               </div>

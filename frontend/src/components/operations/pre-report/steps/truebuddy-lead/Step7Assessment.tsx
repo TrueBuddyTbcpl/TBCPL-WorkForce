@@ -13,9 +13,10 @@ interface Step7Props {
   data: TrueBuddyLeadData;
   onNext: (data: Partial<TrueBuddyLeadData>) => Promise<void>;
   onBack: () => void;
+  onSkip: () => void;
 }
 
-const TrueBuddyStep7Assessment: React.FC<Step7Props> = ({ data, onNext, onBack }) => {
+const TrueBuddyStep7Assessment: React.FC<Step7Props> = ({ data, onNext, onBack,onSkip }) => {
   const {
     control,
     handleSubmit,
@@ -208,6 +209,14 @@ Consider including:
             >
               Back
             </button>
+            {/* Skip Button */}
+        <button
+          type="button"
+          onClick={onSkip}
+          className="px-6 py-3 border-2 border-yellow-400 text-yellow-700 font-medium rounded-lg hover:bg-yellow-50 transition-colors"
+        >
+          Skip Step
+        </button>
             <button
               type="submit"
               disabled={isSubmitting}

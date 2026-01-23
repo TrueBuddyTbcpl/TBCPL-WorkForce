@@ -13,6 +13,7 @@ interface Step10DisclaimerProps {
   data?: ClientLeadData | null;
   onNext: () => void;
   onPrevious: () => void;
+  onSkip: () => void;
 }
 
 const DEFAULT_DISCLAIMER = `This pre-investigation report is prepared based on information available at the time of assessment. The findings and recommendations are preliminary in nature and subject to change based on additional intelligence or field investigation.
@@ -29,6 +30,7 @@ export const Step10Disclaimer = ({
   data,
   onNext,
   onPrevious,
+  onSkip,
 }: Step10DisclaimerProps) => {
   const updateMutation = useUpdateStep();
 
@@ -128,6 +130,14 @@ export const Step10Disclaimer = ({
         >
           <ArrowLeft className="w-4 h-4" />
           Previous
+        </button>
+        {/* Skip Button */}
+        <button
+          type="button"
+          onClick={onSkip}
+          className="px-6 py-3 border-2 border-yellow-400 text-yellow-700 font-medium rounded-lg hover:bg-yellow-50 transition-colors"
+        >
+          Skip Step
         </button>
         <button
           type="submit"

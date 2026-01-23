@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import { useClients } from '../../../hooks/prereport/useDropdowns';
+import { useClients } from '../../../hooks/prereport/useClients';
 import { useProducts } from '../../../hooks/prereport/useProducts';
 import { useCreatePreReport } from '../../../hooks/prereport/useCreatePreReport';
 import { initializeReportSchema } from '../../../schemas/prereport.schemas';
@@ -12,13 +12,13 @@ import type { InitializeReportInput } from '../../../schemas/prereport.schemas';
 
 export const CreatePreReport = () => {
   const navigate = useNavigate();
+
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
   const [selectedProductIds, setSelectedProductIds] = useState<number[]>([]);
 
-  const { data: clients, isLoading: clientsLoading } = useClients();
-  const { data: products, isLoading: productsLoading } = useProducts(
-    selectedClientId ? String(selectedClientId) : null
-  );
+  const { data: products, isLoading: productsLoading } =
+    useProducts(selectedClientId);
+
   const createMutation = useCreatePreReport();
 
   const {
@@ -30,7 +30,7 @@ export const CreatePreReport = () => {
   } = useForm<InitializeReportInput>({
     resolver: zodResolver(initializeReportSchema),
     defaultValues: {
-      clientId: undefined,
+      clientId: 0,
       productIds: [],
       leadType: LeadType.CLIENT_LEAD as any,
     },
@@ -38,23 +38,45 @@ export const CreatePreReport = () => {
 
   const watchClientId = watch('clientId');
 
-  // Update selected client when form value changes
+  /**
+   * 🔒 SAFE clientId handling
+   * - NO valueAsNumber
+   * - NO NaN
+   * - Only valid numeric IDs (>0)
+   */
   useEffect(() => {
-    if (watchClientId && watchClientId !== selectedClientId) {
-      setSelectedClientId(watchClientId);
+    const numericClientId = Number(watchClientId);
+
+    if (!Number.isFinite(numericClientId) || numericClientId <= 0) return;
+
+    if (numericClientId !== selectedClientId) {
+      setSelectedClientId(numericClientId);
       setSelectedProductIds([]);
-      setValue('productIds', []); // Reset products when client changes
+      setValue('productIds', []);
     }
   }, [watchClientId, selectedClientId, setValue]);
 
+  // Debug (can be removed later)
+  const { data: clients, isLoading: clientsLoading } = useClients();
+
+  // 🔍 ADD THIS DEBUG BLOCK
+  useEffect(() => {
+    console.log('=== CLIENT DATA DEBUG ===');
+    console.log('clientsLoading:', clientsLoading);
+    console.log('clients:', clients);
+    console.log('clients type:', typeof clients);
+    console.log('Is Array?', Array.isArray(clients));
+    console.log('Length:', clients?.length);
+    if (clients && clients.length > 0) {
+      console.log('First client:', clients[0]);
+    }
+  }, [clients, clientsLoading]);
 
 
   const onSubmit = async (data: InitializeReportInput) => {
     try {
-      console.log('Submitting data:', data); // ✅ Debug log
-
       const payload = {
-        leadType: data.leadType as 'CLIENT_LEAD' | 'TRUEBUDDY_LEAD',  // ✅ cast
+        leadType: data.leadType as 'CLIENT_LEAD' | 'TRUEBUDDY_LEAD',
         clientId: String(data.clientId),
         productIds: data.productIds.map(String),
       };
@@ -78,42 +100,66 @@ export const CreatePreReport = () => {
           Back to Reports
         </button>
         <h1 className="text-3xl font-bold text-gray-900">Create New Pre-Report</h1>
-        <p className="text-gray-600 mt-1">Initialize a new pre-investigation report</p>
+        <p className="text-gray-600 mt-1">
+          Initialize a new pre-investigation report
+        </p>
       </div>
 
       {/* Form */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {/* Client Selection */}
+          {/* ================= CLIENT SELECTION ================= */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Client <span className="text-red-500">*</span>
             </label>
+
             <select
-              {...register('clientId', { valueAsNumber: true })}
+              {...register('clientId', { valueAsNumber: true })} // ✅ ADDED: valueAsNumber
               disabled={clientsLoading}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${errors.clientId ? 'border-red-500' : 'border-gray-300'
-                } ${clientsLoading ? 'bg-gray-50 cursor-not-allowed' : 'bg-white'}`}
+              className="w-full px-4 py-2 border rounded-lg"
             >
-              <option value="">
+              <option value={0}>
                 {clientsLoading ? 'Loading clients...' : 'Select a client'}
               </option>
-              {clients?.map((client) => (
-                <option key={client.id} value={String(client.clientId)}>
-                  {client.clientName}
-                </option>
-              ))}
+
+              {!clientsLoading && Array.isArray(clients) && clients.length > 0 ? (
+                clients.map((client) => {
+                  const clientValue = typeof client.id === 'number'
+                    ? client.id
+                    : Number(client.clientId);
+
+                  return (
+                    <option
+                      key={`client-${clientValue}`}
+                      value={clientValue}
+                    >
+                      {client.clientName}
+                    </option>
+                  );
+                })
+              ) : (
+                !clientsLoading && (
+                  <option disabled>No clients available</option>
+                )
+              )}
             </select>
+
             {errors.clientId && (
-              <p className="text-red-500 text-sm mt-1">{String(errors.clientId.message)}</p>
+              <p className="text-red-500 text-sm mt-1">
+                {String(errors.clientId.message)}
+              </p>
             )}
           </div>
 
-          {/* Product Selection - ✅ FIXED */}
+
+
+          {/* ================= PRODUCT SELECTION ================= */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Products <span className="text-red-500">*</span>
             </label>
+
             {!selectedClientId ? (
               <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
                 <p className="text-gray-500 text-sm text-center">
@@ -127,40 +173,86 @@ export const CreatePreReport = () => {
                   <span className="text-sm">Loading products...</span>
                 </div>
               </div>
+            ) : !Array.isArray(products) || products.length === 0 ? (
+              <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
+                <p className="text-gray-500 text-sm text-center">
+                  No products available for this client
+                </p>
+              </div>
             ) : (
-              <div className={`border rounded-lg p-3 max-h-64 overflow-y-auto ${errors.productIds ? 'border-red-500' : 'border-gray-300'
-                }`}>
-                {products && products.length > 0 ? (
-                  <div className="space-y-2">
-                    {products?.map((product) => (
-                      <option key={product.id} value={String(product.id)}>
+              <div className="border border-gray-300 rounded-lg p-3 max-h-60 overflow-y-auto bg-white">
+                {products.map((product) => {
+                  // ✅ Handle both id and productId from backend
+                  const productIdentifier = product.id || product.productId;
+
+                  if (!productIdentifier) {
+                    console.warn('Product missing identifier:', product);
+                    return null;
+                  }
+
+                  const numericId = typeof productIdentifier === 'number'
+                    ? productIdentifier
+                    : Number(productIdentifier);
+
+                  const isSelected = selectedProductIds.includes(numericId);
+
+                  return (
+                    <label
+                      key={`product-${numericId}`}
+                      className="flex items-center gap-3 p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={(e) => {
+                          e.stopPropagation();
+
+                          const newSelection = e.target.checked
+                            ? [...selectedProductIds, numericId]
+                            : selectedProductIds.filter((id) => id !== numericId);
+
+                          setSelectedProductIds(newSelection);
+                          setValue('productIds', newSelection, { shouldValidate: true });
+                        }}
+                        className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700 select-none">
                         {product.productName}
-                      </option>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-500 text-sm text-center py-2">
-                    No products available for this client
-                  </p>
-                )}
+                      </span>
+                    </label>
+                  );
+                })}
               </div>
             )}
+
             {errors.productIds && (
-              <p className="text-red-500 text-sm mt-1">{String(errors.productIds.message)}</p>
-            )}
-            {/* ✅ Show selected count */}
-            {selectedProductIds.length > 0 && (
-              <p className="text-sm text-blue-600 mt-2">
-                {selectedProductIds.length} product(s) selected
+              <p className="text-red-500 text-sm mt-1">
+                {String(errors.productIds.message)}
               </p>
             )}
+
+            {selectedProductIds.length > 0 && (
+              <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded">
+                <p className="text-sm font-medium text-blue-700">
+                  {selectedProductIds.length} product(s) selected
+                </p>
+              </div>
+            )}
+
           </div>
 
-          {/* Lead Type Selection */}
+
+
+
+
+
+
+          {/* Lead Type */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
               Lead Type <span className="text-red-500">*</span>
             </label>
+
             <div className="space-y-3">
               <label className="flex items-start gap-3 p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition-all">
                 <input
@@ -169,10 +261,10 @@ export const CreatePreReport = () => {
                   {...register('leadType')}
                   className="mt-0.5 w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
                 />
-                <div className="flex-1">
+                <div>
                   <p className="font-semibold text-gray-900">Client Lead</p>
                   <p className="text-sm text-gray-600 mt-1">
-                    Information provided directly by the client for investigation
+                    Information provided directly by the client
                   </p>
                 </div>
               </label>
@@ -184,25 +276,22 @@ export const CreatePreReport = () => {
                   {...register('leadType')}
                   className="mt-0.5 w-4 h-4 text-purple-600 focus:ring-2 focus:ring-purple-500"
                 />
-                <div className="flex-1">
+                <div>
                   <p className="font-semibold text-gray-900">TrueBuddy Lead</p>
                   <p className="text-sm text-gray-600 mt-1">
-                    Internal intelligence generated through TrueBuddy network
+                    Internal intelligence generated by TrueBuddy
                   </p>
                 </div>
               </label>
             </div>
-            {errors.leadType && (
-              <p className="text-red-500 text-sm mt-1">{String(errors.leadType.message)}</p>
-            )}
           </div>
 
-          {/* Submit Button */}
+          {/* Submit */}
           <div className="flex items-center gap-3 pt-4 border-t">
             <button
               type="submit"
               disabled={createMutation.isPending}
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md"
+              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
               {createMutation.isPending ? (
                 <>
@@ -213,48 +302,17 @@ export const CreatePreReport = () => {
                 'Initialize Report'
               )}
             </button>
+
             <button
               type="button"
               onClick={() => navigate('/operations/pre-report')}
               disabled={createMutation.isPending}
-              className="px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
             >
               Cancel
             </button>
           </div>
         </form>
-      </div>
-
-      {/* Info Box */}
-      <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex gap-3">
-          <div className="flex-shrink-0">
-            <svg
-              className="w-5 h-5 text-blue-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          </div>
-          <div className="flex-1">
-            <h3 className="text-sm font-semibold text-blue-900 mb-1">
-              What happens next?
-            </h3>
-            <ul className="text-sm text-blue-800 space-y-1">
-              <li>• A new pre-report will be created with the selected details</li>
-              <li>• You'll be redirected to the step-by-step form editor</li>
-              <li>• Complete all required steps to finalize the report</li>
-              <li>• You can save progress and return later</li>
-            </ul>
-          </div>
-        </div>
       </div>
     </div>
   );

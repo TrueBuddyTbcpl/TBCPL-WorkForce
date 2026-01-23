@@ -9,18 +9,38 @@ interface Product {
   description?: string;
 }
 
-export const useProducts = (clientId: string | null) => {
-  return useQuery({
+interface RawProduct {
+  id?: number;
+  productId?: string | number;
+  productName?: string;
+  description?: string;
+  clientId?: number;
+}
+
+// src/hooks/prereport/useProducts.ts
+// src/hooks/prereport/useProducts.ts
+export const useProducts = (clientId: number | null) => {
+  return useQuery<Product[]>({
     queryKey: ['products', clientId],
     queryFn: async () => {
-      if (!clientId) return [];
-      
-      const { data } = await apiClient.get<{ products: Product[] }>(
+      const { data } = await apiClient.get(
         `/operation/prereport/dropdown/products/client/${clientId}`
       );
-      return data.products;
+
+      const rawProducts = Array.isArray(data) ? data : data?.products ?? [];
+
+      // ✅ FIX: Map productId to id if missing
+      return rawProducts.map((product: RawProduct) => ({
+        id: product.id || Number(product.productId),
+        productId: product.productId?.toString() || String(product.id),
+        productName: product.productName || 'Unknown Product',
+        description: product.description
+      }));
     },
-    enabled: !!clientId,
+    enabled: typeof clientId === 'number' && clientId > 0,
     staleTime: 5 * 60 * 1000,
   });
 };
+
+
+

@@ -5,16 +5,17 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import type {
   TrueBuddyLeadStep11Input,
 } from '../../../../../schemas/prereport.schemas';
-import {trueBuddyLeadStep11Schema} from '../../../../../schemas/prereport.schemas';
+import { trueBuddyLeadStep11Schema } from '../../../../../schemas/prereport.schemas';
 import type { TrueBuddyLeadData } from '../../../../../types/prereport.types';
 
 interface Step11Props {
   data: TrueBuddyLeadData;
   onNext: (data: Partial<TrueBuddyLeadData>) => Promise<void>;
   onBack: () => void;
+  onSkip: () => void;
 }
 
-const TrueBuddyStep11Disclaimer: React.FC<Step11Props> = ({ data, onNext, onBack }) => {
+const TrueBuddyStep11Disclaimer: React.FC<Step11Props> = ({ data, onNext, onBack, onSkip, }) => {
   const [useDefaultDisclaimer, setUseDefaultDisclaimer] = useState(false);
 
   const {
@@ -149,7 +150,7 @@ Distribution: RESTRICTED`;
               Disclaimer Text *
             </label>
             <p className="text-sm text-gray-500 mb-4">
-              {useDefaultDisclaimer 
+              {useDefaultDisclaimer
                 ? 'Default disclaimer loaded. You can edit it as needed.'
                 : 'Enter a custom disclaimer or use the default template above.'}
             </p>
@@ -170,9 +171,8 @@ Your disclaimer should cover:
 • Source protection measures
 • Distribution restrictions
 • Operational security requirements"
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none font-mono text-sm ${
-                      errors.customDisclaimer ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none font-mono text-sm ${errors.customDisclaimer ? 'border-red-500' : 'border-gray-300'
+                      }`}
                   />
                   <div className="flex justify-between items-center mt-2">
                     <div>
@@ -180,13 +180,12 @@ Your disclaimer should cover:
                         <p className="text-sm text-red-600">{errors.customDisclaimer.message}</p>
                       )}
                     </div>
-                    <p className={`text-xs font-medium ${
-                      charCount < 20 
-                        ? 'text-red-600' 
-                        : charCount < 100 
-                        ? 'text-yellow-600' 
-                        : 'text-green-600'
-                    }`}>
+                    <p className={`text-xs font-medium ${charCount < 20
+                        ? 'text-red-600'
+                        : charCount < 100
+                          ? 'text-yellow-600'
+                          : 'text-green-600'
+                      }`}>
                       {charCount} characters (minimum 20 required)
                     </p>
                   </div>
@@ -226,7 +225,7 @@ Your disclaimer should cover:
                   Ready to Complete
                 </h4>
                 <p className="text-sm text-green-800">
-                  This is the final step of the TrueBuddy Lead pre-report. Once you submit this form, 
+                  This is the final step of the TrueBuddy Lead pre-report. Once you submit this form,
                   your complete pre-report will be saved and ready for review. You can edit it later if needed.
                 </p>
               </div>
@@ -241,6 +240,14 @@ Your disclaimer should cover:
               className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
             >
               Back
+            </button>
+            {/* Skip Button */}
+            <button
+              type="button"
+              onClick={onSkip}
+              className="px-6 py-3 border-2 border-yellow-400 text-yellow-700 font-medium rounded-lg hover:bg-yellow-50 transition-colors"
+            >
+              Skip Step
             </button>
             <button
               type="submit"

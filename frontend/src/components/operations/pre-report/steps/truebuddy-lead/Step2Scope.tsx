@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import type {
   TrueBuddyLeadStep2Input,
 } from '../../../../../schemas/prereport.schemas';
-import {trueBuddyLeadStep2Schema} from '../../../../../schemas/prereport.schemas';
+import { trueBuddyLeadStep2Schema } from '../../../../../schemas/prereport.schemas';
 import type { TrueBuddyLeadData } from '../../../../../types/prereport.types';
 
 interface Step2Props {
@@ -19,7 +19,8 @@ interface Step2Props {
 const TrueBuddyStep2Scope: React.FC<Step2Props> = ({
   data,
   onNext,
-  onBack, // ✅ add this
+  onBack,
+  onSkip, // ✅ add this
 }) => {
 
   const {
@@ -139,6 +140,14 @@ const TrueBuddyStep2Scope: React.FC<Step2Props> = ({
               className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
             >
               Back
+            </button>
+            {/* Skip Button */}
+            <button
+              type="button"
+              onClick={onSkip}
+              className="px-6 py-3 border-2 border-yellow-400 text-yellow-700 font-medium rounded-lg hover:bg-yellow-50 transition-colors"
+            >
+              Skip Step
             </button>
             <button
               type="submit"
