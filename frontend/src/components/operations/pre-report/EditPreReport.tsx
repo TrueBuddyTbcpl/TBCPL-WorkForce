@@ -92,7 +92,7 @@ export const EditPreReport = () => {
         console.log('Saving step data to backend...');
 
         await updateStepMutation.mutateAsync({
-          reportId: reportId!,
+          prereportId: preReport.id,
           step: currentStep,
           leadType: preReport.leadType,
           data: stepData,

@@ -3,7 +3,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../lib/api-client';
 
 interface UpdateStepRequest {
-  reportId: string;
+  
+  prereportId: number; 
   step: number;
   leadType: 'CLIENT_LEAD' | 'TRUEBUDDY_LEAD';
   data: any;
@@ -20,11 +21,11 @@ export const useUpdatePreReportStep = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ reportId, step, leadType, data }: UpdateStepRequest) => {
+    mutationFn: async ({ prereportId, step, leadType, data }: UpdateStepRequest) => {
       const leadTypeSlug = leadType === 'CLIENT_LEAD' ? 'client-lead' : 'truebuddy-lead';
       
       const { data: response } = await apiClient.put<UpdateStepResponse>(
-        `/operation/prereport/${reportId}/${leadTypeSlug}/step/${step}`,
+        `/operation/prereport/${prereportId}/${leadTypeSlug}/step/${step}`,
         data
       );
       return response;
@@ -32,7 +33,7 @@ export const useUpdatePreReportStep = () => {
     onSuccess: (_, variables) => {
       // Invalidate the detail query to refresh data
       queryClient.invalidateQueries({ 
-        queryKey: ['prereport', variables.reportId] 
+        queryKey: ['prereport', variables.prereportId] 
       });
     },
     onError: (error: any) => {
