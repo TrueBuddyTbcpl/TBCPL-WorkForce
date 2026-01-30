@@ -65,14 +65,14 @@ const TrueBuddyStep1BasicInfo: React.FC<Step1Props> = ({ data, onNext, onBack, o
     <div className="space-y-6">
       <div className="bg-white shadow-sm rounded-lg p-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">
-          Step 1: Basic Information
+          Step 1: Case Reference
         </h2>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {/* Date of Internal Lead Generation */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Date of Internal Lead Generation *
+              Date of Internal Lead Generation {/* ✅ Removed asterisk */}
             </label>
             <Controller
               name="dateInternalLeadGeneration"
@@ -94,7 +94,7 @@ const TrueBuddyStep1BasicInfo: React.FC<Step1Props> = ({ data, onNext, onBack, o
           {/* Product Category */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Product Category *
+              Product Category 
             </label>
             <Controller
               name="productCategory"
@@ -122,7 +122,7 @@ const TrueBuddyStep1BasicInfo: React.FC<Step1Props> = ({ data, onNext, onBack, o
           {/* Infringement Type */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Infringement Type *
+              Infringement Type 
             </label>
             <Controller
               name="infringementType"
@@ -150,7 +150,7 @@ const TrueBuddyStep1BasicInfo: React.FC<Step1Props> = ({ data, onNext, onBack, o
           {/* Broad Geography */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Broad Geography *
+              Broad Geography 
             </label>
             <Controller
               name="broadGeography"
@@ -173,7 +173,7 @@ const TrueBuddyStep1BasicInfo: React.FC<Step1Props> = ({ data, onNext, onBack, o
           {/* Client SPOC Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Client SPOC Name *
+              Client SPOC Name 
             </label>
             <Controller
               name="clientSpocName"
@@ -196,7 +196,7 @@ const TrueBuddyStep1BasicInfo: React.FC<Step1Props> = ({ data, onNext, onBack, o
           {/* Client SPOC Designation */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Client SPOC Designation *
+              Client SPOC Designation 
             </label>
             <Controller
               name="clientSpocDesignation"
@@ -219,7 +219,7 @@ const TrueBuddyStep1BasicInfo: React.FC<Step1Props> = ({ data, onNext, onBack, o
           {/* Nature of Entity */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Nature of Entity *
+              Nature of Entity 
             </label>
             <Controller
               name="natureOfEntity"

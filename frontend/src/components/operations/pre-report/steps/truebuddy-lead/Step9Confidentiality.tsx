@@ -71,7 +71,7 @@ const TrueBuddyStep9Confidentiality: React.FC<Step9Props> = ({ data, onNext, onB
           </div>
           <div>
             <h2 className="text-2xl font-bold text-gray-900">
-              Step 9: Confidentiality Note
+              Step 9: Confidentiality & Ring-Fencing Note
             </h2>
             <p className="text-gray-600 mt-2">
               Document specific confidentiality requirements and handling protocols for this TrueBuddy lead.

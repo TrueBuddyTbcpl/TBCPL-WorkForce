@@ -51,7 +51,7 @@ const TrueBuddyStep3Intelligence: React.FC<Step3Props> = ({ data, onNext, onBack
     <div className="space-y-6">
       <div className="bg-white shadow-sm rounded-lg p-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">
-          Step 3: Intelligence Details
+          Step 3: High-Level Lead Description (Sanitised)
         </h2>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">

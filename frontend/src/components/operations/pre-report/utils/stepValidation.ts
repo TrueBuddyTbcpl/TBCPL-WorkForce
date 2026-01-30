@@ -13,29 +13,29 @@ export const isStepValid = (step: number, leadType: string): boolean => {
 export const getStepTitle = (step: number, leadType: string): string => {
   if (leadType === LeadType.CLIENT_LEAD) {
     const titles = [
-      'Basic Information',
-      'Scope',
-      'Target Details',
-      'Verification',
-      'Observations',
-      'Quality Assessment',
-      'Assessment',
-      'Recommendations',
+      'Case Details',
+      'Mandate / Scope Requested',
+      'Information Received from Client',
+      'Preliminary Verification Conducted by True Buddy',
+      'Key Observations',
+      'Information Quality Assessment',
+      'True Buddy’s Preliminary Assessment',
+      'Recommended Way Forward',
       'Remarks',
       'Disclaimer',
     ];
     return titles[step - 1] || '';
   } else {
     const titles = [
-      'Basic Information',
-      'Scope',
-      'Intelligence',
-      'Verification',
-      'Observations',
-      'Risk Assessment',
-      'Assessment',
-      'Recommendations',
-      'Confidentiality',
+      'Case Reference',
+      'Mandate / Scope Proposed',
+      'High-Level Lead Description (Sanitised)',
+      'Preliminary Verification Conducted by True Buddy',
+      'Key Observations (Client-Safe)',
+      'Information Integrity & Risk Assessment',
+      'True Buddy’s Preliminary Assessment',
+      'Recommended Way Forward',
+      'Confidentiality & Ring-Fencing Note',
       'Remarks',
       'Disclaimer',
     ];

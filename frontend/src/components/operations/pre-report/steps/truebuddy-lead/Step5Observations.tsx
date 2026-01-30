@@ -61,7 +61,7 @@ const TrueBuddyStep5Observations: React.FC<Step5Props> = ({ data, onNext, onBack
     <div className="space-y-6">
       <div className="bg-white shadow-sm rounded-lg p-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">
-          Step 5: Observations
+          Step 5: Key Observations (Client-Safe)
         </h2>
 
         <p className="text-gray-600 mb-6">

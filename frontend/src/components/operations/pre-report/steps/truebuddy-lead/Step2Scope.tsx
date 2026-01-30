@@ -84,7 +84,7 @@ const TrueBuddyStep2Scope: React.FC<Step2Props> = ({
     <div className="space-y-6">
       <div className="bg-white shadow-sm rounded-lg p-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">
-          Step 2: Scope of Investigation
+          Step 2: Mandate / Scope Proposed
         </h2>
 
         <p className="text-gray-600 mb-6">

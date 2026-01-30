@@ -11,75 +11,24 @@ export const isStepComplete = (
   if (leadType === 'CLIENT_LEAD' && clientLeadData) {
     switch (stepNumber) {
       case 1:
-        return !!(
-          clientLeadData.dateInfoReceived &&
-          clientLeadData.clientSpocName &&
-          clientLeadData.clientSpocContact
-        );
       case 2:
-        return true; // Scope is optional checkboxes
       case 3:
-        return !!(
-          clientLeadData.entityName &&
-          clientLeadData.suspectName &&
-          clientLeadData.contactNumbers &&
-          clientLeadData.addressLine1 &&
-          clientLeadData.city &&
-          clientLeadData.state &&
-          clientLeadData.pincode &&
-          clientLeadData.productDetails &&
-          clientLeadData.sourceNarrative
-        );
       case 4:
-        return !!(
-          clientLeadData.verificationClientDiscussion &&
-          clientLeadData.verificationOsint &&
-          clientLeadData.verificationMarketplace &&
-          clientLeadData.verificationPretextCalling &&
-          clientLeadData.verificationProductReview
-        );
       case 5:
-        return !!(
-          clientLeadData.obsIdentifiableTarget &&
-          clientLeadData.obsTraceability &&
-          clientLeadData.obsProductVisibility &&
-          clientLeadData.obsCounterfeitingIndications &&
-          clientLeadData.obsEvidentiary_gaps
-        );
       case 6:
-        return !!(
-          clientLeadData.qaCompleteness &&
-          clientLeadData.qaAccuracy &&
-          clientLeadData.qaIndependentInvestigation &&
-          clientLeadData.qaPriorConfrontation &&
-          clientLeadData.qaContaminationRisk
-        );
       case 7:
-        return !!(
-          clientLeadData.assessmentOverall &&
-          clientLeadData.assessmentRationale
-        );
       case 8:
-        return true; // Recommendations are optional checkboxes
       case 9:
-        return !!clientLeadData.remarks;
       case 10:
-        return !!clientLeadData.customDisclaimer;
+        return true; // ✅ All steps are optional
       default:
+        return false;
         return false;
     }
   } else if (leadType === 'TRUEBUDDY_LEAD' && trueBuddyLeadData) {
     switch (stepNumber) {
       case 1:
-        return !!(
-          trueBuddyLeadData.dateInternalLeadGeneration &&
-          trueBuddyLeadData.productCategory &&
-          trueBuddyLeadData.infringementType &&
-          trueBuddyLeadData.broadGeography &&
-          trueBuddyLeadData.clientSpocName &&
-          trueBuddyLeadData.clientSpocDesignation &&
-          trueBuddyLeadData.natureOfEntity
-        );
+        return true;
       case 2:
         return true; // Scope is optional checkboxes
       case 3:
@@ -92,34 +41,9 @@ export const isStepComplete = (
           trueBuddyLeadData.multiBrandRisk
         );
       case 4:
-        return !!(
-          trueBuddyLeadData.verificationIntelCorroboration &&
-          trueBuddyLeadData.verificationOsint &&
-          trueBuddyLeadData.verificationPatternMapping &&
-          trueBuddyLeadData.verificationJurisdiction &&
-          trueBuddyLeadData.verificationRiskAssessment
-        );
       case 5:
-        return !!(
-          trueBuddyLeadData.obsOperationScale &&
-          trueBuddyLeadData.obsCounterfeitLikelihood &&
-          trueBuddyLeadData.obsBrandExposure &&
-          trueBuddyLeadData.obsEnforcementSensitivity &&
-          trueBuddyLeadData.obsLeakageRisk
-        );
       case 6:
-        return !!(
-          trueBuddyLeadData.riskSourceReliability &&
-          trueBuddyLeadData.riskClientConflict &&
-          trueBuddyLeadData.riskImmediateAction &&
-          trueBuddyLeadData.riskControlledValidation &&
-          trueBuddyLeadData.riskPrematureDisclosure
-        );
       case 7:
-        return !!(
-          trueBuddyLeadData.assessmentOverall &&
-          trueBuddyLeadData.assessmentRationale
-        );
       case 8:
         return true; // Recommendations are optional checkboxes
       case 9:

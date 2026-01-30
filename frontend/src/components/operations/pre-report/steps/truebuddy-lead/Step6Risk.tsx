@@ -73,7 +73,7 @@ const TrueBuddyStep6Risk: React.FC<Step6Props> = ({ data, onNext, onBack,onSkip 
     <div className="space-y-6">
       <div className="bg-white shadow-sm rounded-lg p-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">
-          Step 6: Risk Assessment
+          Step 6: Information Integrity & Risk Assessment
         </h2>
 
         <p className="text-gray-600 mb-6">

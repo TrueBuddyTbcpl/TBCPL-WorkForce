@@ -96,7 +96,7 @@ const TrueBuddyStep4Verification: React.FC<Step4Props> = ({ data, onNext, onBack
     <div className="space-y-6">
       <div className="bg-white shadow-sm rounded-lg p-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">
-          Step 4: Verification Activities
+          Step 4: Preliminary Verification Conducted by True Buddy
         </h2>
 
         <p className="text-gray-600 mb-6">

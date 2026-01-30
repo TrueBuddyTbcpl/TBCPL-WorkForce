@@ -72,7 +72,7 @@ const TrueBuddyStep7Assessment: React.FC<Step7Props> = ({ data, onNext, onBack,o
     <div className="space-y-6">
       <div className="bg-white shadow-sm rounded-lg p-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">
-          Step 7: Overall Assessment
+          Step 7: True Buddy’s Preliminary Assessment
         </h2>
 
         <p className="text-gray-600 mb-6">

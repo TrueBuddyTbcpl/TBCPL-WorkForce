@@ -21,29 +21,29 @@ export const isStepCompleted = (currentStep: number, stepNumber: number): boolea
 export const getStepTitle = (leadType: LeadType, stepNumber: number): string => {
   if (leadType === 'CLIENT_LEAD') {
     const titles: Record<number, string> = {
-      1: 'Basic Information',
-      2: 'Scope Selection',
-      3: 'Target Details',
-      4: 'Verification',
-      5: 'Observations',
-      6: 'Quality Assessment',
-      7: 'Assessment',
-      8: 'Recommendations',
+      1: 'Case Details',
+      2: 'Mandate / Scope Requested',
+      3: 'Information Received from Client',
+      4: 'Preliminary Verification Conducted by True Buddy',
+      5: 'Key Observations',
+      6: 'Information Quality Assessment',
+      7: 'True Buddy’s Preliminary Assessment',
+      8: 'Recommended Way Forward',
       9: 'Remarks',
       10: 'Disclaimer',
     };
     return titles[stepNumber] || `Step ${stepNumber}`;
   } else {
     const titles: Record<number, string> = {
-      1: 'Basic Information',
-      2: 'Scope',
-      3: 'Intelligence Nature',
-      4: 'Verification',
-      5: 'Observations',
-      6: 'Risk Assessment',
-      7: 'Assessment',
-      8: 'Recommendations',
-      9: 'Confidentiality',
+      1: 'Case Reference',
+      2: 'Mandate / Scope Proposed',
+      3: 'High-Level Lead Description (Sanitised)',
+      4: 'Preliminary Verification Conducted by True Buddy',
+      5: 'Key Observations (Client-Safe)',
+      6: 'Information Integrity & Risk Assessment',
+      7: 'True Buddy’s Preliminary Assessment',
+      8: 'Recommended Way Forward',
+      9: 'Confidentiality & Ring-Fencing Note',
       10: 'Remarks',
       11: 'Disclaimer',
     };

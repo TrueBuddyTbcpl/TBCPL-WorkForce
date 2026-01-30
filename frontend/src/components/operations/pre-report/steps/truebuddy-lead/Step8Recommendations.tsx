@@ -128,7 +128,7 @@ const TrueBuddyStep8Recommendations: React.FC<Step8Props> = ({ data, onNext, onB
     <div className="space-y-6">
       <div className="bg-white shadow-sm rounded-lg p-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">
-          Step 8: Recommendations
+          Step 8: Recommended Way Forward
         </h2>
 
         <div className="flex items-center justify-between mb-6">

@@ -25,11 +25,11 @@ const createEnumValidator = <T extends Record<string, string>>(enumObj: T) => {
 
 // Online Presence Schema
 export const onlinePresenceSchema = z.object({
-  platformName: z.string().min(1, 'Platform name is required'),
-  link: z.string().url('Invalid URL format'),
+  platformName: z.string().optional(),
+  link: z.string().url('Invalid URL format').optional(),
 });
 
-// Initialize Report Schema
+// Initialize Report Schema (Keep this as required)
 export const initializeReportSchema = z.object({
   clientId: z.number().min(1, 'Client is required'),
   productIds: z.array(z.number()).min(1, 'At least one product is required'),
@@ -37,114 +37,114 @@ export const initializeReportSchema = z.object({
 });
 
 // ===================================
-// CLIENT LEAD SCHEMAS (Steps 1-10)
+// CLIENT LEAD SCHEMAS (Steps 1-10) - ALL OPTIONAL
 // ===================================
 
 export const clientLeadStep1Schema = z.object({
-  dateInfoReceived: z.string().min(1, 'Date is required'),
-  clientSpocName: z.string().min(2, 'Name must be at least 2 characters'),
-  clientSpocContact: z.string().min(10, 'Valid contact number is required'),
+  dateInfoReceived: z.string().optional(),
+  clientSpocName: z.string().optional(),
+  clientSpocContact: z.string().optional(),
 });
 
 export const clientLeadStep2Schema = z.object({
-  scopeDueDiligence: z.boolean(),
-  scopeIprRetailer: z.boolean(),
-  scopeIprSupplier: z.boolean(),
-  scopeIprManufacturer: z.boolean(),
-  scopeOnlinePurchase: z.boolean(),
-  scopeOfflinePurchase: z.boolean(),
+  scopeDueDiligence: z.boolean().optional(),
+  scopeIprRetailer: z.boolean().optional(),
+  scopeIprSupplier: z.boolean().optional(),
+  scopeIprManufacturer: z.boolean().optional(),
+  scopeOnlinePurchase: z.boolean().optional(),
+  scopeOfflinePurchase: z.boolean().optional(),
   scopeCustomIds: z.array(z.number()).optional(),
 });
 
 export const clientLeadStep3Schema = z.object({
-  entityName: z.string().min(2, 'Entity name is required'),
-  suspectName: z.string().min(2, 'Suspect name is required'),
-  contactNumbers: z.string().min(10, 'Contact number is required'),
-  addressLine1: z.string().min(5, 'Address is required'),
+  entityName: z.string().optional(),
+  suspectName: z.string().optional(),
+  contactNumbers: z.string().optional(),
+  addressLine1: z.string().optional(),
   addressLine2: z.string().optional(),
-  city: z.string().min(2, 'City is required'),
-  state: z.string().min(2, 'State is required'),
-  pincode: z.string().regex(/^\d{6}$/, 'Pincode must be 6 digits'),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  pincode: z.string().optional(),
   onlinePresences: z.array(onlinePresenceSchema).optional(),
-  productDetails: z.string().min(10, 'Product details are required'),
-  photosProvided: createEnumValidator(YesNoUnknown),
-  videoProvided: createEnumValidator(YesNoUnknown),
-  invoiceAvailable: createEnumValidator(YesNoUnknown),
-  sourceNarrative: z.string().min(20, 'Source narrative must be detailed'),
+  productDetails: z.string().optional(),
+  photosProvided: createEnumValidator(YesNoUnknown).optional(),
+  videoProvided: createEnumValidator(YesNoUnknown).optional(),
+  invoiceAvailable: createEnumValidator(YesNoUnknown).optional(),
+  sourceNarrative: z.string().optional(),
 });
 
 export const clientLeadStep4Schema = z.object({
-  verificationClientDiscussion: createEnumValidator(VerificationStatus),
+  verificationClientDiscussion: createEnumValidator(VerificationStatus).optional(),
   verificationClientDiscussionNotes: z.string().optional(),
-  verificationOsint: createEnumValidator(VerificationStatus),
+  verificationOsint: createEnumValidator(VerificationStatus).optional(),
   verificationOsintNotes: z.string().optional(),
-  verificationMarketplace: createEnumValidator(VerificationStatus),
+  verificationMarketplace: createEnumValidator(VerificationStatus).optional(),
   verificationMarketplaceNotes: z.string().optional(),
-  verificationPretextCalling: createEnumValidator(VerificationStatus),
+  verificationPretextCalling: createEnumValidator(VerificationStatus).optional(),
   verificationPretextCallingNotes: z.string().optional(),
-  verificationProductReview: createEnumValidator(VerificationStatus),
+  verificationProductReview: createEnumValidator(VerificationStatus).optional(),
   verificationProductReviewNotes: z.string().optional(),
 });
 
 export const clientLeadStep5Schema = z.object({
-  obsIdentifiableTarget: z.string().min(10, 'Observation required'),
-  obsTraceability: z.string().min(10, 'Observation required'),
-  obsProductVisibility: z.string().min(10, 'Observation required'),
-  obsCounterfeitingIndications: z.string().min(10, 'Observation required'),
-  obsEvidentiary_gaps: z.string().min(10, 'Observation required'),
+  obsIdentifiableTarget: z.string().optional(),
+  obsTraceability: z.string().optional(),
+  obsProductVisibility: z.string().optional(),
+  obsCounterfeitingIndications: z.string().optional(),
+  obsEvidentiary_gaps: z.string().optional(),
 });
 
 export const clientLeadStep6Schema = z.object({
-  qaCompleteness: createEnumValidator(QACompleteness),
-  qaAccuracy: createEnumValidator(QAAccuracy),
-  qaIndependentInvestigation: createEnumValidator(YesNoUnknown),
-  qaPriorConfrontation: createEnumValidator(YesNoUnknown),
-  qaContaminationRisk: createEnumValidator(RiskLevel),
+  qaCompleteness: createEnumValidator(QACompleteness).optional(),
+  qaAccuracy: createEnumValidator(QAAccuracy).optional(),
+  qaIndependentInvestigation: createEnumValidator(YesNoUnknown).optional(),
+  qaPriorConfrontation: createEnumValidator(YesNoUnknown).optional(),
+  qaContaminationRisk: createEnumValidator(RiskLevel).optional(),
 });
 
 export const clientLeadStep7Schema = z.object({
-  assessmentOverall: createEnumValidator(AssessmentType),
-  assessmentRationale: z.string().min(20, 'Detailed rationale is required'),
+  assessmentOverall: createEnumValidator(AssessmentType).optional(),
+  assessmentRationale: z.string().optional(),
 });
 
 export const clientLeadStep8Schema = z.object({
-  recMarketSurvey: z.boolean(),
-  recCovertInvestigation: z.boolean(),
-  recTestPurchase: z.boolean(),
-  recEnforcementAction: z.boolean(),
-  recAdditionalInfo: z.boolean(),
-  recClosureHold: z.boolean(),
+  recMarketSurvey: z.boolean().optional(),
+  recCovertInvestigation: z.boolean().optional(),
+  recTestPurchase: z.boolean().optional(),
+  recEnforcementAction: z.boolean().optional(),
+  recAdditionalInfo: z.boolean().optional(),
+  recClosureHold: z.boolean().optional(),
 });
 
 export const clientLeadStep9Schema = z.object({
-  remarks: z.string().min(10, 'Remarks are required'),
+  remarks: z.string().optional(),
 });
 
 export const clientLeadStep10Schema = z.object({
-  customDisclaimer: z.string().min(20, 'Disclaimer text is required'),
+  customDisclaimer: z.string().optional(),
 });
 
 // ===================================
-// TRUEBUDDY LEAD SCHEMAS (Steps 1-11)
+// TRUEBUDDY LEAD SCHEMAS (Steps 1-11) - ALL OPTIONAL
 // ===================================
 
 export const trueBuddyLeadStep1Schema = z.object({
-  dateInternalLeadGeneration: z.string().min(1, 'Date is required'),
-  productCategory: createEnumValidator(ProductCategory),
-  infringementType: createEnumValidator(InfringementType),
-  broadGeography: z.string().min(5, 'Geography is required'),
-  clientSpocName: z.string().min(2, 'SPOC name is required'),
-  clientSpocDesignation: z.string().min(2, 'Designation is required'),
-  natureOfEntity: createEnumValidator(NatureOfEntity),
+  dateInternalLeadGeneration: z.string().optional(),
+  productCategory: createEnumValidator(ProductCategory).optional(),
+  infringementType: createEnumValidator(InfringementType).optional(),
+  broadGeography: z.string().optional(),
+  clientSpocName: z.string().optional(),
+  clientSpocDesignation: z.string().optional(),
+  natureOfEntity: createEnumValidator(NatureOfEntity).optional(),
 });
 
 export const trueBuddyLeadStep2Schema = z.object({
-  scopeIprSupplier: z.boolean(),
-  scopeIprManufacturer: z.boolean(),
-  scopeIprStockist: z.boolean(),
-  scopeMarketVerification: z.boolean(),
-  scopeEtp: z.boolean(),
-  scopeEnforcement: z.boolean(),
+  scopeIprSupplier: z.boolean().optional(),
+  scopeIprManufacturer: z.boolean().optional(),
+  scopeIprStockist: z.boolean().optional(),
+  scopeMarketVerification: z.boolean().optional(),
+  scopeEtp: z.boolean().optional(),
+  scopeEnforcement: z.boolean().optional(),
 });
 
 export const trueBuddyLeadStep3Schema = z.object({
@@ -157,58 +157,58 @@ export const trueBuddyLeadStep3Schema = z.object({
 });
 
 export const trueBuddyLeadStep4Schema = z.object({
-  verificationIntelCorroboration: createEnumValidator(VerificationStatus),
+  verificationIntelCorroboration: createEnumValidator(VerificationStatus).optional(),
   verificationIntelCorroborationNotes: z.string().optional(),
-  verificationOsint: createEnumValidator(VerificationStatus),
+  verificationOsint: createEnumValidator(VerificationStatus).optional(),
   verificationOsintNotes: z.string().optional(),
-  verificationPatternMapping: createEnumValidator(VerificationStatus),
+  verificationPatternMapping: createEnumValidator(VerificationStatus).optional(),
   verificationPatternMappingNotes: z.string().optional(),
-  verificationJurisdiction: createEnumValidator(VerificationStatus),
+  verificationJurisdiction: createEnumValidator(VerificationStatus).optional(),
   verificationJurisdictionNotes: z.string().optional(),
-  verificationRiskAssessment: createEnumValidator(VerificationStatus),
+  verificationRiskAssessment: createEnumValidator(VerificationStatus).optional(),
   verificationRiskAssessmentNotes: z.string().optional(),
 });
 
 export const trueBuddyLeadStep5Schema = z.object({
-  obsOperationScale: createEnumValidator(OperationScale),
-  obsCounterfeitLikelihood: createEnumValidator(RiskLevel),
-  obsBrandExposure: createEnumValidator(BrandExposure),
-  obsEnforcementSensitivity: createEnumValidator(RiskLevel),
-  obsLeakageRisk: createEnumValidator(RiskLevel),
+  obsOperationScale: createEnumValidator(OperationScale).optional(),
+  obsCounterfeitLikelihood: createEnumValidator(RiskLevel).optional(),
+  obsBrandExposure: createEnumValidator(BrandExposure).optional(),
+  obsEnforcementSensitivity: createEnumValidator(RiskLevel).optional(),
+  obsLeakageRisk: createEnumValidator(RiskLevel).optional(),
 });
 
 export const trueBuddyLeadStep6Schema = z.object({
-  riskSourceReliability: createEnumValidator(RiskLevel),
-  riskClientConflict: createEnumValidator(RiskLevel),
-  riskImmediateAction: createEnumValidator(YesNoUnknown),
-  riskControlledValidation: createEnumValidator(YesNoUnknown),
-  riskPrematureDisclosure: createEnumValidator(RiskLevel),
+  riskSourceReliability: createEnumValidator(RiskLevel).optional(),
+  riskClientConflict: createEnumValidator(RiskLevel).optional(),
+  riskImmediateAction: createEnumValidator(YesNoUnknown).optional(),
+  riskControlledValidation: createEnumValidator(YesNoUnknown).optional(),
+  riskPrematureDisclosure: createEnumValidator(RiskLevel).optional(),
 });
 
 export const trueBuddyLeadStep7Schema = z.object({
-  assessmentOverall: createEnumValidator(AssessmentType),
-  assessmentRationale: z.string().min(20, 'Detailed rationale is required'),
+  assessmentOverall: createEnumValidator(AssessmentType).optional(),
+  assessmentRationale: z.string().optional(),
 });
 
 export const trueBuddyLeadStep8Schema = z.object({
-  recCovertValidation: z.boolean(),
-  recEtp: z.boolean(),
-  recMarketReconnaissance: z.boolean(),
-  recEnforcementDeferred: z.boolean(),
-  recContinuedMonitoring: z.boolean(),
-  recClientSegregation: z.boolean(),
+  recCovertValidation: z.boolean().optional(),
+  recEtp: z.boolean().optional(),
+  recMarketReconnaissance: z.boolean().optional(),
+  recEnforcementDeferred: z.boolean().optional(),
+  recContinuedMonitoring: z.boolean().optional(),
+  recClientSegregation: z.boolean().optional(),
 });
 
 export const trueBuddyLeadStep9Schema = z.object({
-  confidentialityNote: z.string().min(10, 'Confidentiality note is required'),
+  confidentialityNote: z.string().optional(),
 });
 
 export const trueBuddyLeadStep10Schema = z.object({
-  remarks: z.string().min(10, 'Remarks are required'),
+  remarks: z.string().optional(),
 });
 
 export const trueBuddyLeadStep11Schema = z.object({
-  customDisclaimer: z.string().min(20, 'Disclaimer text is required'),
+  customDisclaimer: z.string().optional(),
 });
 
 // Export types
