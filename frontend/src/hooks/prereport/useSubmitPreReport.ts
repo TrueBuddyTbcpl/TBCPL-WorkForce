@@ -16,7 +16,7 @@ export const useSubmitPreReport = () => {
     mutationFn: async (reportId: string) => {
       const { data } = await apiClient.patch<SubmitPreReportResponse>(
         `/operation/prereport/${reportId}/status`,
-        { reportStatus: 'COMPLETED' }  // ✅ Backend expects "reportStatus"
+        { reportStatus: 'WAITING_FOR_APPROVAL' }  // ✅ Backend expects "reportStatus"
       );
       return data;
     },

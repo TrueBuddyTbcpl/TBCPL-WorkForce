@@ -25,214 +25,50 @@ export const PreReportDetails = () => {
     );
   };
 
-  // Handle PDF Export
-  const handleExportPDF = async () => {
-    if (!data) return;
 
-    setIsExporting(true);
-    try {
-      const { preReport, clientLeadData, trueBuddyLeadData } = data;
+ // Handle PDF Export
+const handleExportPDF = async () => {
+  if (!data) return;
 
-      // Convert lead type to match PDF export type
-      const pdfLeadType = preReport.leadType === 'TRUEBUDDY_LEAD' ? 'TRUE_BUDDY_LEAD' : 'CLIENT_LEAD';
+  setIsExporting(true);
+  try {
+    const { preReport, clientLeadData, trueBuddyLeadData } = data;
 
-      // Prepare PDF data
-      const pdfData: PreReportPDFData = {
-        reportId: preReport.reportId,
-        clientName: preReport.clientName,
-        leadType: pdfLeadType,
-        status: preReport.reportStatus,
-        createdAt: preReport.createdAt,
-        updatedAt: preReport.updatedAt,
-        products: preReport.productNames?.map((name: string) => ({
-          name,
-          category: 'N/A',
-          status: 'ACTIVE',
-        })),
-      };
+    // Convert lead type to match PDF export type
+    const pdfLeadType = preReport.leadType === 'TRUEBUDDY_LEAD' ? 'TRUE_BUDDY_LEAD' : 'CLIENT_LEAD';
 
-      // Add lead-specific data
-      if (preReport.leadType === 'CLIENT_LEAD' && clientLeadData) {
-        pdfData.clientLeadData = {
-          investigationDate: clientLeadData.dateInfoReceived,
-          investigatorName: clientLeadData.clientSpocName,
-          location: clientLeadData.city || clientLeadData.state || 'N/A',
-          scopeOfWork: [
-            clientLeadData.scopeDueDiligence && 'Due Diligence',
-            clientLeadData.scopeIprRetailer && 'IPR Retailer',
-            clientLeadData.scopeIprSupplier && 'IPR Supplier',
-            clientLeadData.scopeIprManufacturer && 'IPR Manufacturer',
-            clientLeadData.scopeOnlinePurchase && 'Online Purchase',
-            clientLeadData.scopeOfflinePurchase && 'Offline Purchase',
-          ]
-            .filter(Boolean)
-            .join(', ') || 'N/A',
-          objectives: Array.isArray(clientLeadData.scopeCustomIds)
-            ? clientLeadData.scopeCustomIds.join(', ')
-            : typeof clientLeadData.scopeCustomIds === 'string'
-              ? clientLeadData.scopeCustomIds
-              : clientLeadData.scopeCustomIds
-                ? String(clientLeadData.scopeCustomIds)
-                : 'N/A',
+    // Prepare PDF data
+    const pdfData: PreReportPDFData = {
+      reportId: preReport.reportId,
+      clientName: preReport.clientName,
+      leadType: pdfLeadType,
+      status: preReport.reportStatus,
+      createdAt: preReport.createdAt,
+      updatedAt: preReport.updatedAt,
+      products: preReport.productNames?.map((name: string) => ({
+        name,
+        category: 'N/A',
+        status: 'ACTIVE',
+      })),
+    };
 
-          targetName: clientLeadData.entityName || clientLeadData.suspectName,
-          targetAddress: [
-            clientLeadData.addressLine1,
-            clientLeadData.addressLine2,
-            clientLeadData.city,
-            clientLeadData.state,
-            clientLeadData.pincode,
-          ]
-            .filter(Boolean)
-            .join(', '),
-          targetContact: Array.isArray(clientLeadData.contactNumbers)
-            ? clientLeadData.contactNumbers.join(', ')
-            : typeof clientLeadData.contactNumbers === 'string'
-              ? clientLeadData.contactNumbers
-              : clientLeadData.contactNumbers
-                ? String(clientLeadData.contactNumbers)
-                : undefined,
-          verificationMethod: [
-            clientLeadData.verificationClientDiscussion && 'Client Discussion',
-            clientLeadData.verificationOsint && 'OSINT',
-            clientLeadData.verificationMarketplace && 'Marketplace',
-            clientLeadData.verificationPretextCalling && 'Pretext Calling',
-            clientLeadData.verificationProductReview && 'Product Review',
-          ]
-            .filter(Boolean)
-            .join(', '),
-          verificationStatus: 'Completed',
-          verifiedBy: clientLeadData.clientSpocName,
-          observations: [
-            clientLeadData.obsIdentifiableTarget && `Identifiable Target: ${clientLeadData.obsIdentifiableTarget}`,
-            clientLeadData.obsTraceability && `Traceability: ${clientLeadData.obsTraceability}`,
-            clientLeadData.obsProductVisibility && `Product Visibility: ${clientLeadData.obsProductVisibility}`,
-            clientLeadData.obsCounterfeitingIndications && `Counterfeiting Indications: ${clientLeadData.obsCounterfeitingIndications}`,
-          ]
-            .filter(Boolean)
-            .join('\n\n'),
-          findings: clientLeadData.obsEvidentiary_gaps || 'N/A',
-          qualityRating: [
-            clientLeadData.qaCompleteness && 'Complete',
-            clientLeadData.qaAccuracy && 'Accurate',
-            clientLeadData.qaIndependentInvestigation && 'Independent',
-          ]
-            .filter(Boolean)
-            .join(', '),
-          qualityNotes: [
-            clientLeadData.qaPriorConfrontation && 'Prior Confrontation',
-            clientLeadData.qaContaminationRisk && 'Contamination Risk',
-          ]
-            .filter(Boolean)
-            .join(', '),
-          riskLevel: clientLeadData.assessmentOverall || 'N/A',
-          assessmentSummary: clientLeadData.assessmentRationale,
-          recommendations: [
-            clientLeadData.recMarketSurvey && '• Market Survey',
-            clientLeadData.recCovertInvestigation && '• Covert Investigation',
-            clientLeadData.recTestPurchase && '• Test Purchase',
-            clientLeadData.recEnforcementAction && '• Enforcement Action',
-            clientLeadData.recAdditionalInfo && `• Additional Info: ${clientLeadData.recAdditionalInfo}`,
-            clientLeadData.recClosureHold && '• Closure/Hold',
-          ]
-            .filter(Boolean)
-            .join('\n'),
-          actionItems: (() => {
-            const info = clientLeadData.recAdditionalInfo;
-            if (typeof info === 'boolean') {
-              return info ? 'Yes' : 'No';
-            } else if (info !== null && info !== undefined) {
-              return String(info);
-            }
-            return undefined;
-          })(),
-
-          additionalRemarks: clientLeadData.remarks,
-          disclaimer: clientLeadData.customDisclaimer,
-        };
-      } else if (preReport.leadType === 'TRUEBUDDY_LEAD' && trueBuddyLeadData) {
-        pdfData.trueBuddyLeadData = {
-          investigationDate: trueBuddyLeadData.dateInternalLeadGeneration,
-          investigatorName: trueBuddyLeadData.clientSpocName,
-          location: trueBuddyLeadData.broadGeography || 'N/A',
-          scopeOfWork: [
-            trueBuddyLeadData.scopeIprSupplier && 'IPR Supplier',
-            trueBuddyLeadData.scopeIprManufacturer && 'IPR Manufacturer',
-            trueBuddyLeadData.scopeIprStockist && 'IPR Stockist',
-            trueBuddyLeadData.scopeMarketVerification && 'Market Verification',
-            trueBuddyLeadData.scopeEtp && 'ETP',
-            trueBuddyLeadData.scopeEnforcement && 'Enforcement',
-          ]
-            .filter(Boolean)
-            .join(', '),
-          objectives: `Product: ${trueBuddyLeadData.productCategory || 'N/A'}, Infringement: ${trueBuddyLeadData.infringementType || 'N/A'}`,
-          intelligenceGathered: [
-            trueBuddyLeadData.intelNature && `Nature: ${trueBuddyLeadData.intelNature}`,
-            trueBuddyLeadData.suspectedActivity && `Activity: ${trueBuddyLeadData.suspectedActivity}`,
-            trueBuddyLeadData.productSegment && `Segment: ${trueBuddyLeadData.productSegment}`,
-            trueBuddyLeadData.supplyChainStage && `Supply Chain: ${trueBuddyLeadData.supplyChainStage}`,
-          ]
-            .filter(Boolean)
-            .join('\n'),
-          sources: [
-            trueBuddyLeadData.repeatIntelligence ? 'Repeat Intelligence' : null,
-            trueBuddyLeadData.multiBrandRisk ? 'Multi-Brand Risk' : null,
-          ]
-            .filter(Boolean)
-            .join(', ') || undefined,
-          verificationMethod: [
-            trueBuddyLeadData.verificationIntelCorroboration && 'Intel Corroboration',
-            trueBuddyLeadData.verificationOsint && 'OSINT',
-            trueBuddyLeadData.verificationPatternMapping && 'Pattern Mapping',
-            trueBuddyLeadData.verificationJurisdiction && 'Jurisdiction Check',
-          ]
-            .filter(Boolean)
-            .join(', '),
-          verificationStatus: 'Completed',
-          observations: [
-            trueBuddyLeadData.obsOperationScale && `Operation Scale: ${trueBuddyLeadData.obsOperationScale}`,
-            trueBuddyLeadData.obsCounterfeitLikelihood && `Counterfeit Likelihood: ${trueBuddyLeadData.obsCounterfeitLikelihood}`,
-            trueBuddyLeadData.obsBrandExposure && `Brand Exposure: ${trueBuddyLeadData.obsBrandExposure}`,
-            trueBuddyLeadData.obsEnforcementSensitivity && `Enforcement Sensitivity: ${trueBuddyLeadData.obsEnforcementSensitivity}`,
-          ]
-            .filter(Boolean)
-            .join('\n\n'),
-          riskAssessment: [
-            trueBuddyLeadData.riskSourceReliability && `Source Reliability: ${trueBuddyLeadData.riskSourceReliability}`,
-            trueBuddyLeadData.riskClientConflict ? 'Client Conflict Present' : null,
-            trueBuddyLeadData.riskImmediateAction ? 'Immediate Action Required' : null,
-            trueBuddyLeadData.riskControlledValidation ? 'Controlled Validation Needed' : null,
-            trueBuddyLeadData.riskPrematureDisclosure ? 'Risk of Premature Disclosure' : null,
-          ]
-            .filter(Boolean)
-            .join('\n') || undefined,
-          riskLevel: trueBuddyLeadData.assessmentOverall || 'N/A',
-          overallAssessment: trueBuddyLeadData.assessmentRationale,
-          recommendations: [
-            trueBuddyLeadData.recCovertValidation && '• Covert Validation',
-            trueBuddyLeadData.recEtp && '• ETP',
-            trueBuddyLeadData.recMarketReconnaissance && '• Market Reconnaissance',
-            trueBuddyLeadData.recEnforcementDeferred && '• Enforcement Deferred',
-            trueBuddyLeadData.recContinuedMonitoring && '• Continued Monitoring',
-            trueBuddyLeadData.recClientSegregation && '• Client Segregation',
-          ]
-            .filter(Boolean)
-            .join('\n'),
-          confidentialityNotes: trueBuddyLeadData.confidentialityNote,
-          remarks: trueBuddyLeadData.remarks,
-          disclaimer: trueBuddyLeadData.customDisclaimer,
-        };
-      }
-
-      await exportPreReportToPDF(pdfData);
-      toast.success('PDF exported successfully!');
-    } catch (error) {
-      console.error('PDF export error:', error);
-      toast.error('Failed to export PDF. Please try again.');
-    } finally {
-      setIsExporting(false);
+    // Add lead-specific data - directly pass the data objects
+    if (preReport.leadType === 'CLIENT_LEAD' && clientLeadData) {
+      pdfData.clientLeadData = clientLeadData;
+    } else if (preReport.leadType === 'TRUEBUDDY_LEAD' && trueBuddyLeadData) {
+      pdfData.trueBuddyLeadData = trueBuddyLeadData;
     }
-  };
+
+    await exportPreReportToPDF(pdfData);
+    toast.success('PDF exported successfully!');
+  } catch (error) {
+    console.error('PDF export error:', error);
+    toast.error('Failed to export PDF. Please try again.');
+  } finally {
+    setIsExporting(false);
+  }
+};
+
 
   if (isLoading) {
     return (
