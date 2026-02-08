@@ -33,6 +33,9 @@ export const useUpdatePreReportStep = () => {
     onSuccess: (_, variables) => {
       // Invalidate the detail query to refresh data
       queryClient.invalidateQueries({ 
+        queryKey: ['prereport-step-status', variables.prereportId] 
+      });
+      queryClient.invalidateQueries({ 
         queryKey: ['prereport', variables.prereportId] 
       });
     },

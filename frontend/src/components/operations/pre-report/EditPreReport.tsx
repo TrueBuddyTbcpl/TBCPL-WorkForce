@@ -33,6 +33,11 @@ import TrueBuddyStep8Recommendations from './steps/truebuddy-lead/Step8Recommend
 import TrueBuddyStep9Confidentiality from './steps/truebuddy-lead/Step9Confidentiality';
 import TrueBuddyStep10Remarks from './steps/truebuddy-lead/Step10Remarks';
 import TrueBuddyStep11Disclaimer from './steps/truebuddy-lead/Step11Disclaimer';
+import { PreReportStatusBadge } from './PreReportStatusBadge';
+import { queryClient } from '../../../lib/queryClient';
+import { useStepStatus } from '../../../hooks/prereport/useStepStatus';
+
+
 
 export const EditPreReport = () => {
   const { reportId } = useParams<{ reportId: string }>();
@@ -43,6 +48,8 @@ export const EditPreReport = () => {
   const { data, isLoading, isError } = usePreReportDetail(reportId!);
   const updateStepMutation = useUpdatePreReportStep();
   const submitReportMutation = useSubmitPreReport();
+
+  const { data: stepStatusData } = useStepStatus(data?.preReport?.id);
 
   if (isLoading) {
     return (
@@ -96,6 +103,10 @@ export const EditPreReport = () => {
           step: currentStep,
           leadType: preReport.leadType,
           data: stepData,
+        });
+
+        await queryClient.refetchQueries({
+          queryKey: ['prereport-step-status', preReport.id]
         });
 
         console.log('Step saved successfully');
@@ -251,7 +262,7 @@ export const EditPreReport = () => {
                 Step {currentStep} of {totalSteps}
               </div>
               <div className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-700">
-                {preReport.status}
+                <PreReportStatusBadge status={preReport.reportStatus} />
               </div>
             </div>
           </div>
@@ -280,6 +291,7 @@ export const EditPreReport = () => {
               leadType={preReport.leadType}
               clientName={preReport.clientName}
               productCount={preReport.productIds?.length || 0}
+              stepStatuses={stepStatusData?.steps || []}
               onStepClick={(step) => setCurrentStep(step)}
             />
           </div>

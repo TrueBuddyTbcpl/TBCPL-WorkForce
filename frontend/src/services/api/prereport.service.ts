@@ -7,6 +7,7 @@ import type {
   PaginatedResponse,
   PreReportDetailResponse,
   CustomScope,
+  PreReportStepStatusResponse,
   CreateCustomScopeRequest,
   UpdateStatusRequest,
   ClientLeadStep1,
@@ -277,6 +278,15 @@ export const updateTrueBuddyLeadStep11 = async (
 ): Promise<void> => {
   await apiClient.put(`${BASE_PATH}/${prereportId}/truebuddy-lead/step/11`, data);
 };
+
+// Add this with your other API functions
+export const getReportStepStatus = async (prereportId: number): Promise<PreReportStepStatusResponse> => {
+  const response = await apiClient.get<PreReportStepStatusResponse>(
+    `${BASE_PATH}/${prereportId}/step-status`
+  );
+  return response.data;
+};
+
 
 // ==================== CUSTOM SCOPE APIs ====================
 export const getCustomScopes = async (prereportId: number): Promise<CustomScope[]> => {

@@ -1,12 +1,19 @@
 // src/components/operations/pre-report/PreReportDetailsSidebar.tsx
 import React from 'react';
-import { CheckCircle2, Circle } from 'lucide-react';
+import { CheckCircle2, Circle, Clock } from 'lucide-react';
+
+interface StepStatus {
+  stepNumber: number;
+  stepName: string;
+  status: 'PENDING' | 'COMPLETED';
+}
 
 interface PreReportDetailsSidebarProps {
   currentStep: number;
   leadType: string;
   clientName?: string;
   productCount?: number;
+  stepStatuses?: StepStatus[];
   onStepClick?: (step: number) => void;
 }
 
@@ -15,15 +22,30 @@ export const PreReportDetailsSidebar: React.FC<PreReportDetailsSidebarProps> = (
   leadType,
   clientName,
   productCount,
+  stepStatuses = [],
 }) => {
-  // ✅ Calculate totalSteps based on leadType
   const totalSteps = leadType === 'CLIENT_LEAD' ? 10 : 11;
-  const progress = Math.round((currentStep / totalSteps) * 100);
+
+  // Calculate progress based on COMPLETED steps
+  const completedSteps = stepStatuses.filter(s => s.status === 'COMPLETED').length;
+  const progress = Math.round((completedSteps / totalSteps) * 100);
+
+  // Helper to get step status
+  const getStepStatus = (step: number): 'PENDING' | 'COMPLETED' => {
+    const tracked = stepStatuses.find(s => s.stepNumber === step);
+    return tracked?.status || 'PENDING';
+  };
+
+  // Helper to get step name
+  const getStepName = (step: number): string => {
+    const tracked = stepStatuses.find(s => s.stepNumber === step);
+    return tracked?.stepName || `Step ${step}`;
+  };
 
   return (
     <div className="bg-white shadow-sm rounded-lg p-6 sticky top-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Report Details</h3>
-      
+
       <div className="space-y-4">
         {/* Lead Type */}
         <div>
@@ -62,7 +84,7 @@ export const PreReportDetailsSidebar: React.FC<PreReportDetailsSidebarProps> = (
             />
           </div>
           <p className="text-xs text-gray-600">
-            Step {currentStep} of {totalSteps}
+            {completedSteps} of {totalSteps} steps completed
           </p>
         </div>
 
@@ -70,28 +92,63 @@ export const PreReportDetailsSidebar: React.FC<PreReportDetailsSidebarProps> = (
         <div className="pt-2 border-t">
           <span className="text-xs text-gray-500 uppercase mb-3 block">Steps</span>
           <div className="space-y-2">
-            {Array.from({ length: totalSteps }, (_, i) => i + 1).map((step) => (
-              <div key={step} className="flex items-center gap-2">
-                {step < currentStep ? (
-                  <CheckCircle2 className="w-4 h-4 text-green-500" />
-                ) : step === currentStep ? (
-                  <Circle className="w-4 h-4 text-blue-500 fill-blue-500" />
-                ) : (
-                  <Circle className="w-4 h-4 text-gray-300" />
-                )}
-                <span
-                  className={`text-xs ${
-                    step <= currentStep ? 'text-gray-900 font-medium' : 'text-gray-400'
-                  }`}
+            {Array.from({ length: totalSteps }, (_, i) => i + 1).map((step) => {
+              const status = getStepStatus(step);
+              const stepName = getStepName(step);
+              const isActive = step === currentStep;
+              const isCompleted = status === 'COMPLETED';
+
+              return (
+                <div
+                  key={step}
+                  className={`flex items-center gap-2 p-2 rounded transition-all duration-200 ${isActive ? 'bg-blue-50 scale-105' : ''
+                    }`}
                 >
-                  Step {step}
-                </span>
-              </div>
-            ))}
+                  {/* Icon */}
+                  {isActive ? (
+                    <Circle className={`flex-shrink-0 text-blue-500 fill-blue-500 ${isCompleted ? 'w-5 h-5' : 'w-4 h-4'
+                      }`} />
+                  ) : status === 'COMPLETED' ? (
+                    <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                  ) : (
+                    <Clock className="w-4 h-4 text-gray-300 flex-shrink-0" />
+                  )}
+
+                  <div className="flex-1 min-w-0">
+                    <span
+                      className={`block truncate transition-all ${isActive
+                          ? isCompleted
+                            ? 'text-sm font-bold text-blue-600'  // Active + Completed
+                            : 'text-sm font-semibold text-blue-600'  // Active only
+                          : status === 'COMPLETED'
+                            ? 'text-sm font-bold text-green-700'  // Completed but not active
+                            : 'text-xs text-gray-400'  // Pending
+                        }`}
+                      title={stepName}
+                    >
+                      {stepName}
+                    </span>
+                  </div>
+
+                  {/* Status indicators */}
+                  {status === 'COMPLETED' && !isActive && (
+                    <span className="text-sm font-bold text-green-600 flex-shrink-0">✓</span>
+                  )}
+
+                  {isActive && (
+                    <span className="text-xs px-1.5 py-0.5 bg-blue-500 text-white rounded font-medium flex-shrink-0">
+                      •
+                    </span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
+
       </div>
     </div>
   );
 };
+
 export default PreReportDetailsSidebar;

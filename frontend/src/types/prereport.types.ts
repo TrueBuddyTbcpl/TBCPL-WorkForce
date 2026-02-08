@@ -377,3 +377,23 @@ export interface CreateCustomScopeRequest {
 export interface UpdateStatusRequest {
   reportStatus: ReportStatus;
 }
+
+// Add this near your other interfaces
+export interface StepStatusDetail {
+  stepNumber: number;
+  stepName: string;
+  status: 'PENDING' | 'COMPLETED';
+}
+
+export interface PreReportStepStatusResponse {
+  prereportId: number;
+  reportId: string;
+  leadType: LeadType;
+  reportStatus: ReportStatus;
+  currentStep: number;
+  canEdit: boolean;
+  changeComments?: string;
+  rejectionReason?: string;
+  steps: StepStatusDetail[];
+}
+
