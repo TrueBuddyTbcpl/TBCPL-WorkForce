@@ -10,8 +10,10 @@ import AdminProfile from './AdminProfile';
 import RecentActivityFeed from './RecentActivityFeed';
 import EmployeeManagement from './EmployeeManagement';
 import { Search } from 'lucide-react';
+import { AdminPreReportList } from './prereport/AdminPreReportList'; // ✅ Add this import
+import ClientManagement from './ClientManagement';
 
-type ViewMode = 'employees' | 'cases' | 'profiles';
+type ViewMode = 'employees' | 'cases' | 'profiles' | 'prereports' | 'clients';
 
 const AdminDashboard: React.FC = () => {
   const [selectedDepartment, setSelectedDepartment] = useState<Department>('Operations');
@@ -64,9 +66,9 @@ const AdminDashboard: React.FC = () => {
   const getFilteredData = () => {
     if (viewMode === 'employees') {
       let employees = getEmployeesByDepartment(selectedDepartment);
-      
+
       if (searchQuery) {
-        employees = employees.filter(emp => 
+        employees = employees.filter(emp =>
           emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           emp.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
           emp.role.toLowerCase().includes(searchQuery.toLowerCase())
@@ -81,7 +83,7 @@ const AdminDashboard: React.FC = () => {
     } else if (viewMode === 'cases') {
       let cases = mockCases;
       if (searchQuery) {
-        cases = cases.filter(c => 
+        cases = cases.filter(c =>
           c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
           c.caseNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
           c.client.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -94,7 +96,7 @@ const AdminDashboard: React.FC = () => {
     } else {
       let profiles = mockProfiles;
       if (searchQuery) {
-        profiles = profiles.filter(p => 
+        profiles = profiles.filter(p =>
           p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           p.alias.toLowerCase().includes(searchQuery.toLowerCase())
         );
@@ -109,7 +111,7 @@ const AdminDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* ✅ Left Sidebar with View Mode and Filters */}
-      <AdminSidebar 
+      <AdminSidebar
         selectedDepartment={selectedDepartment}
         onDepartmentChange={handleDepartmentChange}
         viewMode={viewMode}
@@ -127,61 +129,68 @@ const AdminDashboard: React.FC = () => {
         <div className="flex-1 flex">
           {/* Center Content */}
           <div className="flex-1 p-6 mr-80">
-            {/* ✅ Search Bar Only */}
-            <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder={`Search ${viewMode === 'employees' ? 'employees' : viewMode === 'cases' ? 'cases' : 'profiles'}...`}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+
+            {/* ✅ Search Bar Only - Hide for prereports and clients */}
+            {viewMode !== 'prereports' && viewMode !== 'clients' && (
+              <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder={`Search ${viewMode === 'employees' ? 'employees' : viewMode === 'cases' ? 'cases' : 'profiles'}...`}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Statistics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-white rounded-lg shadow-sm border p-6">
-                <p className="text-sm text-gray-600">Total {viewMode === 'employees' ? 'Employees' : viewMode === 'cases' ? 'Cases' : 'Profiles'}</p>
-                <p className="text-3xl font-bold text-blue-600 mt-2">
-                  {viewMode === 'employees' ? departmentStats?.totalEmployees || 0 : 
-                   viewMode === 'cases' ? mockCases.length : mockProfiles.length}
-                </p>
+            {/* Statistics Cards - Hide for prereports and clients */}
+            {viewMode !== 'prereports' && viewMode !== 'clients' && (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                {/* Total Employees Card - Active */}
+                <div className="bg-white rounded-lg shadow-sm border p-6">
+                  <p className="text-sm text-gray-600">Total Employees</p>
+                  <p className="text-3xl font-bold text-blue-600 mt-2">
+                    {departmentStats?.totalEmployees || 0}
+                  </p>
+                </div>
+
+                {/* Active Cases Card - Disabled */}
+                <div className="bg-white rounded-lg shadow-sm border p-6 opacity-50">
+                  <p className="text-sm text-gray-600">Active Cases</p>
+                  <p className="text-3xl font-bold text-gray-400 mt-2">0</p>
+                </div>
+
+                {/* Profiles Created Card - Disabled */}
+                <div className="bg-white rounded-lg shadow-sm border p-6 opacity-50">
+                  <p className="text-sm text-gray-600">Profiles Created</p>
+                  <p className="text-3xl font-bold text-gray-400 mt-2">0</p>
+                </div>
+
+                {/* Reports Generated Card - Disabled */}
+                <div className="bg-white rounded-lg shadow-sm border p-6 opacity-50">
+                  <p className="text-sm text-gray-600">Reports Generated</p>
+                  <p className="text-3xl font-bold text-gray-400 mt-2">0</p>
+                </div>
               </div>
+            )}
 
-              {selectedDepartment === 'Operations' && viewMode === 'employees' && (
-                <>
-                  <div className="bg-white rounded-lg shadow-sm border p-6">
-                    <p className="text-sm text-gray-600">Active Cases</p>
-                    <p className="text-3xl font-bold text-green-600 mt-2">{departmentStats?.activeCases || 0}</p>
-                  </div>
-
-                  <div className="bg-white rounded-lg shadow-sm border p-6">
-                    <p className="text-sm text-gray-600">Profiles Created</p>
-                    <p className="text-3xl font-bold text-purple-600 mt-2">{departmentStats?.profilesCreated || 0}</p>
-                  </div>
-
-                  <div className="bg-white rounded-lg shadow-sm border p-6">
-                    <p className="text-sm text-gray-600">Reports Generated</p>
-                    <p className="text-3xl font-bold text-orange-600 mt-2">{departmentStats?.reportsGenerated || 0}</p>
-                  </div>
-                </>
-              )}
-            </div>
 
             {/* Data Display based on View Mode */}
             {viewMode === 'employees' ? (
-              <EmployeeManagement 
-                department={selectedDepartment}
-                employees={getFilteredData() as any}
+              <EmployeeManagement
               />
             ) : viewMode === 'cases' ? (
               <CasesView cases={getFilteredData() as any} />
-            ) : (
+            ) : viewMode === 'profiles' ? (
               <ProfilesView profiles={getFilteredData() as any} />
-            )}
+            ) : viewMode === 'prereports' ? ( // ✅ Add this
+              <AdminPreReportList />
+            ) : viewMode === 'clients' ? (  // ✅ ADD THIS
+              <ClientManagement />) :
+              null}
           </div>
         </div>
       </div>
@@ -195,7 +204,7 @@ const AdminDashboard: React.FC = () => {
 // Cases View Component
 const CasesView: React.FC<{ cases: any[] }> = ({ cases }) => {
   const navigate = useNavigate();
-  
+
   return (
     <div className="bg-white rounded-lg shadow-sm border p-6">
       <h2 className="text-xl font-semibold text-gray-900 mb-4">All Cases</h2>
@@ -214,20 +223,18 @@ const CasesView: React.FC<{ cases: any[] }> = ({ cases }) => {
                   <h3 className="font-semibold text-gray-900 mb-1">{caseItem.title}</h3>
                   <p className="text-sm text-gray-600 mb-2">{caseItem.caseNumber} • {caseItem.client.name}</p>
                   <div className="flex items-center gap-3 text-xs">
-                    <span className={`px-2 py-1 rounded-full font-medium ${
-                      caseItem.status === 'open' ? 'bg-green-100 text-green-800' :
+                    <span className={`px-2 py-1 rounded-full font-medium ${caseItem.status === 'open' ? 'bg-green-100 text-green-800' :
                       caseItem.status === 'closed' ? 'bg-gray-100 text-gray-800' :
-                      caseItem.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
+                        caseItem.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
+                          'bg-yellow-100 text-yellow-800'
+                      }`}>
                       {caseItem.status}
                     </span>
-                    <span className={`px-2 py-1 rounded-full font-medium ${
-                      caseItem.priority === 'critical' ? 'bg-red-100 text-red-800' :
+                    <span className={`px-2 py-1 rounded-full font-medium ${caseItem.priority === 'critical' ? 'bg-red-100 text-red-800' :
                       caseItem.priority === 'high' ? 'bg-orange-100 text-orange-800' :
-                      caseItem.priority === 'medium' ? 'bg-blue-100 text-blue-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
+                        caseItem.priority === 'medium' ? 'bg-blue-100 text-blue-800' :
+                          'bg-gray-100 text-gray-800'
+                      }`}>
                       {caseItem.priority}
                     </span>
                   </div>
@@ -244,7 +251,7 @@ const CasesView: React.FC<{ cases: any[] }> = ({ cases }) => {
 // Profiles View Component
 const ProfilesView: React.FC<{ profiles: any[] }> = ({ profiles }) => {
   const navigate = useNavigate();
-  
+
   return (
     <div className="bg-white rounded-lg shadow-sm border p-6">
       <h2 className="text-xl font-semibold text-gray-900 mb-4">Culprit Profiles</h2>
@@ -266,11 +273,10 @@ const ProfilesView: React.FC<{ profiles: any[] }> = ({ profiles }) => {
                   <h3 className="font-semibold text-gray-900">{profile.name}</h3>
                   <p className="text-sm text-gray-600">Alias: {profile.alias}</p>
                   <p className="text-xs text-gray-500 mt-1">{profile.address.city}, {profile.address.state}</p>
-                  <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium mt-2 ${
-                    profile.status === 'Active' ? 'bg-green-100 text-green-800' :
+                  <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium mt-2 ${profile.status === 'Active' ? 'bg-green-100 text-green-800' :
                     profile.status === 'Under Investigation' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
+                      'bg-red-100 text-red-800'
+                    }`}>
                     {profile.status}
                   </span>
                 </div>

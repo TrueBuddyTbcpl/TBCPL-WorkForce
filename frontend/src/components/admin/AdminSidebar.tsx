@@ -1,28 +1,23 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Department } from './types/admin.types';
-import { 
-  Building2, 
-  Users, 
-  Calculator, 
-  UserPlus, 
-  Lock, 
-  Briefcase, 
-  ChevronDown, 
+import {
+  Building2,
+  Users,
+  Calculator,
+  Briefcase,
+  ChevronDown,
   Home,
   User,
   Settings,
   LogOut,
-  Filter,
-  List,
   FileText,
   UserCheck,
 } from 'lucide-react';
-import AddEmployeeModal from './AddEmployeeModal';
-import ChangePasswordModal from './ChangePasswordModal';
-import ClientsListModal from './ClientsListModal';
+import { useAuthStore } from '../../stores/authStore';
+import { useAuth } from '../../hooks/useAuth';
 
-type ViewMode = 'employees' | 'cases' | 'profiles';
+export type ViewMode = 'employees' | 'cases' | 'profiles' | 'prereports' | 'clients';
 
 interface Filters {
   role: string;
@@ -40,25 +35,17 @@ interface AdminSidebarProps {
 
 const AdminSidebar: React.FC<AdminSidebarProps> = ({
   selectedDepartment,
-  onDepartmentChange,
   viewMode,
   onViewModeChange,
-  filters,
-  onFiltersChange,
 }) => {
   const navigate = useNavigate();
-  const [deptDropdownOpen, setDeptDropdownOpen] = useState(false);
-  const [showAddEmployee, setShowAddEmployee] = useState(false);
-  const [showChangePassword, setShowChangePassword] = useState(false);
-  const [showClientsList, setShowClientsList] = useState(false);
+  const { user } = useAuthStore();
+  const { logout } = useAuth();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [showEmployeeMenu, setShowEmployeeMenu] = useState(false);
-  const [filterOpen, setFilterOpen] = useState(false); // ✅ Filter state
 
-  // ✅ Get admin info from localStorage
-  const adminName = localStorage.getItem('admin_name') || 'Admin User';
-  const adminEmail = localStorage.getItem('admin_email') || 'admin@tbcpl.com';
-  const adminRole = localStorage.getItem('admin_role') || 'Administrator';
+  const adminName = user?.fullName || 'Admin User';
+  const adminEmail = user?.email || 'admin@tbcpl.com';
+  const adminRole = user?.roleName || 'Administrator';
 
   const departments: { value: Department; label: string; icon: any; color: string }[] = [
     { value: 'Operations', label: 'Operations', icon: Building2, color: 'blue' },
@@ -68,20 +55,15 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
   const selectedDept = departments.find(d => d.value === selectedDepartment);
 
-  // ✅ Handle logout
   const handleLogout = () => {
-    localStorage.clear();
-    navigate('/admin/login');
-  };
-
-  // ✅ Clear all filters
-  const handleClearFilters = () => {
-    onFiltersChange({ role: 'all', status: 'all' });
+    logout();
+    setShowProfileMenu(false);
   };
 
   return (
     <>
-      <div className="fixed left-0 top-0 h-screen w-64 bg-white border-r border-gray-200 shadow-lg z-40 flex flex-col">
+      {/* ✅ CHANGED: Background color to light sky blue */}
+      <div className="fixed left-0 top-0 h-screen w-64 bg-sky-100 border-r border-gray-200 shadow-lg z-40 flex flex-col">
         {/* Logo/Brand */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center gap-3">
@@ -97,51 +79,24 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
         {/* Navigation - Scrollable */}
         <div className="flex-1 overflow-y-auto p-4">
-          {/* Department Selector */}
+          {/* ✅ CHANGED: Disabled Department Selector */}
           <div className="mb-4">
             <label className="block text-xs font-medium text-gray-600 mb-2 uppercase tracking-wide">
               Select Department
             </label>
             <button
-              onClick={() => setDeptDropdownOpen(!deptDropdownOpen)}
-              className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg hover:bg-gray-100 transition"
+              disabled
+              className="w-full flex items-center justify-between px-4 py-3 bg-gray-200 border border-gray-300 rounded-lg cursor-not-allowed opacity-60"
             >
               <div className="flex items-center gap-2">
                 {selectedDept && <selectedDept.icon className={`w-5 h-5 text-${selectedDept.color}-600`} />}
                 <span className="font-medium text-gray-900">{selectedDept?.label}</span>
               </div>
-              <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${deptDropdownOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown className="w-4 h-4 text-gray-600" />
             </button>
-
-            {deptDropdownOpen && (
-              <div className="mt-2 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
-                {departments.map((dept) => {
-                  const DeptIcon = dept.icon;
-                  const isSelected = dept.value === selectedDepartment;
-                  
-                  return (
-                    <button
-                      key={dept.value}
-                      onClick={() => {
-                        onDepartmentChange(dept.value);
-                        setDeptDropdownOpen(false);
-                      }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition ${
-                        isSelected ? 'bg-blue-50 border-l-4 border-blue-600' : ''
-                      }`}
-                    >
-                      <DeptIcon className={`w-5 h-5 text-${dept.color}-600`} />
-                      <span className={`font-medium ${isSelected ? 'text-blue-600' : 'text-gray-900'}`}>
-                        {dept.label}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
           </div>
 
-          {/* ✅ View Mode Selector */}
+          {/* ✅ View Mode Selector - Cases and Profiles DISABLED */}
           <div className="mb-4">
             <label className="block text-xs font-medium text-gray-600 mb-2 uppercase tracking-wide">
               View Mode
@@ -149,35 +104,28 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
             <div className="space-y-2">
               <button
                 onClick={() => onViewModeChange('employees')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-                  viewMode === 'employees'
-                    ? 'bg-blue-50 text-blue-600 border-2 border-blue-600 font-semibold'
-                    : 'bg-gray-50 text-gray-700 border border-gray-300 hover:bg-gray-100'
-                }`}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${viewMode === 'employees'
+                  ? 'bg-blue-50 text-blue-600 border-2 border-blue-600 font-semibold'
+                  : 'bg-gray-50 text-gray-700 border border-gray-300 hover:bg-gray-100'
+                  }`}
               >
                 <Users className="w-5 h-5" />
                 <span>Employees</span>
               </button>
 
+              {/* ✅ CHANGED: Cases button disabled */}
               <button
-                onClick={() => onViewModeChange('cases')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-                  viewMode === 'cases'
-                    ? 'bg-blue-50 text-blue-600 border-2 border-blue-600 font-semibold'
-                    : 'bg-gray-50 text-gray-700 border border-gray-300 hover:bg-gray-100'
-                }`}
+                disabled
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-gray-200 text-gray-400 border border-gray-300 cursor-not-allowed opacity-60"
               >
                 <Briefcase className="w-5 h-5" />
                 <span>Cases</span>
               </button>
 
+              {/* ✅ CHANGED: Culprit Profiles button disabled */}
               <button
-                onClick={() => onViewModeChange('profiles')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-                  viewMode === 'profiles'
-                    ? 'bg-blue-50 text-blue-600 border-2 border-blue-600 font-semibold'
-                    : 'bg-gray-50 text-gray-700 border border-gray-300 hover:bg-gray-100'
-                }`}
+                disabled
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-gray-200 text-gray-400 border border-gray-300 cursor-not-allowed opacity-60"
               >
                 <UserCheck className="w-5 h-5" />
                 <span>Culprit Profiles</span>
@@ -185,138 +133,42 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
             </div>
           </div>
 
-          {/* ✅ Filter Section */}
-          <div className="mb-4">
-            <button
-              onClick={() => setFilterOpen(!filterOpen)}
-              className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg hover:bg-gray-100 transition font-medium"
-            >
-              <div className="flex items-center gap-2">
-                <Filter className="w-5 h-5" />
-                <span>Filters</span>
-              </div>
-              <ChevronDown className={`w-4 h-4 transition-transform ${filterOpen ? 'rotate-180' : ''}`} />
-            </button>
+          {/* ✅ REMOVED: Filter Section - Completely removed */}
 
-            {/* ✅ Filter Options */}
-            {filterOpen && (
-              <div className="mt-2 bg-white border border-gray-200 rounded-lg p-4 space-y-3">
-                {/* Role Filter (Employees only) */}
-                {viewMode === 'employees' && (
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Role
-                    </label>
-                    <select
-                      value={filters.role}
-                      onChange={(e) => onFiltersChange({ ...filters, role: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="all">All Roles</option>
-                      <option value="Manager">Manager</option>
-                      <option value="Senior Investigator">Senior Investigator</option>
-                      <option value="Investigator">Investigator</option>
-                      <option value="Junior Investigator">Junior Investigator</option>
-                    </select>
-                  </div>
-                )}
-
-                {/* Status Filter (Cases and Profiles) */}
-                {(viewMode === 'cases' || viewMode === 'profiles') && (
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Status
-                    </label>
-                    <select
-                      value={filters.status}
-                      onChange={(e) => onFiltersChange({ ...filters, status: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="all">All Status</option>
-                      {viewMode === 'cases' ? (
-                        <>
-                          <option value="open">Open</option>
-                          <option value="in-progress">In Progress</option>
-                          <option value="on-hold">On Hold</option>
-                          <option value="closed">Closed</option>
-                        </>
-                      ) : (
-                        <>
-                          <option value="active">Active</option>
-                          <option value="under investigation">Under Investigation</option>
-                          <option value="arrested">Arrested</option>
-                        </>
-                      )}
-                    </select>
-                  </div>
-                )}
-
-                {/* Clear Filters Button */}
-                <button
-                  onClick={handleClearFilters}
-                  className="w-full px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm font-medium"
-                >
-                  Clear Filters
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* ✅ Employee Management Section */}
-          <div className="space-y-2 mb-4">
-            <button
-              onClick={() => setShowEmployeeMenu(!showEmployeeMenu)}
-              className="w-full flex items-center justify-between px-4 py-3 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200 transition font-medium"
-            >
-              <div className="flex items-center gap-3">
-                <Users className="w-5 h-5" />
-                <span>Employee Management</span>
-              </div>
-              <ChevronDown className={`w-4 h-4 transition-transform ${showEmployeeMenu ? 'rotate-180' : ''}`} />
-            </button>
-
-            {showEmployeeMenu && (
-              <div className="ml-4 space-y-1 border-l-2 border-gray-200 pl-4">
-                <button
-                  onClick={() => setShowAddEmployee(true)}
-                  className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 rounded-lg hover:bg-gray-100 transition text-sm"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  Add Employee
-                </button>
-
-                <button
-                  onClick={() => console.log('View all employees')}
-                  className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 rounded-lg hover:bg-gray-100 transition text-sm"
-                >
-                  <List className="w-4 h-4" />
-                  All Employees
-                </button>
-              </div>
-            )}
-          </div>
+          {/* ✅ REMOVED: Employee Management Section - Completely removed */}
 
           {/* Action Buttons */}
           <div className="space-y-2">
+            {/* ✅ REMOVED: Change Password button - Completely removed */}
+            {/* ✅ NEW: Preliminary Reports Button */}
             <button
-              onClick={() => setShowChangePassword(true)}
-              className="w-full flex items-center gap-3 px-4 py-3 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200 transition font-medium"
-            >
-              <Lock className="w-5 h-5" />
-              Change Password
-            </button>
-
-            <button
-              onClick={() => setShowClientsList(true)}
-              className="w-full flex items-center gap-3 px-4 py-3 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200 transition font-medium"
+              onClick={() => onViewModeChange('prereports')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition font-medium ${viewMode === 'prereports'
+                ? 'bg-blue-50 text-blue-600 border-2 border-blue-600'
+                : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                }`}
             >
               <FileText className="w-5 h-5" />
-              View All Clients
+              Preliminary Reports
             </button>
+
+            {/* ✅ Client Management Button - Same pattern as prereports */}
+            <button
+              onClick={() => onViewModeChange('clients')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition font-medium ${viewMode === 'clients'
+                  ? 'bg-blue-50 text-blue-600 border-2 border-blue-600'
+                  : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                }`}
+            >
+              <Building2 className="w-5 h-5" />
+              Client Management
+            </button>
+
+
           </div>
         </div>
 
-        {/* ✅ Admin Profile Section (Bottom) */}
+        {/* Admin Profile Section (Bottom) */}
         <div className="border-t border-gray-200 p-4">
           <div className="relative">
             <button
@@ -333,9 +185,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
                 <p className="text-xs text-gray-500 truncate">{adminRole}</p>
               </div>
               <ChevronDown
-                className={`w-4 h-4 text-gray-500 transition-transform ${
-                  showProfileMenu ? 'rotate-180' : ''
-                }`}
+                className={`w-4 h-4 text-gray-500 transition-transform ${showProfileMenu ? 'rotate-180' : ''
+                  }`}
               />
             </button>
 
@@ -388,20 +239,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Modals */}
-      {showAddEmployee && (
-        <AddEmployeeModal 
-          onClose={() => setShowAddEmployee(false)}
-          onSuccess={() => setShowAddEmployee(false)}
-        />
-      )}
-      {showChangePassword && (
-        <ChangePasswordModal onClose={() => setShowChangePassword(false)} />
-      )}
-      {showClientsList && (
-        <ClientsListModal onClose={() => setShowClientsList(false)} />
-      )}
     </>
   );
 };

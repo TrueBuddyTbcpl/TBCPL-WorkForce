@@ -181,3 +181,96 @@ export const API_ENDPOINTS = {
     PRODUCTS: (clientId: number) => `/operation/prereport/dropdown/products/client/${clientId}`,
   },
 } as const;
+
+// ==================== AUTH CONSTANTS ====================
+
+// Storage Keys
+export const STORAGE_KEYS = {
+  AUTH_TOKEN: 'authToken',
+  USER_INFO: 'userInfo',
+  TOKEN_EXPIRY: 'tokenExpiry',
+  DEVICE_ID: 'deviceId',
+} as const;
+
+// Role Types
+export const UserRole = {
+  SUPER_ADMIN: 'SUPER_ADMIN',
+  HR_MANAGER: 'HR_MANAGER',
+  MANAGER: 'MANAGER',
+  EMPLOYEE: 'EMPLOYEE',
+} as const;
+export type UserRole = (typeof UserRole)[keyof typeof UserRole];
+
+// API Endpoints - Auth Module
+export const AUTH_ENDPOINTS = {
+  LOGIN: '/auth/login',
+  LOGOUT: '/auth/logout',
+  ADMIN_RESET_PASSWORD: '/auth/admin/reset-password',
+  CHANGE_PASSWORD: '/auth/change-password',
+  RESET_PASSWORD: '/auth/reset-password',
+  EMPLOYEES: '/auth/employees',
+  EMPLOYEE_BY_ID: (empId: string) => `/auth/employees/empId/${empId}`,
+  DEPARTMENTS: '/auth/departments',
+  DEPARTMENT_BY_ID: (id: number) => `/auth/departments/${id}`,
+  ROLES: '/auth/roles',
+  ROLE_BY_ID: (id: number) => `/auth/roles/${id}`,
+  LOGIN_ATTEMPTS: '/auth/login-attempts',
+  LOGIN_ATTEMPTS_BY_EMP: (empId: string) => `/auth/login-attempts/employee/${empId}`,
+
+   LOGIN_HISTORY: '/auth/login-history',
+} as const;
+
+// Query Keys - Auth Module
+export const AUTH_QUERY_KEYS = {
+  EMPLOYEES: ['employees'],
+  EMPLOYEE_DETAIL: (empId: string) => ['employee', empId],
+  DEPARTMENTS: ['departments'],
+  ROLES: ['roles'],
+  LOGIN_ATTEMPTS: ['loginAttempts'],
+  LOGIN_ATTEMPTS_BY_EMP: (empId: string) => ['loginAttempts', empId],
+} as const;
+
+// Add to ADMIN_ENDPOINTS
+export const ADMIN_ENDPOINTS = {
+  // ... existing endpoints
+  
+  // Client endpoints
+  CLIENTS: '/admin/clients',
+  CLIENT_BY_ID: (id: number) => `/admin/clients/${id}`,
+  CLIENT_LOGO: (id: number) => `/admin/clients/${id}/logo`,
+  
+  // Client Product endpoints
+  CLIENT_PRODUCTS: '/admin/client-products',
+  CLIENT_PRODUCT_BY_ID: (id: number) => `/admin/client-products/${id}`,
+  CLIENT_PRODUCTS_BY_CLIENT: (clientId: number) => `/admin/client-products/client/${clientId}`,
+} as const;
+
+// Add to ADMIN_QUERY_KEYS
+export const ADMIN_QUERY_KEYS = {
+  // ... existing keys
+  CLIENTS: 'clients',
+  CLIENT_DETAIL: (id: number) => ['client', id],
+  CLIENT_PRODUCTS: 'client-products',
+  CLIENT_PRODUCT_DETAIL: (id: number) => ['client-product', id],
+  CLIENT_PRODUCTS_BY_CLIENT: (clientId: number) => ['client-products-by-client', clientId],
+} as const;
+
+
+// Password Requirements Display
+export const PASSWORD_REQUIREMENTS = [
+  'At least 8 characters',
+  'At least 1 uppercase letter',
+  'At least 1 lowercase letter',
+  'At least 1 number',
+  'At least 1 special character (@#$%^&+=!)',
+] as const;
+
+// Token Expiry (8 hours in milliseconds)
+export const TOKEN_EXPIRY_TIME = 8 * 60 * 60 * 1000; // 28800000ms
+
+// Account Lockout Settings
+export const LOCKOUT_CONFIG = {
+  MAX_ATTEMPTS: 5,
+  LOCKOUT_DURATION_MINUTES: 15,
+} as const;
+

@@ -1,5 +1,8 @@
 export type Department = 'Operations' | 'HR' | 'Account';
 
+// ✅ ADD THIS LINE:
+export type ViewMode = 'employees' | 'cases' | 'profiles' | 'prereports' | 'clients';
+
 export interface DepartmentStats {
   department: Department;
   totalEmployees: number;
