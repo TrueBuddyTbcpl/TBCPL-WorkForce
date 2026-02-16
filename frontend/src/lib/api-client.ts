@@ -6,7 +6,7 @@ import { storageHelper } from '../utils/storageHelper';
 let isSessionExpiredModalShown = false;
 
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://tbcpl-workforce-backend.onrender.com/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },

@@ -3,7 +3,7 @@ import { storageHelper } from '../../utils/storageHelper';
 import { STORAGE_KEYS } from '../../utils/constants';
 import { toast } from 'sonner';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://tbcpl-workforce-backend.onrender.com/api/v1';
 
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({
