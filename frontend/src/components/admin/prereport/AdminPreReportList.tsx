@@ -79,7 +79,7 @@ export const AdminPreReportList: React.FC = () => {
     const fetchClients = async () => {
       try {
         setIsLoadingClients(true);
-        const res = await apiClient.get('/api/v1/admin/clients');
+        const res = await apiClient.get('/admin/clients');
         const list = (res.data?.data || []) as any[];
         setClients(
           list.map((c) => ({
@@ -102,7 +102,7 @@ export const AdminPreReportList: React.FC = () => {
     const fetchEmployees = async () => {
       try {
         setIsLoadingEmployees(true);
-        const res = await apiClient.get('/api/v1/auth/employees', {
+        const res = await apiClient.get('/auth/employees', {
           params: { page: 0, size: 1000, sort: 'empId', direction: 'ASC' },
         });
         const list = (res.data?.data?.employees || []) as any[];
