@@ -86,10 +86,12 @@ export const PreReportList = () => {
                   productIds: report.productIds ? report.productIds.map(id => Number(id)) : [],
                   productNames: report.productNames || [],
                   leadType: (report.leadType as 'CLIENT_LEAD' | 'TRUEBUDDY_LEAD'),
-                  reportStatus: report.reportStatus as any,  // ✅ fix reportStatus
-                } as PreReport}  // ✅ final cast to PreReport
+                  reportStatus: report.reportStatus as any,
+                  createdBy: String(report.createdBy), // ✅ convert number → string
+                } as PreReport}
                 onDelete={handleDelete}
               />
+
 
 
 

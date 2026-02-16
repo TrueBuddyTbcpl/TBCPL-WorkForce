@@ -1,17 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Employee, UpdateEmployeeRequest, Department, Role } from '../../types/employee.types';
-import type { ApiResponse } from '../../types/auth.types';
 import { getEmployeeById, updateEmployee, deleteEmployee } from '../../services/api/employee.api';
 import { getDepartments } from '../../services/api/department.api';
 import { getRoles } from '../../services/api/role.api';
-import ChangeHistoryViewer from './ChangeHistoryViewer';
 import { toast } from 'sonner';
 import { AUTH_QUERY_KEYS } from '../../utils/constants';
 import {
-  ArrowLeft, Mail, Phone, Calendar, Briefcase,
-  FileText, UserCheck, User, Shield,
+  ArrowLeft, Mail,  Calendar, User, 
   Building2, Edit, Trash2, X, Save
 } from 'lucide-react';
 
