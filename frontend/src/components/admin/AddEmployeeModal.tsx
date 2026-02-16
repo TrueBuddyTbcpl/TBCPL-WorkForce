@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { X, UserPlus, Mail, Phone, Calendar, Briefcase, User } from 'lucide-react';
-import type { Department } from './types/admin.types';
+import { X, UserPlus, Mail, Phone, Calendar, Briefcase, Lock, Eye, EyeOff } from 'lucide-react';
+import apiClient from '../../services/api/apiClient';
+import { toast } from 'sonner';
 
-interface Employee {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  role: string;
-  department: Department;
-  reportingManager?: string;
-  joinDate: string;
-  isManager: boolean;
+interface DepartmentOption {
+  id: number;
+  departmentName: string;
+}
+
+interface RoleOption {
+  id: number;
+  roleName: string;
 }
 
 interface AddEmployeeModalProps {
@@ -20,95 +19,154 @@ interface AddEmployeeModalProps {
 }
 
 const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ onClose, onSuccess }) => {
-  const [employees, setEmployees] = useState<Employee[]>([]);
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    middleName: '',
+    lastName: '',
     email: '',
+    password: '',
     phone: '',
-    role: '',
-    department: 'Operations' as Department,
-    reportingManager: '', // ✅ New field
+    departmentId: '',
+    roleId: '',
     joinDate: new Date().toISOString().split('T')[0],
-    isManager: false,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const roles = {
-    Operations: ['Manager', 'Senior Investigator', 'Investigator', 'Junior Investigator', 'Field Investigator'],
-    HR: ['HR Manager', 'HR Executive', 'Recruiter', 'HR Assistant'],
-    Account: ['Account Manager', 'Senior Accountant', 'Accountant', 'Junior Accountant'],
-  };
+  // Dropdown data
+  const [departments, setDepartments] = useState<DepartmentOption[]>([]);
+  const [roles, setRoles] = useState<RoleOption[]>([]);
+  const [isLoadingDepartments, setIsLoadingDepartments] = useState(true);
+  const [isLoadingRoles, setIsLoadingRoles] = useState(true);
 
-  // ✅ Load existing employees for reporting manager dropdown
+  // Load departments
   useEffect(() => {
-    const storedEmployees = localStorage.getItem('employees');
-    if (storedEmployees) {
+    const fetchDepartments = async () => {
       try {
-        const parsedEmployees = JSON.parse(storedEmployees);
-        setEmployees(parsedEmployees);
+        setIsLoadingDepartments(true);
+        const response = await apiClient.get('/auth/departments');
+        setDepartments(response.data?.data || []);
       } catch (error) {
-        console.error('Error loading employees:', error);
+        console.error('Failed to load departments:', error);
+        toast.error('Failed to load departments');
+      } finally {
+        setIsLoadingDepartments(false);
       }
-    }
+    };
+
+    fetchDepartments();
   }, []);
 
-  // ✅ Filter managers by department
-  const availableManagers = employees.filter(
-    (emp) => emp.department === formData.department && emp.isManager
-  );
+  // Load roles
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        setIsLoadingRoles(true);
+        const response = await apiClient.get('/auth/roles');
+        setRoles(response.data?.data || []);
+      } catch (error) {
+        console.error('Failed to load roles:', error);
+        toast.error('Failed to load roles');
+      } finally {
+        setIsLoadingRoles(false);
+      }
+    };
+
+    fetchRoles();
+  }, []);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name.trim()) newErrors.name = 'Name is required';
-    if (!formData.email.trim()) newErrors.email = 'Email is required';
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email is invalid';
-    if (!formData.phone.trim()) newErrors.phone = 'Phone is required';
-    else if (!/^\+?[\d\s-]{10,}$/.test(formData.phone)) newErrors.phone = 'Phone is invalid';
-    if (!formData.role) newErrors.role = 'Role is required';
+    // First Name
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'First name is required';
+    } else if (formData.firstName.length < 2 || formData.firstName.length > 50) {
+      newErrors.firstName = 'First name must be between 2 and 50 characters';
+    }
+
+    // Last Name
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'Last name is required';
+    } else if (formData.lastName.length < 2 || formData.lastName.length > 50) {
+      newErrors.lastName = 'Last name must be between 2 and 50 characters';
+    }
+
+    // Middle Name (optional)
+    if (formData.middleName && formData.middleName.length > 50) {
+      newErrors.middleName = 'Middle name must not exceed 50 characters';
+    }
+
+    // Email
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Email is invalid';
+    }
+
+    // Password
+    if (!formData.password.trim()) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 8 || formData.password.length > 50) {
+      newErrors.password = 'Password must be between 8 and 50 characters';
+    } else if (!/(?=.*[A-Za-z])(?=.*\d)/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one letter and one number';
+    }
+
+    // Phone (optional but validate if provided)
+    if (formData.phone && !/^\+?[\d\s-]{10,}$/.test(formData.phone)) {
+      newErrors.phone = 'Phone is invalid';
+    }
+
+    // Department
+    if (!formData.departmentId) {
+      newErrors.departmentId = 'Department is required';
+    }
+
+    // Role
+    if (!formData.roleId) {
+      newErrors.roleId = 'Role is required';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
-    // ✅ Create new employee with unique ID
-    const newEmployee: Employee = {
-      id: `emp-${Date.now()}`,
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-      role: formData.role,
-      department: formData.department,
-      reportingManager: formData.reportingManager || undefined,
-      joinDate: formData.joinDate,
-      isManager: formData.isManager,
-    };
-
-    // ✅ Save to localStorage
     try {
-      const storedEmployees = localStorage.getItem('employees');
-      const employeesList: Employee[] = storedEmployees ? JSON.parse(storedEmployees) : [];
-      employeesList.push(newEmployee);
-      localStorage.setItem('employees', JSON.stringify(employeesList));
+      setIsSubmitting(true);
 
-      // Show success message
-      alert('Employee added successfully!');
-      
-      // Call success callback if provided
-      if (onSuccess) {
-        onSuccess();
+      const requestData = {
+        email: formData.email.trim(),
+        password: formData.password,
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        middleName: formData.middleName.trim() || undefined,
+        departmentId: Number(formData.departmentId),
+        roleId: Number(formData.roleId),
+      };
+
+      const response = await apiClient.post('/auth/employees', requestData);
+
+      if (response.data.success) {
+        toast.success('Employee added successfully!');
+        if (onSuccess) {
+          onSuccess();
+        }
+        onClose();
       }
-      
-      onClose();
-    } catch (error) {
-      console.error('Error saving employee:', error);
-      alert('Failed to add employee. Please try again.');
+    } catch (error: any) {
+      console.error('Error adding employee:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to add employee. Please try again.';
+      toast.error(errorMessage);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -116,7 +174,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ onClose, onSuccess 
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
               <UserPlus className="w-6 h-6 text-blue-600" />
@@ -128,7 +186,8 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ onClose, onSuccess 
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition"
+            disabled={isSubmitting}
+            className="p-2 hover:bg-gray-100 rounded-lg transition disabled:opacity-50"
           >
             <X className="w-5 h-5 text-gray-600" />
           </button>
@@ -141,26 +200,60 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ onClose, onSuccess 
             <h3 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">
               Personal Information
             </h3>
-            
-            {/* Full Name */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Full Name *
-              </label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.name ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="Enter full name"
-              />
-              {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+
+            {/* First Name, Middle Name, Last Name */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  First Name *
+                </label>
+                <input
+                  type="text"
+                  value={formData.firstName}
+                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                  disabled={isSubmitting}
+                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 ${errors.firstName ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  placeholder="John"
+                />
+                {errors.firstName && <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Middle Name
+                </label>
+                <input
+                  type="text"
+                  value={formData.middleName}
+                  onChange={(e) => setFormData({ ...formData, middleName: e.target.value })}
+                  disabled={isSubmitting}
+                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 ${errors.middleName ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  placeholder="Michael"
+                />
+                {errors.middleName && <p className="text-red-500 text-xs mt-1">{errors.middleName}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Last Name *
+                </label>
+                <input
+                  type="text"
+                  value={formData.lastName}
+                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                  disabled={isSubmitting}
+                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 ${errors.lastName ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  placeholder="Doe"
+                />
+                {errors.lastName && <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>}
+              </div>
             </div>
 
             {/* Email and Phone */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Mail className="w-4 h-4 inline mr-1" />
@@ -170,10 +263,10 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ onClose, onSuccess 
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.email ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="email@example.com"
+                  disabled={isSubmitting}
+                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 ${errors.email ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  placeholder="john.doe@gnsp.co.in"
                 />
                 {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
               </div>
@@ -181,20 +274,57 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ onClose, onSuccess 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Phone className="w-4 h-4 inline mr-1" />
-                  Phone Number *
+                  Phone Number
                 </label>
                 <input
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.phone ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  disabled={isSubmitting}
+                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 ${errors.phone ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   placeholder="+91 98765 43210"
                 />
                 {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
               </div>
             </div>
+
+            {/* Password */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Lock className="w-4 h-4 inline mr-1" />
+                Initial Password *
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}  // ✅ Toggles between text/password
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  disabled={isSubmitting}
+                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-12 disabled:bg-gray-50 ${errors.password ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  placeholder="Enter initial password"
+                />
+                {/* ✅ Eye icon button to toggle visibility */}
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  disabled={isSubmitting}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" />  // ✅ Shows when password is visible
+                  ) : (
+                    <Eye className="w-5 h-5" />     // ✅ Shows when password is hidden
+                  )}
+                </button>
+              </div>
+              {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
+              <p className="text-xs text-gray-500 mt-1">
+                Must be 8-50 characters with letters and numbers. Employee will be required to change password on first login.
+              </p>
+            </div>
+
           </div>
 
           {/* Job Information Section */}
@@ -211,19 +341,26 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ onClose, onSuccess 
                   Department *
                 </label>
                 <select
-                  value={formData.department}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    department: e.target.value as Department,
-                    role: '', // Reset role when department changes
-                    reportingManager: '', // Reset manager when department changes
+                  value={formData.departmentId}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    departmentId: e.target.value,
+                    roleId: '', // Reset role when department changes
                   })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={isSubmitting || isLoadingDepartments}
+                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 ${errors.departmentId ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 >
-                  <option value="Operations">Operations</option>
-                  <option value="HR">Human Resources</option>
-                  <option value="Account">Accounts</option>
+                  <option value="">
+                    {isLoadingDepartments ? 'Loading departments...' : 'Select Department'}
+                  </option>
+                  {departments.map((dept) => (
+                    <option key={dept.id} value={dept.id}>
+                      {dept.departmentName}
+                    </option>
+                  ))}
                 </select>
+                {errors.departmentId && <p className="text-red-500 text-xs mt-1">{errors.departmentId}</p>}
               </div>
 
               <div>
@@ -231,74 +368,38 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ onClose, onSuccess 
                   Role *
                 </label>
                 <select
-                  value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.role ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  value={formData.roleId}
+                  onChange={(e) => setFormData({ ...formData, roleId: e.target.value })}
+                  disabled={isSubmitting || isLoadingRoles}
+                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 ${errors.roleId ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 >
-                  <option value="">Select Role</option>
-                  {roles[formData.department].map((role) => (
-                    <option key={role} value={role}>{role}</option>
-                  ))}
-                </select>
-                {errors.role && <p className="text-red-500 text-xs mt-1">{errors.role}</p>}
-              </div>
-            </div>
-
-            {/* ✅ Reporting Manager and Join Date */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <User className="w-4 h-4 inline mr-1" />
-                  Reporting Manager
-                </label>
-                <select
-                  value={formData.reportingManager}
-                  onChange={(e) => setFormData({ ...formData, reportingManager: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={availableManagers.length === 0}
-                >
-                  <option value="">Select Manager (Optional)</option>
-                  {availableManagers.map((manager) => (
-                    <option key={manager.id} value={manager.id}>
-                      {manager.name} - {manager.role}
+                  <option value="">
+                    {isLoadingRoles ? 'Loading roles...' : 'Select Role'}
+                  </option>
+                  {roles.map((role) => (
+                    <option key={role.id} value={role.id}>
+                      {role.roleName}
                     </option>
                   ))}
                 </select>
-                {availableManagers.length === 0 && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    No managers available in {formData.department} department
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Calendar className="w-4 h-4 inline mr-1" />
-                  Join Date *
-                </label>
-                <input
-                  type="date"
-                  value={formData.joinDate}
-                  onChange={(e) => setFormData({ ...formData, joinDate: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                {errors.roleId && <p className="text-red-500 text-xs mt-1">{errors.roleId}</p>}
               </div>
             </div>
 
-            {/* Is Manager Checkbox */}
-            <div className="flex items-center gap-2 p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <input
-                type="checkbox"
-                id="isManager"
-                checked={formData.isManager}
-                onChange={(e) => setFormData({ ...formData, isManager: e.target.checked })}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <label htmlFor="isManager" className="text-sm font-medium text-gray-700">
-                Assign as Department Manager
+            {/* Join Date */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Calendar className="w-4 h-4 inline mr-1" />
+                Join Date
               </label>
+              <input
+                type="date"
+                value={formData.joinDate}
+                onChange={(e) => setFormData({ ...formData, joinDate: e.target.value })}
+                disabled={isSubmitting}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50"
+              />
             </div>
           </div>
 
@@ -307,16 +408,27 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ onClose, onSuccess 
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
+              disabled={isSubmitting}
+              className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium flex items-center justify-center gap-2"
+              disabled={isSubmitting}
+              className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <UserPlus className="w-5 h-5" />
-              Add Employee
+              {isSubmitting ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                <>
+                  <UserPlus className="w-5 h-5" />
+                  Add Employee
+                </>
+              )}
             </button>
           </div>
         </form>

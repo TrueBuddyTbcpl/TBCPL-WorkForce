@@ -13,6 +13,10 @@ import {
 } from 'lucide-react';
 import { usePreReports } from '../../../hooks/prereport/usePreReports';
 import apiClient from '../../../services/api/apiClient';
+import { StatusDropdown } from '../StatusDropdown';
+import { RequestChangesModal } from '../RequestChangesModal';
+import { ReportStatus } from '../../../utils/constants';
+import { toast } from 'sonner';
 
 
 interface ClientOption {
@@ -20,11 +24,13 @@ interface ClientOption {
   name: string;
 }
 
+
 interface EmployeeOption {
   id: number;
   name: string;
   empId: string;
 }
+
 
 export const AdminPreReportList: React.FC = () => {
   const navigate = useNavigate();
@@ -60,7 +66,13 @@ export const AdminPreReportList: React.FC = () => {
     dateTo: '',
   });
 
-  const { data, isLoading, isError } = usePreReports({ page, size });
+  // Modal state
+  const [selectedReportForChanges, setSelectedReportForChanges] = useState<string | null>(null);
+
+  // ✅ ADDED: Employee names mapping for display
+  const [employeeNamesMap, setEmployeeNamesMap] = useState<Record<number, string>>({});
+
+  const { data, isLoading, isError, refetch } = usePreReports({ page, size });
 
   // Fetch all clients for dropdown
   useEffect(() => {
@@ -72,7 +84,7 @@ export const AdminPreReportList: React.FC = () => {
         setClients(
           list.map((c) => ({
             id: c.id,
-            name: c.name, // adjust if your field is different (e.g. clientName)
+            name: c.name,
           }))
         );
       } catch (error) {
@@ -85,7 +97,7 @@ export const AdminPreReportList: React.FC = () => {
     fetchClients();
   }, []);
 
-  // Fetch employees for dropdown (first page, large size)
+  // Fetch employees for dropdown
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
@@ -110,6 +122,37 @@ export const AdminPreReportList: React.FC = () => {
 
     fetchEmployees();
   }, []);
+
+  // ✅ ADDED: Fetch employee names for reports
+  useEffect(() => {
+    const fetchEmployeeNamesForReports = async () => {
+      if (!data?.reports || data.reports.length === 0) return;
+
+      const uniqueEmployeeIds = [...new Set(data.reports.map(r => r.createdBy))];
+      const names: Record<number, string> = {};
+      
+      await Promise.all(
+        uniqueEmployeeIds.map(async (employeeId) => {
+          try {
+            const response = await apiClient.get(`/auth/employees/id/${employeeId}`);
+            
+            if (response.data?.success && response.data?.data) {
+              names[employeeId] = response.data.data.fullName;
+            } else {
+              names[employeeId] = `Employee ${employeeId}`;
+            }
+          } catch (error) {
+            console.error(`Failed to fetch employee name for ID ${employeeId}:`, error);
+            names[employeeId] = `Employee ${employeeId}`;
+          }
+        })
+      );
+
+      setEmployeeNamesMap(names);
+    };
+
+    fetchEmployeeNamesForReports();
+  }, [data?.reports]);
 
   const filteredClients = useMemo(() => {
     if (!clientSearchQuery) return clients;
@@ -165,17 +208,47 @@ export const AdminPreReportList: React.FC = () => {
     setShowClientDropdown(false);
   };
 
+  // ✅ FIXED: Store employee ID instead of name
   const handleEmployeeSelect = (employee: EmployeeOption | null) => {
     if (!employee) {
       setCreatedBy('');
       setEmployeeSearchQuery('');
     } else {
-      setCreatedBy(employee.name);
+      setCreatedBy(employee.id.toString());  // ✅ Store employee ID
       setEmployeeSearchQuery(employee.name);
     }
     setShowEmployeeDropdown(false);
   };
 
+  const handleStatusChange = async (reportId: string, newStatus: ReportStatus) => {
+    try {
+      await apiClient.patch(`/operation/prereport/${reportId}/status`, {
+        reportStatus: newStatus,
+      });
+      
+      toast.success('Status updated successfully');
+      refetch();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to update status');
+      throw error;
+    }
+  };
+
+  const handleRequestChanges = async (reportId: string, changeComments: string) => {
+    try {
+      await apiClient.post(`/operation/prereport/${reportId}/request-changes`, {
+        changeComments,
+      });
+      
+      toast.success('Changes requested successfully');
+      refetch();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to request changes');
+      throw error;
+    }
+  };
+
+  // ✅ FIXED: Filter by employee ID
   const getFilteredReports = () => {
     let reports = data?.reports || [];
 
@@ -186,9 +259,8 @@ export const AdminPreReportList: React.FC = () => {
     }
 
     if (appliedFilters.createdBy) {
-      reports = reports.filter((r) =>
-        r.createdBy.toLowerCase().includes(appliedFilters.createdBy.toLowerCase())
-      );
+      // ✅ Filter by employee ID (number)
+      reports = reports.filter((r) => r.createdBy === parseInt(appliedFilters.createdBy));
     }
 
     if (appliedFilters.leadType) {
@@ -391,7 +463,7 @@ export const AdminPreReportList: React.FC = () => {
                               key={e.id}
                               onClick={() => handleEmployeeSelect(e)}
                               className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 ${
-                                createdBy === e.name
+                                createdBy === e.id.toString()
                                   ? 'bg-blue-50 text-blue-700 font-medium'
                                   : 'text-gray-900'
                               }`}
@@ -476,6 +548,7 @@ export const AdminPreReportList: React.FC = () => {
       {filteredReports.length > 0 ? (
         <>
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            {/* ✅ CHANGED: Proper overflow handling */}
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
@@ -504,11 +577,10 @@ export const AdminPreReportList: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredReports.map((report) => (
+                  {filteredReports.map((report, index) => (
                     <tr
                       key={report.id}
-                      className="hover:bg-gray-50 transition-colors cursor-pointer"
-                      onClick={() => navigate(`/operations/pre-report/${report.reportId}`)}
+                      className="hover:bg-gray-50 transition-colors"
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
@@ -536,32 +608,25 @@ export const AdminPreReportList: React.FC = () => {
                             : 'TrueBuddy Lead'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            report.reportStatus === 'DRAFT'
-                              ? 'bg-gray-100 text-gray-800'
-                              : report.reportStatus === 'PENDING_APPROVAL'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : report.reportStatus === 'APPROVED'
-                              ? 'bg-green-100 text-green-800'
-                              : report.reportStatus === 'CHANGES_REQUESTED'
-                              ? 'bg-orange-100 text-orange-800'
-                              : report.reportStatus === 'REJECTED'
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}
-                        >
-                          {report.reportStatus
-                            ? report.reportStatus.replace(/_/g, ' ')
-                            : 'Unknown'}
-                        </span>
+                      {/* ✅ FIXED: Better approach - only add padding for last 2 rows */}
+                      <td 
+                        className={`px-6 whitespace-nowrap ${
+                          index >= filteredReports.length - 2 ? 'py-4 pb-32' : 'py-4'
+                        }`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <StatusDropdown
+                          currentStatus={report.reportStatus as ReportStatus}
+                          reportId={report.reportId}
+                          onStatusChange={(newStatus) => handleStatusChange(report.reportId, newStatus)}
+                          onRequestChanges={() => setSelectedReportForChanges(report.reportId)}
+                        />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <User className="w-4 h-4 text-gray-400 mr-2" />
                           <span className="text-sm text-gray-900">
-                            {report.createdBy}
+                            {employeeNamesMap[report.createdBy] || `Employee ${report.createdBy}`}
                           </span>
                         </div>
                       </td>
@@ -579,10 +644,7 @@ export const AdminPreReportList: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/operations/pre-report/${report.reportId}`);
-                          }}
+                          onClick={() => navigate(`/operations/pre-report/${report.reportId}`)}
                           className="text-blue-600 hover:text-blue-900 transition-colors"
                         >
                           View Details
@@ -595,6 +657,7 @@ export const AdminPreReportList: React.FC = () => {
             </div>
           </div>
 
+          {/* Pagination remains same */}
           {pagination && pagination.totalPages > 1 && (
             <div className="flex items-center justify-between bg-white px-6 py-3 border border-gray-200 rounded-lg">
               <div className="flex items-center gap-2">
@@ -639,6 +702,16 @@ export const AdminPreReportList: React.FC = () => {
           </p>
         </div>
       )}
+
+      {/* Request Changes Modal */}
+      <RequestChangesModal
+        isOpen={selectedReportForChanges !== null}
+        reportId={selectedReportForChanges || ''}
+        onClose={() => setSelectedReportForChanges(null)}
+        onSubmit={(changeComments) => 
+          handleRequestChanges(selectedReportForChanges!, changeComments)
+        }
+      />
     </div>
   );
 };

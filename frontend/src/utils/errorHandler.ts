@@ -14,6 +14,12 @@ export const getErrorMessage = (error: unknown): string => {
     
     // Handle common HTTP errors
     if (error.response?.status === 401) {
+      // ✅ Check if it's session expiry
+      const errorMsg = error.response?.data?.message || '';
+      if (errorMsg.toLowerCase().includes('expired') || 
+          errorMsg.toLowerCase().includes('invalid token')) {
+        return 'Your session has expired. Please login again.';
+      }
       return 'Invalid credentials. Please check your email and password.';
     }
     
@@ -59,6 +65,20 @@ export const getErrorMessage = (error: unknown): string => {
 export const isAuthError = (error: unknown): boolean => {
   if (error instanceof AxiosError) {
     return error.response?.status === 401 || error.response?.status === 403;
+  }
+  return false;
+};
+
+/**
+ * Check if error is session expiry
+ */
+export const isSessionExpired = (error: unknown): boolean => {
+  if (error instanceof AxiosError) {
+    if (error.response?.status === 401) {
+      const errorMsg = error.response?.data?.message || '';
+      return errorMsg.toLowerCase().includes('expired') || 
+             errorMsg.toLowerCase().includes('invalid token');
+    }
   }
   return false;
 };

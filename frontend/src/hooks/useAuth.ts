@@ -73,7 +73,7 @@ export const useAuth = () => {
       queryClient.clear();
       navigate('/auth/login', { replace: true });
     },
-    onError: (error: any) => {
+    onError: () => {
       // ✅ Even if API call fails completely, clear local auth data
       console.log('⚠️ Logout API failed, clearing local session anyway');
       logout();

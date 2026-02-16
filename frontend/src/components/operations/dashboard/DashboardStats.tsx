@@ -1,28 +1,44 @@
 import React, { useState, useEffect } from 'react';
-import { FolderOpen, FolderCheck, Users, FileText, TrendingUp, AlertCircle } from 'lucide-react';
-import { dashboardStorage } from './utils/dashboardStorage';
-import type { DashboardStats as StatsType } from './types/dashboard.types';
+import { FolderOpen, FolderCheck, Users, FileText, TrendingUp } from 'lucide-react';
+import apiClient from '../../../services/api/apiClient';
+
 
 const DashboardStats: React.FC = () => {
-  const [stats, setStats] = useState<StatsType>({
-    totalCases: 0,
-    openCases: 0,
-    closedCases: 0,
-    profilesCreated: 0,
-    reportsGenerated: 0,
-    activeCases: 0,
-  });
+  const [preReportCount, setPreReportCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loadedStats = dashboardStorage.getDashboardStats();
-    setStats(loadedStats);
+    const loadPreReportCount = async () => {
+      try {
+        setIsLoading(true);
+        const response = await apiClient.get('/operation/prereport/list', {
+          params: { page: 0, size: 1 },
+        });
+        
+        console.log('📊 Raw Response:', response);
+        console.log('📊 Response Data:', response.data);
+        
+        // ✅ The response structure is: response.data = { reports, currentPage, totalPages, totalElements, pageSize }
+        const count = response.data?.totalElements || 0;
+        
+        console.log('✅ Total Pre-Reports Count:', count);
+        setPreReportCount(count);
+      } catch (error: any) {
+        console.error('❌ Failed to load pre-report count:', error);
+        setPreReportCount(0);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadPreReportCount();
   }, []);
 
   const statCards = [
     {
       icon: FolderOpen,
       label: 'Total Cases',
-      value: stats.totalCases,
+      value: 0,
       color: 'bg-blue-500',
       textColor: 'text-blue-600',
       bgColor: 'bg-blue-50',
@@ -30,7 +46,7 @@ const DashboardStats: React.FC = () => {
     {
       icon: TrendingUp,
       label: 'Active Cases',
-      value: stats.activeCases,
+      value: 0,
       color: 'bg-green-500',
       textColor: 'text-green-600',
       bgColor: 'bg-green-50',
@@ -38,7 +54,7 @@ const DashboardStats: React.FC = () => {
     {
       icon: FolderCheck,
       label: 'Closed Cases',
-      value: stats.closedCases,
+      value: 0,
       color: 'bg-gray-500',
       textColor: 'text-gray-600',
       bgColor: 'bg-gray-50',
@@ -46,7 +62,7 @@ const DashboardStats: React.FC = () => {
     {
       icon: Users,
       label: 'Profiles Created',
-      value: stats.profilesCreated,
+      value: 0,
       color: 'bg-purple-500',
       textColor: 'text-purple-600',
       bgColor: 'bg-purple-50',
@@ -54,20 +70,21 @@ const DashboardStats: React.FC = () => {
     {
       icon: FileText,
       label: 'Reports Generated',
-      value: stats.reportsGenerated,
+      value: 0,
       color: 'bg-orange-500',
       textColor: 'text-orange-600',
       bgColor: 'bg-orange-50',
     },
     {
-      icon: AlertCircle,
-      label: 'Open Cases',
-      value: stats.openCases,
-      color: 'bg-red-500',
-      textColor: 'text-red-600',
-      bgColor: 'bg-red-50',
+      icon: FileText,
+      label: 'Total Pre-Reports',
+      value: isLoading ? '...' : preReportCount,
+      color: 'bg-indigo-500',
+      textColor: 'text-indigo-600',
+      bgColor: 'bg-indigo-50',
     },
   ];
+
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
@@ -87,5 +104,6 @@ const DashboardStats: React.FC = () => {
     </div>
   );
 };
+
 
 export default DashboardStats;

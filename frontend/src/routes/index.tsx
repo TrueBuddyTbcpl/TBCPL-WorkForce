@@ -14,10 +14,11 @@ import NotFound from './NotFound';
 import ClientManagement from '../components/admin/ClientManagement';
 
 // ✅ Import Pre-Report Components
-import { PreReportList } from '../components/operations/pre-report/PreReportList';
+import { EmployeePreReportList } from '../components/operations/dashboard/EmployeePreReportList';
 import { CreatePreReport } from '../components/operations/pre-report/CreatePreReport';
 import { EditPreReport } from '../components/operations/pre-report/EditPreReport';
 import { PreReportDetails } from '../components/operations/pre-report/PreReportDetails';
+import PreReportPreviewPage from '../components/operations/pre-report/PreReportPreviewPage';
 
 // ✅ Import Auth Pages & Route Guards
 import { LoginPage } from '../components/auth/LoginPage';
@@ -126,6 +127,17 @@ const AppRoutes = () => {
       />
 
       <Route
+        path="/operations/pre-report/:reportId/preview"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER']}>
+              <PreReportPreviewPage /> {/* ✅ Use page component */}
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
         path="/operations/profile/create"
         element={
           <ProtectedRoute>
@@ -217,10 +229,10 @@ const AppRoutes = () => {
 
       {/* ✅ Pre-Report Routes - Protected */}
       <Route
-        path="/operations/pre-report"
+        path="/operations/pre-reports"
         element={
           <ProtectedRoute>
-            <PreReportList />
+            <EmployeePreReportList />
           </ProtectedRoute>
         }
       />
@@ -233,6 +245,7 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+
 
       <Route
         path="/operations/pre-report/:reportId"

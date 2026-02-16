@@ -41,6 +41,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     });
   },
 
+  // ✅ NEW: Clear auth (same as logout but explicit for session expiry)
+  clearAuth: () => {
+    // Clear localStorage
+    storageHelper.remove(STORAGE_KEYS.AUTH_TOKEN);
+    storageHelper.remove(STORAGE_KEYS.USER_INFO);
+    storageHelper.remove(STORAGE_KEYS.TOKEN_EXPIRY);
+    
+    // Reset state
+    set({
+      token: null,
+      user: null,
+      isAuthenticated: false,
+      tokenExpiry: null,
+    });
+  },
+
   isTokenExpired: () => {
     const { tokenExpiry } = get();
     if (!tokenExpiry) return true;

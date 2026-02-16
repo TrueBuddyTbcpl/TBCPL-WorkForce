@@ -128,7 +128,7 @@ const AdminDashboard: React.FC = () => {
         {/* Main Content */}
         <div className="flex-1 flex">
           {/* Center Content */}
-          <div className="flex-1 p-6 mr-80">
+          <div className="flex-1 p-6">
 
             {/* ✅ Search Bar Only - Hide for prereports and clients */}
             {viewMode !== 'prereports' && viewMode !== 'clients' && (

@@ -1433,6 +1433,32 @@ const generateTrueBuddyLeadPDF = (data: PreReportPDFData) => {
   return docDefinition;
 };
 
+// ✅ ADD THIS NEW FUNCTION - Export the doc definition for preview
+export const getPreReportDocDefinition = (data: PreReportPDFData) => {
+  const isClientLead = data.leadType === 'CLIENT_LEAD';
+  return isClientLead
+    ? generateClientLeadPDF(data)
+    : generateTrueBuddyLeadPDF(data);
+};
+
+// ✅ NEW - Open PDF in new browser tab (for preview)
+export const openPreReportInNewTab = (data: PreReportPDFData) => {
+  try {
+    const isClientLead = data.leadType === 'CLIENT_LEAD';
+    const docDefinition = isClientLead
+      ? generateClientLeadPDF(data)
+      : generateTrueBuddyLeadPDF(data);
+
+    // Open PDF in new browser tab
+    pdfMake.createPdf(docDefinition).open();
+    
+    return { success: true };
+  } catch (error) {
+    console.error('PDF Preview Error:', error);
+    throw new Error('Failed to open PDF preview. Please try again.');
+  }
+};
+
 export const exportPreReportToPDF = async (data: PreReportPDFData) => {
   try {
     const isClientLead = data.leadType === 'CLIENT_LEAD';

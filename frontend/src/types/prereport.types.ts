@@ -397,3 +397,11 @@ export interface PreReportStepStatusResponse {
   steps: StepStatusDetail[];
 }
 
+export interface PreReportListResponse {
+  reports: PreReport[];
+  currentPage: number;
+  totalPages: number;
+  totalElements: number;  // ✅ This matches backend
+  pageSize: number;
+}
+

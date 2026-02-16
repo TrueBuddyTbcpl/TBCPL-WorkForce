@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Download, Loader2, ChevronDown, ChevronUp, Mail } from 'lucide-react';
+import { ArrowLeft, Edit, Download, Loader2, ChevronDown, ChevronUp, Mail, Eye } from 'lucide-react';
 import { useState } from 'react';
 import { usePreReportDetail } from '../../../hooks/prereport/usePreReportDetail';
 import { PreReportStatusBadge } from './PreReportStatusBadge';
@@ -8,7 +8,8 @@ import { getStepTitle } from '../../../utils/helpers';
 import { getCompletionPercentage } from '../../../utils/stepValidation';
 import { exportPreReportToPDF, type PreReportPDFData } from '../../../utils/preReportPdfExport';
 import { toast } from 'sonner';
-import { useAuthStore } from '../../../stores/authStore'; // ✅ NEW
+import { useAuthStore } from '../../../stores/authStore';
+
 
 export const PreReportDetails = () => {
   const { reportId } = useParams<{ reportId: string }>();
@@ -16,11 +17,14 @@ export const PreReportDetails = () => {
   const [expandedSteps, setExpandedSteps] = useState<number[]>([]);
   const [isExporting, setIsExporting] = useState(false);
 
-  const { user } = useAuthStore(); // ✅ NEW
+
+  const { user } = useAuthStore();
   const isAdmin =
-    user?.roleName === 'SUPER_ADMIN' || user?.roleName === 'HR_MANAGER'; // ✅ NEW
+    user?.roleName === 'SUPER_ADMIN' || user?.roleName === 'HR_MANAGER';
+
 
   const { data, isLoading, isError } = usePreReportDetail(reportId!);
+
 
   const toggleStep = (stepNum: number) => {
     setExpandedSteps(prev =>
@@ -30,18 +34,22 @@ export const PreReportDetails = () => {
     );
   };
 
+
   // Handle PDF Export
   const handleExportPDF = async () => {
-    if (!data || !isAdmin) return; // ✅ only allow admin
+    if (!data || !isAdmin) return;
+
 
     setIsExporting(true);
     try {
       const { preReport, clientLeadData, trueBuddyLeadData } = data;
 
+
       const pdfLeadType =
         preReport.leadType === 'TRUEBUDDY_LEAD'
           ? 'TRUE_BUDDY_LEAD'
           : 'CLIENT_LEAD';
+
 
       const pdfData: PreReportPDFData = {
         reportId: preReport.reportId,
@@ -57,11 +65,13 @@ export const PreReportDetails = () => {
         })),
       };
 
+
       if (preReport.leadType === 'CLIENT_LEAD' && clientLeadData) {
         pdfData.clientLeadData = clientLeadData;
       } else if (preReport.leadType === 'TRUEBUDDY_LEAD' && trueBuddyLeadData) {
         pdfData.trueBuddyLeadData = trueBuddyLeadData;
       }
+
 
       await exportPreReportToPDF(pdfData);
       toast.success('PDF exported successfully!');
@@ -73,12 +83,20 @@ export const PreReportDetails = () => {
     }
   };
 
-  // ✅ NEW: placeholder for send mail (will implement later)
+
+  // ✅ NEW: Handle Preview - Navigate to preview page
+  const handlePreview = () => {
+    if (!isAdmin) return;
+    navigate(`/operations/pre-report/${reportId}/preview`);
+  };
+
+
+  // Send Mail handler
   const handleSendMail = async () => {
     if (!isAdmin) return;
     toast.info('Send Mail feature will be implemented soon.');
-    // Later: generate PDF + call backend mail API
   };
+
 
   if (isLoading) {
     return (
@@ -87,6 +105,7 @@ export const PreReportDetails = () => {
       </div>
     );
   }
+
 
   if (isError || !data) {
     return (
@@ -106,6 +125,7 @@ export const PreReportDetails = () => {
     );
   }
 
+
   const { preReport, clientLeadData, trueBuddyLeadData } = data;
   const completionPercentage = getCompletionPercentage(
     preReport.leadType,
@@ -113,7 +133,6 @@ export const PreReportDetails = () => {
     trueBuddyLeadData
   );
 
-  // ... all your existing helper functions (getStepFields, getStepData, formatLabel, renderField, renderStepDetails) stay exactly the same ...
 
   const getStepFields = (stepNum: number, isClientLead: boolean): string[] => {
     if (isClientLead) {
@@ -253,14 +272,18 @@ export const PreReportDetails = () => {
     }
   };
 
+
   const getStepData = (stepNum: number) => {
     const isClientLead = preReport.leadType === 'CLIENT_LEAD';
     const sourceData = isClientLead ? clientLeadData : trueBuddyLeadData;
 
+
     if (!sourceData) return null;
+
 
     const fields = getStepFields(stepNum, isClientLead);
     const stepData: Record<string, any> = {};
+
 
     fields.forEach(field => {
       const value = sourceData[field as keyof typeof sourceData];
@@ -269,8 +292,10 @@ export const PreReportDetails = () => {
       }
     });
 
+
     return Object.keys(stepData).length > 0 ? stepData : null;
   };
+
 
   const formatLabel = (key: string) => {
     return key
@@ -279,8 +304,10 @@ export const PreReportDetails = () => {
       .trim();
   };
 
+
   const renderField = (label: string, value: any) => {
     if (value === null || value === undefined || value === '') return null;
+
 
     if (
       label.toLowerCase().includes('created at') ||
@@ -288,6 +315,7 @@ export const PreReportDetails = () => {
     ) {
       return null;
     }
+
 
     if (typeof value === 'boolean') {
       return (
@@ -303,6 +331,7 @@ export const PreReportDetails = () => {
         </div>
       );
     }
+
 
     if (label === 'Online Presences' && Array.isArray(value) && value.length > 0) {
       return (
@@ -347,6 +376,7 @@ export const PreReportDetails = () => {
       );
     }
 
+
     if (Array.isArray(value)) {
       if (value.length === 0) return null;
       return (
@@ -366,6 +396,7 @@ export const PreReportDetails = () => {
       );
     }
 
+
     if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}/)) {
       return (
         <div key={label} className="py-2 border-b border-gray-100 last:border-0">
@@ -374,6 +405,7 @@ export const PreReportDetails = () => {
         </div>
       );
     }
+
 
     if (typeof value === 'object' && value !== null) {
       return (
@@ -388,6 +420,7 @@ export const PreReportDetails = () => {
       );
     }
 
+
     return (
       <div key={label} className="py-2 border-b border-gray-100 last:border-0">
         <span className="text-sm font-medium text-gray-700">{label}:</span>
@@ -396,10 +429,12 @@ export const PreReportDetails = () => {
     );
   };
 
+
   const renderStepDetails = (stepData: Record<string, any> | null) => {
     if (!stepData || Object.keys(stepData).length === 0) {
       return <p className="text-gray-500 text-sm italic">No data entered yet</p>;
     }
+
 
     return (
       <div className="mt-3 bg-gray-50 rounded-lg p-4 space-y-1">
@@ -416,7 +451,9 @@ export const PreReportDetails = () => {
     );
   };
 
+
   const totalSteps = preReport.leadType === 'CLIENT_LEAD' ? 10 : 11;
+
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -438,6 +475,7 @@ export const PreReportDetails = () => {
           </div>
           <div className="flex items-center gap-3">
             <PreReportStatusBadge status={preReport.reportStatus} />
+            
             <button
               onClick={() =>
                 navigate(`/operations/pre-report/${reportId}/edit`)
@@ -448,7 +486,22 @@ export const PreReportDetails = () => {
               Edit
             </button>
 
-            {/* Export PDF button - admin only enabled */}
+            {/* ✅ Preview PDF button - Navigate to preview page */}
+            <button
+              onClick={handlePreview}
+              disabled={!isAdmin}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                isAdmin
+                  ? 'border border-purple-600 text-purple-700 hover:bg-purple-50'
+                  : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              <Eye className="w-4 h-4" />
+              Preview PDF
+            </button>
+
+
+            {/* Export PDF button */}
             <button
               onClick={handleExportPDF}
               disabled={isExporting || !isAdmin}
@@ -471,7 +524,8 @@ export const PreReportDetails = () => {
               )}
             </button>
 
-            {/* ✅ NEW: Send Mail button */}
+
+            {/* Send Mail button */}
             <button
               onClick={handleSendMail}
               disabled={!isAdmin}
@@ -487,6 +541,7 @@ export const PreReportDetails = () => {
           </div>
         </div>
       </div>
+
 
       {/* Overview Card */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
@@ -520,6 +575,7 @@ export const PreReportDetails = () => {
           </div>
         </div>
 
+
         <div className="mt-6">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-gray-700">
@@ -536,6 +592,7 @@ export const PreReportDetails = () => {
             />
           </div>
         </div>
+
 
         <div className="mt-6">
           <p className="text-sm font-medium text-gray-700 mb-2">Products:</p>
@@ -554,6 +611,7 @@ export const PreReportDetails = () => {
         </div>
       </div>
 
+
       {/* Step Details */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
@@ -566,6 +624,7 @@ export const PreReportDetails = () => {
               const isCompleted = preReport.currentStep >= stepNum;
               const isExpanded = expandedSteps.includes(stepNum);
               const hasData = stepData && Object.keys(stepData).length > 0;
+
 
               return (
                 <div
@@ -617,6 +676,7 @@ export const PreReportDetails = () => {
                     </div>
                   </button>
 
+
                   {isExpanded && (
                     <div className="px-4 pb-4">
                       {renderStepDetails(stepData)}
@@ -631,5 +691,6 @@ export const PreReportDetails = () => {
     </div>
   );
 };
+
 
 export default PreReportDetails;

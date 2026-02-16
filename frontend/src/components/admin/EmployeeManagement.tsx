@@ -14,9 +14,11 @@ import { getRoles } from '../../services/api/role.api';
 import { toast } from 'sonner';
 import { AUTH_QUERY_KEYS } from '../../utils/constants';
 
+
 interface EmployeeManagementProps {
   department?: Department;
 }
+
 
 const EmployeeManagement: React.FC<EmployeeManagementProps> = ({ department }) => {
   const navigate = useNavigate();
@@ -29,6 +31,7 @@ const EmployeeManagement: React.FC<EmployeeManagementProps> = ({ department }) =
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
 
+
   // Debounced search
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -40,6 +43,7 @@ const EmployeeManagement: React.FC<EmployeeManagementProps> = ({ department }) =
     }, 500);
     return () => clearTimeout(timeoutId);
   }, [searchTerm]);
+
 
   // Employees query
   const { 
@@ -63,6 +67,7 @@ const EmployeeManagement: React.FC<EmployeeManagementProps> = ({ department }) =
     } as ApiResponse<any>,
   });
 
+
   // Departments query
   const { data: departmentsResponse } = useQuery({
     queryKey: [AUTH_QUERY_KEYS.DEPARTMENTS],
@@ -74,6 +79,7 @@ const EmployeeManagement: React.FC<EmployeeManagementProps> = ({ department }) =
       data: []
     } as ApiResponse<Department[]>,
   });
+
 
   // Roles query
   const { data: rolesResponse } = useQuery({
@@ -87,6 +93,7 @@ const EmployeeManagement: React.FC<EmployeeManagementProps> = ({ department }) =
     } as ApiResponse<Role[]>,
   });
 
+
   const createMutation = useMutation({
     mutationFn: createEmployee,
     onSuccess: () => {
@@ -99,6 +106,7 @@ const EmployeeManagement: React.FC<EmployeeManagementProps> = ({ department }) =
     },
   });
 
+
   // Safe data extraction
   const employees: Employee[] = employeeResponse?.data?.employees ?? [];
   const totalPages: number = employeeResponse?.data?.totalPages ?? 0;
@@ -107,19 +115,23 @@ const EmployeeManagement: React.FC<EmployeeManagementProps> = ({ department }) =
   const departments: Department[] = departmentsResponse?.data ?? [];
   const roles: Role[] = rolesResponse?.data ?? [];
 
+
   const updateFilter = (key: keyof EmployeeFilters, value: any) => {
     setFilters(prev => ({ ...prev, [key]: value, page: 0 }));
   };
 
+
   const handlePageChange = (newPage: number) => {
     setFilters(prev => ({ ...prev, page: newPage }));
   };
+
 
   // Debug component mount
   useEffect(() => {
     console.log('🎯 EmployeeManagement mounted');
     console.log('📊 Current filters:', filters);
   }, [filters]);
+
 
   if (error) {
     return (
@@ -134,6 +146,7 @@ const EmployeeManagement: React.FC<EmployeeManagementProps> = ({ department }) =
       </div>
     );
   }
+
 
   return (
     <div className="bg-white rounded-lg shadow-sm border p-6">
@@ -154,6 +167,7 @@ const EmployeeManagement: React.FC<EmployeeManagementProps> = ({ department }) =
       >
         🧪 Test API
       </button>
+
 
       {/* Header */}
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-6">
@@ -186,6 +200,7 @@ const EmployeeManagement: React.FC<EmployeeManagementProps> = ({ department }) =
         </div>
       </div>
 
+
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-6 p-4 bg-gray-50 rounded-lg">
         <select
@@ -213,6 +228,7 @@ const EmployeeManagement: React.FC<EmployeeManagementProps> = ({ department }) =
           ))}
         </select>
       </div>
+
 
       {/* Content */}
       <div className="space-y-4">
@@ -286,6 +302,7 @@ const EmployeeManagement: React.FC<EmployeeManagementProps> = ({ department }) =
               ))}
             </div>
 
+
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 pt-6 border-t border-gray-200">
@@ -319,6 +336,7 @@ const EmployeeManagement: React.FC<EmployeeManagementProps> = ({ department }) =
         )}
       </div>
 
+
       {/* AddEmployeeModal */}
       {showAddModal && (
         <AddEmployeeModal
@@ -333,6 +351,7 @@ const EmployeeManagement: React.FC<EmployeeManagementProps> = ({ department }) =
   );
 };
 
+
 interface AddEmployeeModalProps {
   onClose: () => void;
   onSubmit: (data: CreateEmployeeRequest) => void;
@@ -340,6 +359,7 @@ interface AddEmployeeModalProps {
   roles: Role[];
   loading: boolean;
 }
+
 
 const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
   onClose,
@@ -357,6 +377,8 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
     departmentId: 0,
     roleId: 0,
   });
+
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -390,6 +412,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
               onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               placeholder="John"
+              disabled={loading}
             />
           </div>
           <div>
@@ -400,6 +423,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
               onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               placeholder="Doe"
+              disabled={loading}
             />
           </div>
           <div>
@@ -409,6 +433,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
               onChange={(e) => setFormData({ ...formData, middleName: e.target.value })}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               placeholder="Optional"
+              disabled={loading}
             />
           </div>
           <div>
@@ -420,18 +445,44 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               placeholder="john.doe@company.com"
+              disabled={loading}
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Password *</label>
-            <input
-              type="password"
-              required
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              placeholder="Secure password..."
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                className="w-full px-3 py-2 pr-10 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="Min 8 characters with letters & numbers"
+                disabled={loading}
+                minLength={8}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                disabled={loading}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 disabled:opacity-50 focus:outline-none"
+                title={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                )}
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Must be 8-50 characters with letters and numbers
+            </p>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -441,6 +492,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
                 value={formData.departmentId}
                 onChange={(e) => setFormData({ ...formData, departmentId: Number(e.target.value) })}
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500"
+                disabled={loading}
               >
                 <option value={0}>Select Department</option>
                 {departments.map((dept) => (
@@ -455,6 +507,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
                 value={formData.roleId}
                 onChange={(e) => setFormData({ ...formData, roleId: Number(e.target.value) })}
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500"
+                disabled={loading}
               >
                 <option value={0}>Select Role</option>
                 {roles.map((role) => (
@@ -492,5 +545,6 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
     </div>
   );
 };
+
 
 export default EmployeeManagement;

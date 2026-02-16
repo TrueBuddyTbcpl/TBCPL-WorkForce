@@ -11,7 +11,7 @@ export const ReportStatus = {
   IN_PROGRESS: 'IN_PROGRESS',
   WAITING_FOR_APPROVAL: 'WAITING_FOR_APPROVAL',
   REQUESTED_FOR_CHANGES: 'REQUESTED_FOR_CHANGES',
-  REJECTED_BY_CLIENT: 'REJECTED_BY_CLIENT',
+  DISAPPROVED_BY_CLIENT: 'DISAPPROVED_BY_CLIENT',
   READY_FOR_CREATE_CASE: 'READY_FOR_CREATE_CASE',
 } as const;
 export type ReportStatus = (typeof ReportStatus)[keyof typeof ReportStatus];
@@ -147,7 +147,7 @@ export const STATUS_LABELS: Record<ReportStatus, string> = {
   [ReportStatus.IN_PROGRESS]: 'In Progress',
   [ReportStatus.WAITING_FOR_APPROVAL]: 'Waiting for Approval',
   [ReportStatus.REQUESTED_FOR_CHANGES]: 'Changes Requested',
-  [ReportStatus.REJECTED_BY_CLIENT]: 'Rejected by Client',
+  [ReportStatus.DISAPPROVED_BY_CLIENT]: 'Disapproved by Client',
   [ReportStatus.READY_FOR_CREATE_CASE]: 'Ready for Case Creation',
 };
 
@@ -157,7 +157,7 @@ export const STATUS_COLORS: Record<ReportStatus, string> = {
   [ReportStatus.IN_PROGRESS]: 'bg-blue-100 text-blue-800',
   [ReportStatus.WAITING_FOR_APPROVAL]: 'bg-yellow-100 text-yellow-800',
   [ReportStatus.REQUESTED_FOR_CHANGES]: 'bg-orange-100 text-orange-800',
-  [ReportStatus.REJECTED_BY_CLIENT]: 'bg-red-100 text-red-800',
+  [ReportStatus.DISAPPROVED_BY_CLIENT]: 'bg-red-100 text-red-800',
   [ReportStatus.READY_FOR_CREATE_CASE]: 'bg-green-100 text-green-800',
 };
 

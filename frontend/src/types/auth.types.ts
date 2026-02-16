@@ -63,5 +63,6 @@ export interface AuthState {
   tokenExpiry: number | null;
   login: (token: string, user: UserInfo, expiresIn: number) => void;
   logout: () => void;
+  clearAuth: () => void;
   isTokenExpired: () => boolean;
 }

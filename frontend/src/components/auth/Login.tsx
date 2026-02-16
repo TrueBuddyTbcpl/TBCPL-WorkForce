@@ -1,20 +1,24 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { loginSchema, type LoginFormData } from '../../schemas/auth.schema';
 import { useAuth } from '../../hooks/useAuth';
 import { Input } from '../common/Input';
 import { Button } from '../common/Button';
 import { useAuthStore } from '../../stores/authStore';
+import { storageHelper } from '../../utils/storageHelper';
+import { STORAGE_KEYS } from '../../utils/constants';
+import apiClient from '../../services/api/apiClient';
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, clearAuth } = useAuthStore();
   const { login, isLoggingIn, loginError, resetLoginError } = useAuth();
   const [showPassword, setShowPassword] = React.useState(false);
+  const [isValidatingToken, setIsValidatingToken] = useState(true); // ✅ NEW
 
   const {
     register,
@@ -24,22 +28,41 @@ export const Login: React.FC = () => {
     resolver: zodResolver(loginSchema),
   });
 
-  // Redirect if already authenticated
+  // ✅ NEW: Validate token on mount
   useEffect(() => {
-    if (isAuthenticated && user) { // ✅ Check both conditions
-      console.log('Already authenticated, redirecting...'); // Debug
-      console.log('User role:', user.roleName); // Debug
+    const validateToken = async () => {
+      if (isAuthenticated && user) {
+        const token = storageHelper.get<string>(STORAGE_KEYS.AUTH_TOKEN);
+        
+        if (!token) {
+          // No token, clear auth
+          clearAuth();
+          setIsValidatingToken(false);
+          return;
+        }
+
+        try {
+          // Try to make a simple API call to validate token
+          await apiClient.get('/auth/validate');
+          
+          // Token is valid, redirect to appropriate dashboard
+          const isAdmin = user?.roleName === 'SUPER_ADMIN' || user?.roleName === 'HR_MANAGER';
+          const defaultRoute = isAdmin ? '/admin' : '/operations/dashboard';
+          const from = (location.state as any)?.from?.pathname || defaultRoute;
+          
+          navigate(from, { replace: true });
+        } catch (error) {
+          // Token invalid or expired, clear auth
+          console.log('Token validation failed, clearing auth');
+          clearAuth();
+        }
+      }
       
-      // ✅ Check admin role with null safety
-      const isAdmin = user?.roleName === 'SUPER_ADMIN' || user?.roleName === 'HR_MANAGER';
-      const defaultRoute = isAdmin ? '/admin' : '/operations/dashboard';
-      
-      console.log('Default route:', defaultRoute); // Debug
-      
-      const from = (location.state as any)?.from?.pathname || defaultRoute;
-      navigate(from, { replace: true });
-    }
-  }, [isAuthenticated, user, navigate, location]);
+      setIsValidatingToken(false);
+    };
+
+    validateToken();
+  }, []); // ✅ Run only once on mount
 
   // Clear login error when component unmounts
   useEffect(() => {
@@ -49,9 +72,20 @@ export const Login: React.FC = () => {
   }, [resetLoginError]);
 
   const onSubmit = (data: LoginFormData) => {
-    console.log('Submitting login...'); // Debug
     login(data);
   };
+
+  // ✅ NEW: Show loading while validating token
+  if (isValidatingToken) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
