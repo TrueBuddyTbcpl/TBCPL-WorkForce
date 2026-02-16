@@ -79,7 +79,7 @@ export const AdminPreReportList: React.FC = () => {
     const fetchClients = async () => {
       try {
         setIsLoadingClients(true);
-        const res = await apiClient.get('/admin/clients');
+        const res = await apiClient.get('/api/v1/admin/clients');
         const list = (res.data?.data || []) as any[];
         setClients(
           list.map((c) => ({
@@ -102,7 +102,7 @@ export const AdminPreReportList: React.FC = () => {
     const fetchEmployees = async () => {
       try {
         setIsLoadingEmployees(true);
-        const res = await apiClient.get('/auth/employees', {
+        const res = await apiClient.get('/api/v1/auth/employees', {
           params: { page: 0, size: 1000, sort: 'empId', direction: 'ASC' },
         });
         const list = (res.data?.data?.employees || []) as any[];
@@ -130,12 +130,12 @@ export const AdminPreReportList: React.FC = () => {
 
       const uniqueEmployeeIds = [...new Set(data.reports.map(r => r.createdBy))];
       const names: Record<number, string> = {};
-
+      
       await Promise.all(
         uniqueEmployeeIds.map(async (employeeId) => {
           try {
             const response = await apiClient.get(`/auth/employees/id/${employeeId}`);
-
+            
             if (response.data?.success && response.data?.data) {
               names[employeeId] = response.data.data.fullName;
             } else {
@@ -225,7 +225,7 @@ export const AdminPreReportList: React.FC = () => {
       await apiClient.patch(`/operation/prereport/${reportId}/status`, {
         reportStatus: newStatus,
       });
-
+      
       toast.success('Status updated successfully');
       refetch();
     } catch (error: any) {
@@ -239,7 +239,7 @@ export const AdminPreReportList: React.FC = () => {
       await apiClient.post(`/operation/prereport/${reportId}/request-changes`, {
         changeComments,
       });
-
+      
       toast.success('Changes requested successfully');
       refetch();
     } catch (error: any) {
@@ -321,19 +321,20 @@ export const AdminPreReportList: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate('/operations/pre-report/create')}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-          >
-            <FileText className="w-4 h-4" />
-            Create Report
-          </button>
+              <button
+      onClick={() => navigate('/operations/pre-report/create')}
+      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+    >
+      <FileText className="w-4 h-4" />
+      Create Report
+    </button>
           <button
             onClick={() => setShowFilters((v) => !v)}
-            className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${showFilters || hasActiveFilters
+            className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${
+              showFilters || hasActiveFilters
                 ? 'bg-blue-50 border-blue-300 text-blue-700'
                 : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-              }`}
+            }`}
           >
             <Filter className="w-4 h-4" />
             Filters
@@ -406,10 +407,11 @@ export const AdminPreReportList: React.FC = () => {
                             <button
                               key={c.id}
                               onClick={() => handleClientSelect(c)}
-                              className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 ${clientName === c.name
+                              className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 ${
+                                clientName === c.name
                                   ? 'bg-blue-50 text-blue-700 font-medium'
                                   : 'text-gray-900'
-                                }`}
+                              }`}
                             >
                               {c.name}
                             </button>
@@ -467,10 +469,11 @@ export const AdminPreReportList: React.FC = () => {
                             <button
                               key={e.id}
                               onClick={() => handleEmployeeSelect(e)}
-                              className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 ${createdBy === e.id.toString()
+                              className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 ${
+                                createdBy === e.id.toString()
                                   ? 'bg-blue-50 text-blue-700 font-medium'
                                   : 'text-gray-900'
-                                }`}
+                              }`}
                             >
                               {e.name} ({e.empId})
                             </button>
@@ -601,10 +604,11 @@ export const AdminPreReportList: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${report.leadType === 'CLIENT_LEAD'
+                          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            report.leadType === 'CLIENT_LEAD'
                               ? 'bg-blue-100 text-blue-800'
                               : 'bg-purple-100 text-purple-800'
-                            }`}
+                          }`}
                         >
                           {report.leadType === 'CLIENT_LEAD'
                             ? 'Client Lead'
@@ -612,9 +616,10 @@ export const AdminPreReportList: React.FC = () => {
                         </span>
                       </td>
                       {/* ✅ FIXED: Better approach - only add padding for last 2 rows */}
-                      <td
-                        className={`px-6 whitespace-nowrap ${index >= filteredReports.length - 2 ? 'py-4 pb-32' : 'py-4'
-                          }`}
+                      <td 
+                        className={`px-6 whitespace-nowrap ${
+                          index >= filteredReports.length - 2 ? 'py-4 pb-32' : 'py-4'
+                        }`}
                         onClick={(e) => e.stopPropagation()}
                       >
                         <StatusDropdown
@@ -710,7 +715,7 @@ export const AdminPreReportList: React.FC = () => {
         isOpen={selectedReportForChanges !== null}
         reportId={selectedReportForChanges || ''}
         onClose={() => setSelectedReportForChanges(null)}
-        onSubmit={(changeComments) =>
+        onSubmit={(changeComments) => 
           handleRequestChanges(selectedReportForChanges!, changeComments)
         }
       />
