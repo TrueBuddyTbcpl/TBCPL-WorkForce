@@ -7,7 +7,7 @@ import { mockReports } from '../../data/mockData/mockReports';
 
 const RecentActivityFeed: React.FC = () => {
   const [activities, setActivities] = useState<any[]>([]);
-  const [isMinimized, setIsMinimized] = useState(false); // ✅ NEW: Minimize state
+  const [isMinimized, setIsMinimized] = useState(true); // ✅ NEW: Minimize state
 
 
   useEffect(() => {

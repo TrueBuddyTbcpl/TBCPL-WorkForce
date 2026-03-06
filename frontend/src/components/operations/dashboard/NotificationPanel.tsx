@@ -14,7 +14,7 @@ interface Notification {
 
 
 const NotificationPanel: React.FC = () => {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([
     {
       id: '1',
@@ -111,9 +111,9 @@ const NotificationPanel: React.FC = () => {
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
-    
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
+
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
       day: 'numeric',
       year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
     });
@@ -121,7 +121,7 @@ const NotificationPanel: React.FC = () => {
 
 
   const markAsRead = (id: string) => {
-    setNotifications(notifications.map(n => 
+    setNotifications(notifications.map(n =>
       n.id === id ? { ...n, isRead: true } : n
     ));
   };
@@ -166,7 +166,7 @@ const NotificationPanel: React.FC = () => {
             </div>
           </button>
         </div>
-        
+
         <style>{`
           .writing-mode-vertical {
             writing-mode: vertical-rl;
@@ -180,9 +180,11 @@ const NotificationPanel: React.FC = () => {
 
   // ✅ EXPANDED FULL PANEL
   return (
-    <div className="fixed right-0 top-0 h-screen w-96 bg-white border-l border-gray-200 shadow-lg z-40 flex flex-col">
+    <div className="fixed right-0 top-[60px] h-[calc(100vh-60px)] w-96 border-l shadow-lg z-[60] flex flex-col bg-white"
+  style={{ borderColor: '#e5e7eb' }}
+>
       {/* Header */}
-      <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+      <div className="p-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="relative">
@@ -194,10 +196,8 @@ const NotificationPanel: React.FC = () => {
               )}
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
-              <p className="text-xs text-gray-500">
-                {unreadCount} unread
-              </p>
+              <h3 className="text-sm font-semibold text-white">Notifications</h3>
+              <p className="text-xs text-gray-400">{unreadCount} unread</p>
             </div>
           </div>
           {/* ✅ ChevronRight when expanded (pointing right to minimize) */}
@@ -241,13 +241,11 @@ const NotificationPanel: React.FC = () => {
               <div
                 key={notification.id}
                 onClick={() => !notification.isRead && markAsRead(notification.id)}
-                className={`p-3 border rounded-lg transition-all cursor-pointer ${
-                  getNotificationColor(notification.type)
-                } ${
-                  !notification.isRead 
-                    ? 'border-l-4 shadow-sm' 
+                className={`p-3 border rounded-lg transition-all cursor-pointer ${getNotificationColor(notification.type)
+                  } ${!notification.isRead
+                    ? 'border-l-4 shadow-sm'
                     : 'opacity-75 hover:opacity-100'
-                }`}
+                  }`}
               >
                 <div className="flex items-start gap-3">
                   <div className="flex-shrink-0 mt-0.5">

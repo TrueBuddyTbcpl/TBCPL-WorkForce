@@ -34,8 +34,6 @@ const TrueBuddyStep3Intelligence: React.FC<Step3Props> = ({ data, onNext, onBack
       suspectedActivity: data.suspectedActivity || SuspectedActivity.COUNTERFEITING,
       productSegment: data.productSegment || ProductCategory.CROP_PROTECTION,
       supplyChainStage: data.supplyChainStage || SupplyChainStage.UPSTREAM,
-      repeatIntelligence: data.repeatIntelligence || YesNoUnknown.UNKNOWN,
-      multiBrandRisk: data.multiBrandRisk || YesNoUnknown.UNKNOWN,
     },
   });
 

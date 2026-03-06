@@ -1,5 +1,5 @@
 // Update the interface and component
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ReportData, Section } from './types/report.types';
 import { FileDown, Edit, ArrowLeft, FileText, Building2, Award, Shield, Users, Calendar, Briefcase, CheckCircle2, BookOpen, List, CheckCircle, AlertCircle, Lock } from 'lucide-react';
 import { format } from 'date-fns';
@@ -11,6 +11,104 @@ interface ReportPreviewProps {
     onEdit: () => void;
     onUpdate: (updatedData: ReportData) => void; // Add this
 }
+
+// ✅ Add this above the ReportPreview component
+const useImageOrientations = (images: string[]) => {
+    const [orientations, setOrientations] = useState<Record<string, 'portrait' | 'landscape'>>({});
+
+    useEffect(() => {
+        images.forEach((src) => {
+            if (orientations[src]) return; // already detected
+            const img = new Image();
+            img.onload = () => {
+                setOrientations((prev) => ({
+                    ...prev,
+                    [src]: img.naturalHeight > img.naturalWidth ? 'portrait' : 'landscape',
+                }));
+            };
+            img.src = src;
+        });
+    }, [images]);
+
+    return orientations;
+};
+
+// ✅ Add this component right after useImageOrientations and BEFORE ReportPreview
+const SectionImages = ({ images }: { images: string[] }) => {
+    const orientations = useImageOrientations(images);
+
+    // ✅ Determine grid columns based on majority orientation
+    const portraitCount = Object.values(orientations).filter(o => o === 'portrait').length;
+    const landscapeCount = Object.values(orientations).filter(o => o === 'landscape').length;
+
+    // ✅ Wait until all orientations detected
+    const allDetected = Object.keys(orientations).length === images.length;
+
+    // Portrait majority → 3 cols, Landscape majority → 2 cols
+    const cols = allDetected
+        ? (portraitCount > landscapeCount ? 3 : 2)
+        : 2; // default 2 while loading
+
+    return (
+        <div className="mt-6">
+            {/* Label */}
+            <div className="flex items-center gap-2 mb-3">
+                <div className="w-1 h-4 bg-blue-600 rounded-full"></div>
+                <h4 className="text-xs font-bold text-gray-600 uppercase tracking-wide">
+                    Photographic Evidence ({images.length} image{images.length > 1 ? 's' : ''})
+                </h4>
+            </div>
+
+            {/* Grid */}
+            <div
+                style={{
+                    display: 'grid',
+                    gridTemplateColumns: `repeat(${cols}, 1fr)`,
+                    gap: '10px',
+                }}
+            >
+                {images.map((img, idx) => {
+                    const orientation = orientations[img] ?? 'landscape';
+                    const maxH = orientation === 'portrait' ? '280px' : '200px';
+
+                    return (
+                        <div
+                            key={idx}
+                            className="border border-gray-200 rounded-lg overflow-hidden shadow-sm flex flex-col"
+                        >
+                            <div
+                                className="bg-gray-50 flex items-center justify-center p-1"
+                                style={{ minHeight: '100px' }}
+                            >
+                                <img
+                                    src={img}
+                                    alt={`Section image ${idx + 1}`}
+                                    style={{
+                                        maxWidth: '100%',
+                                        maxHeight: maxH,   // ✅ portrait gets taller box
+                                        width: 'auto',
+                                        height: 'auto',    // ✅ preserves natural ratio
+                                        display: 'block',
+                                        margin: '0 auto',
+                                    }}
+                                />
+                            </div>
+                            <div className="bg-gray-50 border-t border-gray-200 px-2 py-1 text-center">
+                                <span className="text-xs text-gray-500 font-medium">
+                                    Image {idx + 1}
+                                </span>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            <div className="mt-4 h-px bg-gray-100"></div>
+        </div>
+    );
+};
+
+
 
 const ReportPreview = ({ data, onEdit, onUpdate }: ReportPreviewProps) => {
     const [editingSection, setEditingSection] = useState<Section | null>(null);
@@ -81,12 +179,24 @@ const ReportPreview = ({ data, onEdit, onUpdate }: ReportPreviewProps) => {
     // A4 page dimensions
     const pageStyle = {
         width: '210mm',
-        height: '297mm',
+        height: '297mm',       // ✅ Fixed height only for cover and TOC
         margin: '0 auto',
         padding: '40px',
         backgroundColor: 'white',
         marginBottom: '50px',
     };
+
+    // Content pages - auto-grow with content
+    const contentPageStyle = {
+        width: '210mm',
+        minHeight: '297mm',
+        height: 'auto',
+        margin: '0 auto',
+        padding: '40px',
+        backgroundColor: 'white',
+        marginBottom: '50px',
+    };
+
 
     return (
         <div className="min-h-screen bg-white py-8 relative">
@@ -312,10 +422,16 @@ const ReportPreview = ({ data, onEdit, onUpdate }: ReportPreviewProps) => {
 
                 {/* PAGES 3+: CONTENT PAGES */}
                 {data.sections.length > 0 && (
-                    <div data-pdf-page style={pageStyle} className="shadow-lg border border-gray-200">
+                    <div data-pdf-page style={contentPageStyle} className="shadow-lg border border-gray-200">
                         <div className="space-y-8">
+                            {/* PAGES 3+: CONTENT PAGES - Each section on its own page */}
                             {data.sections.map((section, index) => (
-                                <div key={section.id}>
+                                <div
+                                    key={section.id}
+                                    data-pdf-page
+                                    style={contentPageStyle}
+                                    className="shadow-lg border border-gray-200"
+                                >
                                     {/* Section Header */}
                                     <div className="flex items-start justify-between mb-4 pb-3 border-b-2 border-gray-400">
                                         <h3 className="text-xl font-bold text-gray-900">
@@ -330,7 +446,6 @@ const ReportPreview = ({ data, onEdit, onUpdate }: ReportPreviewProps) => {
                                         </button>
                                     </div>
 
-                                    {/* Section Content */}
                                     {/* Section Content */}
                                     <div className="mb-6">
                                         {/* Custom Table Content */}
@@ -420,27 +535,12 @@ const ReportPreview = ({ data, onEdit, onUpdate }: ReportPreviewProps) => {
 
                                         {/* Section Images */}
                                         {section.images && section.images.length > 0 && (
-                                            <div className="mt-6">
-                                                <h4 className="text-sm font-semibold text-gray-700 mb-3">
-                                                    Attached Images:
-                                                </h4>
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    {section.images.map((img, idx) => (
-                                                        <div key={idx} className="border border-gray-300 rounded-lg overflow-hidden">
-                                                            <img
-                                                                src={img}
-                                                                alt={`Section image ${idx + 1}`}
-                                                                className="w-full h-auto object-contain"
-                                                            />
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
+                                            <SectionImages images={section.images} />
                                         )}
                                     </div>
-
                                 </div>
                             ))}
+
                         </div>
                     </div>
                 )}

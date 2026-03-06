@@ -13,16 +13,23 @@ import {
   LogOut,
   FileText,
   UserCheck,
+  ClipboardCheck,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useAuth } from '../../hooks/useAuth';
 
-export type ViewMode = 'employees' | 'cases' | 'profiles' | 'prereports' | 'clients';
+
+
+export type ViewMode = 'employees' | 'cases' | 'profiles' | 'prereports' | 'clients' | 'finalreports';
+
+
 
 interface Filters {
   role: string;
   status: string;
 }
+
+
 
 interface AdminSidebarProps {
   selectedDepartment: Department;
@@ -32,6 +39,8 @@ interface AdminSidebarProps {
   filters: Filters;
   onFiltersChange: (filters: Filters) => void;
 }
+
+
 
 const AdminSidebar: React.FC<AdminSidebarProps> = ({
   selectedDepartment,
@@ -43,9 +52,13 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   const { logout } = useAuth();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
+
+
   const adminName = user?.fullName || 'Admin User';
   const adminEmail = user?.email || 'admin@tbcpl.com';
   const adminRole = user?.roleName || 'Administrator';
+
+
 
   const departments: { value: Department; label: string; icon: any; color: string }[] = [
     { value: 'Operations', label: 'Operations', icon: Building2, color: 'blue' },
@@ -53,16 +66,22 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     { value: 'Account', label: 'Accounts', icon: Calculator, color: 'purple' },
   ];
 
+
+
   const selectedDept = departments.find(d => d.value === selectedDepartment);
+
+
 
   const handleLogout = () => {
     logout();
     setShowProfileMenu(false);
   };
 
+
+
   return (
     <>
-      {/* ✅ CHANGED: Background color to light sky blue */}
+      {/* Background color: light sky blue */}
       <div className="fixed left-0 top-0 h-screen w-64 bg-sky-100 border-r border-gray-200 shadow-lg z-40 flex flex-col">
         {/* Logo/Brand */}
         <div className="p-6 border-b border-gray-200">
@@ -77,10 +96,13 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
           </div>
         </div>
 
+
+
         {/* Navigation - Scrollable */}
         <div className="flex-1 overflow-y-auto p-4">
-          {/* ✅ CHANGED: Disabled Department Selector */}
+          {/* Disabled Department Selector */}
           <div className="mb-4">
+            {/* ✅ FIX 1: abel → <label */}
             <label className="block text-xs font-medium text-gray-600 mb-2 uppercase tracking-wide">
               Select Department
             </label>
@@ -96,8 +118,11 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
             </button>
           </div>
 
-          {/* ✅ View Mode Selector - Cases and Profiles DISABLED */}
+
+
+          {/* View Mode Selector */}
           <div className="mb-4">
+            {/* ✅ FIX 2: abel → <label */}
             <label className="block text-xs font-medium text-gray-600 mb-2 uppercase tracking-wide">
               View Mode
             </label>
@@ -113,16 +138,23 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
                 <span>Employees</span>
               </button>
 
-              {/* ✅ CHANGED: Cases button disabled */}
+
+
+              {/* Cases button enabled */}
               <button
-                disabled
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-gray-200 text-gray-400 border border-gray-300 cursor-not-allowed opacity-60"
+                onClick={() => onViewModeChange('cases')}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${viewMode === 'cases'
+                    ? 'bg-blue-50 text-blue-600 border-2 border-blue-600 font-semibold'
+                    : 'bg-gray-50 text-gray-700 border border-gray-300 hover:bg-gray-100'
+                  }`}
               >
                 <Briefcase className="w-5 h-5" />
                 <span>Cases</span>
               </button>
 
-              {/* ✅ CHANGED: Culprit Profiles button disabled */}
+
+
+              {/* Culprit Profiles button disabled */}
               <button
                 disabled
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-gray-200 text-gray-400 border border-gray-300 cursor-not-allowed opacity-60"
@@ -133,14 +165,11 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
             </div>
           </div>
 
-          {/* ✅ REMOVED: Filter Section - Completely removed */}
 
-          {/* ✅ REMOVED: Employee Management Section - Completely removed */}
 
           {/* Action Buttons */}
           <div className="space-y-2">
-            {/* ✅ REMOVED: Change Password button - Completely removed */}
-            {/* ✅ NEW: Preliminary Reports Button */}
+            {/* Preliminary Reports */}
             <button
               onClick={() => onViewModeChange('prereports')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition font-medium ${viewMode === 'prereports'
@@ -152,12 +181,14 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
               Preliminary Reports
             </button>
 
-            {/* ✅ Client Management Button - Same pattern as prereports */}
+
+
+            {/* Client Management */}
             <button
               onClick={() => onViewModeChange('clients')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition font-medium ${viewMode === 'clients'
-                  ? 'bg-blue-50 text-blue-600 border-2 border-blue-600'
-                  : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                ? 'bg-blue-50 text-blue-600 border-2 border-blue-600'
+                : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
                 }`}
             >
               <Building2 className="w-5 h-5" />
@@ -165,8 +196,24 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
             </button>
 
 
+
+            {/* ✅ NEW: Final Reports */}
+            <button
+              onClick={() => {
+                onViewModeChange('finalreports');
+              }}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition font-medium ${viewMode === 'finalreports'
+                ? 'bg-blue-50 text-blue-600 border-2 border-blue-600'
+                : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                }`}
+            >
+              <ClipboardCheck className="w-5 h-5" />
+              Final Reports
+            </button>
           </div>
         </div>
+
+
 
         {/* Admin Profile Section (Bottom) */}
         <div className="border-t border-gray-200 p-4">
@@ -190,6 +237,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
               />
             </button>
 
+
+
             {showProfileMenu && (
               <>
                 <div
@@ -202,6 +251,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
                     <p className="text-xs text-gray-500 truncate">{adminEmail}</p>
                   </div>
 
+
+
                   <button
                     onClick={() => {
                       navigate('/admin/profile');
@@ -213,6 +264,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
                     My Profile
                   </button>
 
+
+
                   <button
                     onClick={() => {
                       navigate('/admin/settings');
@@ -223,6 +276,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
                     <Settings className="w-4 h-4" />
                     Settings
                   </button>
+
+
 
                   <div className="border-t border-gray-100 mt-1 pt-1">
                     <button
@@ -242,5 +297,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     </>
   );
 };
+
+
 
 export default AdminSidebar;

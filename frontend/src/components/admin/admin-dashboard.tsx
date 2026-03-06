@@ -12,8 +12,12 @@ import EmployeeManagement from './EmployeeManagement';
 import { Search } from 'lucide-react';
 import { AdminPreReportList } from './prereport/AdminPreReportList'; // ✅ Add this import
 import ClientManagement from './ClientManagement';
+import AdminFinalReportList from './finalreports/AdminFinalReportList';
+import AdminCaseList from './cases/AdminCaseList';
 
-type ViewMode = 'employees' | 'cases' | 'profiles' | 'prereports' | 'clients';
+
+type ViewMode = 'employees' | 'cases' | 'profiles' | 'prereports' | 'clients' | 'finalreports';
+
 
 const AdminDashboard: React.FC = () => {
   const [selectedDepartment, setSelectedDepartment] = useState<Department>('Operations');
@@ -131,7 +135,7 @@ const AdminDashboard: React.FC = () => {
           <div className="flex-1 p-6">
 
             {/* ✅ Search Bar Only - Hide for prereports and clients */}
-            {viewMode !== 'prereports' && viewMode !== 'clients' && (
+            {viewMode !== 'prereports' && viewMode !== 'clients' && viewMode !== 'finalreports' &&  (
               <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -147,7 +151,7 @@ const AdminDashboard: React.FC = () => {
             )}
 
             {/* Statistics Cards - Hide for prereports and clients */}
-            {viewMode !== 'prereports' && viewMode !== 'clients' && (
+            {viewMode !== 'prereports' && viewMode !== 'clients' && viewMode !== 'finalreports' && viewMode !== 'cases' && (
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 {/* Total Employees Card - Active */}
                 <div className="bg-white rounded-lg shadow-sm border p-6">
@@ -183,67 +187,23 @@ const AdminDashboard: React.FC = () => {
               <EmployeeManagement
               />
             ) : viewMode === 'cases' ? (
-              <CasesView cases={getFilteredData() as any} />
+              <AdminCaseList />
             ) : viewMode === 'profiles' ? (
               <ProfilesView profiles={getFilteredData() as any} />
             ) : viewMode === 'prereports' ? ( // ✅ Add this
               <AdminPreReportList />
-            ) : viewMode === 'clients' ? (  // ✅ ADD THIS
-              <ClientManagement />) :
-              null}
+            ) : viewMode === 'clients' ? (
+              <ClientManagement />
+            ) : viewMode === 'finalreports' ? (
+              <AdminFinalReportList />
+            ) : null}
+
           </div>
         </div>
       </div>
 
       {/* Right Sidebar - Recent Activity */}
       <RecentActivityFeed />
-    </div>
-  );
-};
-
-// Cases View Component
-const CasesView: React.FC<{ cases: any[] }> = ({ cases }) => {
-  const navigate = useNavigate();
-
-  return (
-    <div className="bg-white rounded-lg shadow-sm border p-6">
-      <h2 className="text-xl font-semibold text-gray-900 mb-4">All Cases</h2>
-      {cases.length === 0 ? (
-        <p className="text-center text-gray-600 py-12">No cases found</p>
-      ) : (
-        <div className="space-y-3">
-          {cases.map((caseItem) => (
-            <div
-              key={caseItem.id}
-              onClick={() => navigate(`/operations/case-index/${caseItem.id}`)}
-              className="border border-gray-200 rounded-lg p-4 hover:shadow-md hover:border-blue-300 transition cursor-pointer"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900 mb-1">{caseItem.title}</h3>
-                  <p className="text-sm text-gray-600 mb-2">{caseItem.caseNumber} • {caseItem.client.name}</p>
-                  <div className="flex items-center gap-3 text-xs">
-                    <span className={`px-2 py-1 rounded-full font-medium ${caseItem.status === 'open' ? 'bg-green-100 text-green-800' :
-                      caseItem.status === 'closed' ? 'bg-gray-100 text-gray-800' :
-                        caseItem.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
-                          'bg-yellow-100 text-yellow-800'
-                      }`}>
-                      {caseItem.status}
-                    </span>
-                    <span className={`px-2 py-1 rounded-full font-medium ${caseItem.priority === 'critical' ? 'bg-red-100 text-red-800' :
-                      caseItem.priority === 'high' ? 'bg-orange-100 text-orange-800' :
-                        caseItem.priority === 'medium' ? 'bg-blue-100 text-blue-800' :
-                          'bg-gray-100 text-gray-800'
-                      }`}>
-                      {caseItem.priority}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 };

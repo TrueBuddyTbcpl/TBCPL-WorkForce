@@ -6,6 +6,7 @@ import {
   Calendar,
   User,
   AlertCircle,
+  Briefcase,
 } from 'lucide-react';
 import { usePreReports } from '../../../hooks/prereport/usePreReports';
 import apiClient from '../../../services/api/apiClient';
@@ -16,6 +17,8 @@ export const EmployeePreReportList: React.FC = () => {
   const [page, setPage] = useState(0);
   const [size] = useState(15);
   const [employeeNames, setEmployeeNames] = useState<Record<number, string>>({});  // ✅ Changed from string to number
+
+
 
 
   const { data, isLoading, isError } = usePreReports({ page, size });
@@ -29,23 +32,23 @@ export const EmployeePreReportList: React.FC = () => {
 
       // ✅ Get unique employee IDs (now they are numbers)
       const uniqueEmployeeIds = [...new Set(data.reports.map(r => r.createdBy))];
-      
+
       console.log('🔍 Unique employee IDs to fetch:', uniqueEmployeeIds);
 
 
       // Fetch all employee names
       const names: Record<number, string> = {};
-      
+
       await Promise.all(
         uniqueEmployeeIds.map(async (employeeId) => {
           try {
             console.log(`📡 Fetching employee for ID: ${employeeId}`);
-            
+
             // ✅ Use employee ID directly (not empId)
             const response = await apiClient.get(`/auth/employees/id/${employeeId}`);
-            
+
             console.log(`✅ Response for employee ID ${employeeId}:`, response.data);
-            
+
             if (response.data?.success && response.data?.data) {
               names[employeeId] = response.data.data.fullName;
               console.log(`✅ Mapped ID ${employeeId} -> ${response.data.data.fullName}`);
@@ -68,6 +71,7 @@ export const EmployeePreReportList: React.FC = () => {
 
     fetchEmployeeNames();
   }, [data?.reports]);
+
 
 
   if (isLoading) {
@@ -168,11 +172,10 @@ export const EmployeePreReportList: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            report.leadType === 'CLIENT_LEAD'
+                          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${report.leadType === 'CLIENT_LEAD'
                               ? 'bg-blue-100 text-blue-800'
                               : 'bg-purple-100 text-purple-800'
-                          }`}
+                            }`}
                         >
                           {report.leadType === 'CLIENT_LEAD'
                             ? 'Client Lead'
@@ -181,19 +184,18 @@ export const EmployeePreReportList: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            report.reportStatus === 'DRAFT'
+                          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${report.reportStatus === 'DRAFT'
                               ? 'bg-gray-100 text-gray-800'
                               : report.reportStatus === 'WAITING_FOR_APPROVAL'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : report.reportStatus === 'READY_FOR_CREATE_CASE'
-                              ? 'bg-green-100 text-green-800'
-                              : report.reportStatus === 'REQUESTED_FOR_CHANGES'
-                              ? 'bg-orange-100 text-orange-800'
-                              : report.reportStatus === 'DISAPPROVED_BY_CLIENT'
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : report.reportStatus === 'READY_FOR_CREATE_CASE'
+                                  ? 'bg-green-100 text-green-800'
+                                  : report.reportStatus === 'REQUESTED_FOR_CHANGES'
+                                    ? 'bg-orange-100 text-orange-800'
+                                    : report.reportStatus === 'DISAPPROVED_BY_CLIENT'
+                                      ? 'bg-red-100 text-red-800'
+                                      : 'bg-gray-100 text-gray-800'
+                            }`}
                         >
                           {report.reportStatus
                             ? report.reportStatus.replace(/_/g, ' ')
@@ -221,17 +223,41 @@ export const EmployeePreReportList: React.FC = () => {
                           </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/operations/pre-report/${report.reportId}`);
-                          }}
-                          className="text-blue-600 hover:text-blue-900 transition-colors"
-                        >
-                          View Details
-                        </button>
+
+                      <td
+                        className="px-6 py-4 whitespace-nowrap text-sm font-medium"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center gap-3">
+                          {/* View button */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/operations/pre-report/${report.reportId}`);
+                            }}
+                            className="text-blue-600 hover:text-blue-900 transition-colors"
+                          >
+                            View
+                          </button>
+
+                          {/* Case number link OR fallback label */}
+                          {report.caseNumber ? (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/operations/cases/${report.caseId}`);
+                              }}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 text-xs font-semibold rounded-lg hover:bg-blue-100 border border-blue-200 transition-colors"
+                            >
+                              <Briefcase className="w-3 h-3" />
+                              {report.caseNumber}
+                            </button>
+                          ) : (
+                            <span className="text-xs text-gray-400 italic">Case not created yet</span>
+                          )}
+                        </div>
                       </td>
+
                     </tr>
                   ))}
                 </tbody>

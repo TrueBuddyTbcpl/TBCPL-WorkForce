@@ -17,6 +17,8 @@ interface PreReportListItem {
   productNames?: string[];
   reportStatus?: string;
   isCompleted?: boolean;
+  caseNumber?: string;
+  caseId?: number;
 }
 
 

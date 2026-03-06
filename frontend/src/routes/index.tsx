@@ -2,7 +2,6 @@ import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import ReportCreate from '../components/operations/report-create';
 import ProfileIndex from '../components/operations/profile/profile-index';
 import CaseIndex from '../components/operations/Cases/case-index';
-import CaseDetailView from '../components/operations/Cases/CaseDetailView';
 import Dashboard from '../components/operations/dashboard/dashboard-index';
 import ProfileForm from '../components/operations/profile/ProfileForm';
 import ReportDashboard from '../components/operations/report-create/report-dashboard';
@@ -19,6 +18,13 @@ import { CreatePreReport } from '../components/operations/pre-report/CreatePreRe
 import { EditPreReport } from '../components/operations/pre-report/EditPreReport';
 import { PreReportDetails } from '../components/operations/pre-report/PreReportDetails';
 import PreReportPreviewPage from '../components/operations/pre-report/PreReportPreviewPage';
+import AdminFinalReportList from '../components/admin/finalreports/AdminFinalReportList';
+
+// ADD these 3 imports alongside existing imports
+import CreateReportPage from '../components/operations/report-create/CreateReportPage';
+import EditReportPage from '../components/operations/report-create/EditReportPage';
+import PreviewReportPage from '../components/operations/report-create/PreviewReportPage';
+
 
 // ✅ Import Auth Pages & Route Guards
 import { LoginPage } from '../components/auth/LoginPage';
@@ -28,47 +34,24 @@ import { RoleBasedRoute } from './RoleBasedRoute';
 import { LoginHistoryPage } from '../components/loginHistory/LoginHistoryPage';
 import { LoginAttemptsPage } from '../components/loginHistory/LoginAttemptsPage';
 import { useAuthStore } from '../stores/authStore';
+import CaseDashboard from '../components/operations/Cases/CaseDashboard';
+import FinalReportList from '../components/operations/dashboard/FinalReportList';
+// ADD this import at the top alongside existing imports
+import DashboardLayout from '../components/operations/dashboard/DashboardLayout';
+
 
 // Wrapper component for ProfileForm
 const ProfileFormWrapper = () => {
   const navigate = useNavigate();
 
-  const handleSubmit = (data: any) => {
-    console.log('Profile submitted:', data);
-
-    const existingProfiles = JSON.parse(localStorage.getItem('culprit_profiles') || '[]');
-    existingProfiles.push({
-      ...data,
-      id: `profile_${Date.now()}`,
-      createdDate: new Date().toISOString(),
-    });
-    localStorage.setItem('culprit_profiles', JSON.stringify(existingProfiles));
-
-    localStorage.removeItem('profile_draft');
-    localStorage.removeItem('profile_form_step');
-    localStorage.removeItem('profile_timestamp');
-
-    alert('Profile created successfully!');
-    navigate('/operations/profile');
-  };
-
-  const handleCancel = () => {
-    const confirmCancel = window.confirm(
-      'Are you sure you want to cancel? Any unsaved changes will be lost.'
-    );
-
-    if (confirmCancel) {
-      navigate('/operations/dashboard');
-    }
-  };
-
   return (
     <ProfileForm
-      onSubmit={handleSubmit}
-      onCancel={handleCancel}
+      onSaved={() => navigate('/operations/profile')}
+      onCancel={() => navigate('/operations/profile')}
     />
   );
 };
+
 
 const AppRoutes = () => {
   const { user } = useAuthStore();
@@ -121,7 +104,9 @@ const AppRoutes = () => {
         path="/operations/profile"
         element={
           <ProtectedRoute>
-            <ProfileIndex />
+            <DashboardLayout>
+              <ProfileIndex />
+            </DashboardLayout>
           </ProtectedRoute>
         }
       />
@@ -164,14 +149,6 @@ const AppRoutes = () => {
         }
       />
 
-      <Route
-        path="/operations/case-index/:caseId"
-        element={
-          <ProtectedRoute>
-            <CaseDetailView />
-          </ProtectedRoute>
-        }
-      />
 
       <Route
         path="/admin/clients"
@@ -227,12 +204,15 @@ const AppRoutes = () => {
         }
       />
 
-      {/* ✅ Pre-Report Routes - Protected */}
       <Route
         path="/operations/pre-reports"
         element={
           <ProtectedRoute>
-            <EmployeePreReportList />
+            <DashboardLayout>
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <EmployeePreReportList />
+              </div>
+            </DashboardLayout>
           </ProtectedRoute>
         }
       />
@@ -261,6 +241,17 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <EditPreReport />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/finalreports"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER']}>
+              <AdminFinalReportList />
+            </RoleBasedRoute>
           </ProtectedRoute>
         }
       />
@@ -319,6 +310,92 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+
+
+
+      {/* ── Final Report Routes ──────────────────────────────────── */}
+      <Route
+        path="/operations/finalreport/create"
+        element={
+          <ProtectedRoute>
+            <CreateReportPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/operations/finalreport/:reportId/edit"
+        element={
+          <ProtectedRoute>
+            <EditReportPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/operations/finalreport/:reportId/preview"
+        element={
+          <ProtectedRoute>
+            <PreviewReportPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/operations/final-reports"
+        element={
+          <ProtectedRoute>
+            <FinalReportList />
+          </ProtectedRoute>
+        }
+      />
+
+
+
+      // ── Operations Case Routes ─────────────────────────────────────────────
+      <Route
+        path="/operations/cases"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <CaseIndex />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/operations/cases/:caseId"
+        element={
+          <ProtectedRoute>
+            <CaseDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+// ── Admin Case Routes ──────────────────────────────────────────────────
+      <Route
+        path="/admin/cases"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER']}>
+              <CaseIndex isAdminView />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/cases/:caseId"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER']}>
+              <CaseDashboard isAdminView />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+
 
       {/* 404 Not Found */}
       <Route path="*" element={<NotFound />} />

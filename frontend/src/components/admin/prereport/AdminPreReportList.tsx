@@ -10,12 +10,17 @@ import {
   Filter,
   X,
   ChevronDown,
+  Briefcase,
 } from 'lucide-react';
 import { usePreReports } from '../../../hooks/prereport/usePreReports';
 import apiClient from '../../../services/api/apiClient';
 import { StatusDropdown } from '../StatusDropdown';
 import { RequestChangesModal } from '../RequestChangesModal';
 import { ReportStatus } from '../../../utils/constants';
+// ✅ Add these two imports to existing import list
+import CreateCaseModal from '../../operations/Cases/CreateCaseModal';
+import { useAuthStore } from '../../../stores/authStore';
+
 import { toast } from 'sonner';
 
 
@@ -36,6 +41,17 @@ export const AdminPreReportList: React.FC = () => {
   const navigate = useNavigate();
   const [page, setPage] = useState(0);
   const [size] = useState(15);
+
+  const [creatingCaseForReportId, setCreatingCaseForReportId] = useState<number | null>(null);
+
+  const [modalReport, setModalReport] = useState<{
+    id: number;
+    reportId: string;
+    clientName: string;
+  } | null>(null);
+
+  const { user } = useAuthStore();
+
 
   // Filter states
   const [showFilters, setShowFilters] = useState(false);
@@ -79,7 +95,7 @@ export const AdminPreReportList: React.FC = () => {
     const fetchClients = async () => {
       try {
         setIsLoadingClients(true);
-        const res = await apiClient.get('/api/v1/admin/clients');
+        const res = await apiClient.get('/admin/clients');
         const list = (res.data?.data || []) as any[];
         setClients(
           list.map((c) => ({
@@ -102,7 +118,7 @@ export const AdminPreReportList: React.FC = () => {
     const fetchEmployees = async () => {
       try {
         setIsLoadingEmployees(true);
-        const res = await apiClient.get('/api/v1/auth/employees', {
+        const res = await apiClient.get('/auth/employees', {
           params: { page: 0, size: 1000, sort: 'empId', direction: 'ASC' },
         });
         const list = (res.data?.data?.employees || []) as any[];
@@ -130,12 +146,12 @@ export const AdminPreReportList: React.FC = () => {
 
       const uniqueEmployeeIds = [...new Set(data.reports.map(r => r.createdBy))];
       const names: Record<number, string> = {};
-      
+
       await Promise.all(
         uniqueEmployeeIds.map(async (employeeId) => {
           try {
             const response = await apiClient.get(`/auth/employees/id/${employeeId}`);
-            
+
             if (response.data?.success && response.data?.data) {
               names[employeeId] = response.data.data.fullName;
             } else {
@@ -225,7 +241,7 @@ export const AdminPreReportList: React.FC = () => {
       await apiClient.patch(`/operation/prereport/${reportId}/status`, {
         reportStatus: newStatus,
       });
-      
+
       toast.success('Status updated successfully');
       refetch();
     } catch (error: any) {
@@ -239,7 +255,7 @@ export const AdminPreReportList: React.FC = () => {
       await apiClient.post(`/operation/prereport/${reportId}/request-changes`, {
         changeComments,
       });
-      
+
       toast.success('Changes requested successfully');
       refetch();
     } catch (error: any) {
@@ -247,6 +263,36 @@ export const AdminPreReportList: React.FC = () => {
       throw error;
     }
   };
+
+  // ✅ ADDED: Handle create case
+  // ✅ Replace with this
+  const handleCreateCase = async (
+    prereportId: number,
+    assignedEmployeeEmpIds: string[]
+  ) => {
+    try {
+      setCreatingCaseForReportId(prereportId);
+      const response = await apiClient.post(
+        `/operation/cases/from-prereport/${prereportId}`,
+        { assignedEmployees: assignedEmployeeEmpIds },
+        {
+          headers: {
+            'X-Username': user?.empId || user?.fullName || 'admin',
+          },
+        }
+      );
+      const caseData = response.data?.data;
+      toast.success(`Case ${caseData?.caseNumber} created successfully!`);
+      setModalReport(null);
+      refetch();
+      navigate(`/operations/cases/${caseData?.id}`);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to create case');
+    } finally {
+      setCreatingCaseForReportId(null);
+    }
+  };
+
 
   // ✅ FIXED: Filter by employee ID
   const getFilteredReports = () => {
@@ -321,20 +367,19 @@ export const AdminPreReportList: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-4">
-              <button
-      onClick={() => navigate('/operations/pre-report/create')}
-      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-    >
-      <FileText className="w-4 h-4" />
-      Create Report
-    </button>
+          <button
+            onClick={() => navigate('/operations/pre-report/create')}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+          >
+            <FileText className="w-4 h-4" />
+            Create Report
+          </button>
           <button
             onClick={() => setShowFilters((v) => !v)}
-            className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${
-              showFilters || hasActiveFilters
-                ? 'bg-blue-50 border-blue-300 text-blue-700'
-                : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-            }`}
+            className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${showFilters || hasActiveFilters
+              ? 'bg-blue-50 border-blue-300 text-blue-700'
+              : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
           >
             <Filter className="w-4 h-4" />
             Filters
@@ -407,11 +452,10 @@ export const AdminPreReportList: React.FC = () => {
                             <button
                               key={c.id}
                               onClick={() => handleClientSelect(c)}
-                              className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 ${
-                                clientName === c.name
-                                  ? 'bg-blue-50 text-blue-700 font-medium'
-                                  : 'text-gray-900'
-                              }`}
+                              className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 ${clientName === c.name
+                                ? 'bg-blue-50 text-blue-700 font-medium'
+                                : 'text-gray-900'
+                                }`}
                             >
                               {c.name}
                             </button>
@@ -469,11 +513,10 @@ export const AdminPreReportList: React.FC = () => {
                             <button
                               key={e.id}
                               onClick={() => handleEmployeeSelect(e)}
-                              className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 ${
-                                createdBy === e.id.toString()
-                                  ? 'bg-blue-50 text-blue-700 font-medium'
-                                  : 'text-gray-900'
-                              }`}
+                              className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 ${createdBy === e.id.toString()
+                                ? 'bg-blue-50 text-blue-700 font-medium'
+                                : 'text-gray-900'
+                                }`}
                             >
                               {e.name} ({e.empId})
                             </button>
@@ -604,11 +647,10 @@ export const AdminPreReportList: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            report.leadType === 'CLIENT_LEAD'
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'bg-purple-100 text-purple-800'
-                          }`}
+                          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${report.leadType === 'CLIENT_LEAD'
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-purple-100 text-purple-800'
+                            }`}
                         >
                           {report.leadType === 'CLIENT_LEAD'
                             ? 'Client Lead'
@@ -616,19 +658,27 @@ export const AdminPreReportList: React.FC = () => {
                         </span>
                       </td>
                       {/* ✅ FIXED: Better approach - only add padding for last 2 rows */}
-                      <td 
-                        className={`px-6 whitespace-nowrap ${
-                          index >= filteredReports.length - 2 ? 'py-4 pb-32' : 'py-4'
-                        }`}
+                      <td
+                        className={`px-6 whitespace-nowrap ${index >= filteredReports.length - 2 ? 'py-4 pb-32' : 'py-4'
+                          }`}
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <StatusDropdown
-                          currentStatus={report.reportStatus as ReportStatus}
-                          reportId={report.reportId}
-                          onStatusChange={(newStatus) => handleStatusChange(report.reportId, newStatus)}
-                          onRequestChanges={() => setSelectedReportForChanges(report.reportId)}
-                        />
+                        {/* ✅ CASE_GENERATED — show static badge, no dropdown */}
+                        {report.reportStatus === 'CASE_GENERATED' ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-100 text-emerald-800 text-xs font-semibold rounded-full">
+                            <Briefcase className="w-3 h-3" />
+                            Case Generated
+                          </span>
+                        ) : (
+                          <StatusDropdown
+                            currentStatus={report.reportStatus as ReportStatus}
+                            reportId={report.reportId}
+                            onStatusChange={(newStatus) => handleStatusChange(report.reportId, newStatus)}
+                            onRequestChanges={() => setSelectedReportForChanges(report.reportId)}
+                          />
+                        )}
                       </td>
+
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <User className="w-4 h-4 text-gray-400 mr-2" />
@@ -650,13 +700,59 @@ export const AdminPreReportList: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          onClick={() => navigate(`/operations/pre-report/${report.reportId}`)}
-                          className="text-blue-600 hover:text-blue-900 transition-colors"
-                        >
-                          View Details
-                        </button>
+                        <div className="flex items-center gap-3">
+
+                          {/* View Details — always visible */}
+                          <button
+                            onClick={() => navigate(`/operations/pre-report/${report.reportId}`)}
+                            className="text-blue-600 hover:text-blue-900 transition-colors"
+                          >
+                            View Details
+                          </button>
+
+                          {/* Create Case button — only when READY_FOR_CREATE_CASE */}
+                          {report.reportStatus === 'READY_FOR_CREATE_CASE' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setModalReport({
+                                  id: report.id,
+                                  reportId: report.reportId,
+                                  clientName: report.clientName || 'Unknown Client',
+                                });
+                              }}
+                              disabled={creatingCaseForReportId === report.id}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                              {creatingCaseForReportId === report.id ? (
+                                <>
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                  Creating...
+                                </>
+                              ) : (
+                                <>
+                                  <Briefcase className="w-3 h-3" />
+                                  Create Case
+                                </>
+                              )}
+                            </button>
+                          )}
+
+                          {/* ✅ Case Number clickable badge — only when CASE_GENERATED */}
+                          {report.reportStatus === 'CASE_GENERATED' && report.caseNumber && (
+                            <button
+                              onClick={() => navigate(`/operations/cases/${report.caseId}`)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-semibold rounded-lg hover:bg-indigo-100 hover:border-indigo-400 transition-colors"
+                              title="Click to open case details"
+                            >
+                              <Briefcase className="w-3 h-3" />
+                              {report.caseNumber}
+                            </button>
+                          )}
+
+                        </div>
                       </td>
+
                     </tr>
                   ))}
                 </tbody>
@@ -715,10 +811,25 @@ export const AdminPreReportList: React.FC = () => {
         isOpen={selectedReportForChanges !== null}
         reportId={selectedReportForChanges || ''}
         onClose={() => setSelectedReportForChanges(null)}
-        onSubmit={(changeComments) => 
+        onSubmit={(changeComments) =>
           handleRequestChanges(selectedReportForChanges!, changeComments)
         }
       />
+
+      {/* ✅ ADD: Create Case Modal */}
+      {modalReport && (
+        <CreateCaseModal
+          prereportId={modalReport.id}
+          reportId={modalReport.reportId}
+          clientName={modalReport.clientName}
+          onConfirm={handleCreateCase}
+          onClose={() => {
+            setModalReport(null);
+            setCreatingCaseForReportId(null);
+          }}
+          isCreating={creatingCaseForReportId === modalReport.id}
+        />
+      )}
     </div>
   );
 };

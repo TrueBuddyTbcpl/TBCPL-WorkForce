@@ -1,40 +1,76 @@
-import { X, Edit, User, MapPin, Phone, FileText, Briefcase, Building2, Globe, Scale, Package, Car, Users, ShoppingBag, Heart, Award, Activity, AlertCircle } from 'lucide-react';
-import type { CulpritProfile } from './types/profile.types';
+import {
+  X, Edit, Trash2, User, MapPin, Phone, FileText, Briefcase,
+  Building2, Globe, Scale, Package, Car, Users, ShoppingBag,
+  Heart, Award, Activity, AlertCircle
+} from 'lucide-react';
+import type { ApiProfileDetail } from '../../../services/api/profileApi';
+
+import { useEffect, useState } from 'react';
+import apiClient from '../../../services/api/apiClient';
+import { Link } from 'lucide-react'; // add to existing lucide imports
+
 
 interface Props {
-  profile: CulpritProfile;
+  profile: ApiProfileDetail;
   onClose: () => void;
   onEdit?: () => void;
+  onDelete?: () => void;
 }
 
-const ProfilePreview = ({ profile, onClose, onEdit }: Props) => {
+const ProfilePreview = ({ profile, onClose, onEdit, onDelete }: Props) => {
+  const getStatusColor = (status?: string) => {
+    switch (status?.toUpperCase()) {
+      case 'ACTIVE': return 'bg-green-500';
+      case 'ARRESTED': return 'bg-red-500';
+      case 'ABSCONDING': return 'bg-orange-500';
+      default: return 'bg-yellow-500';
+    }
+  };
+
+  const [linkedCasesCount, setLinkedCasesCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    apiClient.get(`/operation/cases/profile/${profile.id}/count`)
+      .then(res => setLinkedCasesCount(res.data.data))
+      .catch(() => setLinkedCasesCount(0));
+  }, [profile.id]);
+
+  const p = profile;
+  const fullName = p.name;
+  const pi = p.personalInfo;
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-6 flex justify-between items-start">
           <div className="flex items-start gap-4">
-            {profile.personal.profilePhoto ? (
-              <img src={profile.personal.profilePhoto} alt={profile.name} className="w-24 h-24 rounded-lg object-cover border-4 border-white shadow-lg" />
+            {pi?.profilePhoto ? (
+              <img src={pi.profilePhoto} alt={fullName} className="w-24 h-24 rounded-lg object-cover border-4 border-white shadow-lg" />
             ) : (
               <div className="w-24 h-24 bg-blue-500 rounded-lg flex items-center justify-center border-4 border-white shadow-lg">
                 <User className="w-12 h-12" />
               </div>
             )}
             <div>
-              <h2 className="text-3xl font-bold mb-1">{profile.name}</h2>
-              <p className="text-blue-100 mb-2">Profile ID: {profile.id}</p>
-              <div className="flex gap-2">
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${profile.status === 'Active' ? 'bg-green-500' : profile.status === 'Arrested' ? 'bg-red-500' : 'bg-yellow-500'}`}>
-                  {profile.currentStatus?.status || profile.status}
-                </span>
-              </div>
+              <h2 className="text-3xl font-bold mb-1">{fullName}</h2>
+              <p className="text-blue-100 mb-1">Profile Number: {p.profileNumber}</p>
+              <p className="text-blue-200 text-sm mb-2">DB ID: {p.id}</p>
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(p.currentStatus?.status || p.status)}`}>
+                {p.currentStatus?.status || p.status}
+              </span>
             </div>
           </div>
           <div className="flex gap-2">
             {onEdit && (
-              <button onClick={onEdit} className="p-2 hover:bg-blue-700 rounded-lg transition-colors">
+              <button onClick={onEdit} className="p-2 hover:bg-blue-700 rounded-lg transition-colors" title="Edit">
                 <Edit className="w-5 h-5" />
+              </button>
+            )}
+            {onDelete && (
+              <button onClick={onDelete} className="p-2 hover:bg-red-700 rounded-lg transition-colors" title="Delete">
+                <Trash2 className="w-5 h-5" />
               </button>
             )}
             <button onClick={onClose} className="p-2 hover:bg-blue-700 rounded-lg transition-colors">
@@ -42,113 +78,129 @@ const ProfilePreview = ({ profile, onClose, onEdit }: Props) => {
             </button>
           </div>
         </div>
+        {linkedCasesCount !== null && (
+          <div className="flex items-center gap-2 mt-2">
+            <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium
+      ${linkedCasesCount > 0
+                ? 'bg-orange-100 text-orange-800 border border-orange-300'
+                : 'bg-gray-100 text-gray-600 border border-gray-300'
+              }`}
+            >
+              <Link className="w-3.5 h-3.5" />
+              {linkedCasesCount > 0
+                ? `Linked to ${linkedCasesCount} case${linkedCasesCount > 1 ? 's' : ''}`
+                : 'No cases linked'
+              }
+            </span>
+          </div>
+        )}
+
 
         {/* Content */}
         <div className="overflow-y-auto flex-1 p-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            
-            {/* Personal Information */}
+
+            {/* Personal Info */}
             <Section icon={<User />} title="Personal Information">
-              <InfoRow label="Full Name" value={profile.name} />
-              <InfoRow label="Date of Birth" value={profile.personal.dateOfBirth} />
-              <InfoRow label="Gender" value={profile.personal.gender} />
-              <InfoRow label="Nationality" value={profile.personal.nationality} />
+              <InfoRow label="Full Name" value={fullName} />
+              <InfoRow label="Date of Birth" value={pi?.dateOfBirth} />
+              <InfoRow label="Gender" value={pi?.gender} />
+              <InfoRow label="Nationality" value={pi?.nationality} />
+              <InfoRow label="Blood Group" value={pi?.bloodGroup} />
             </Section>
 
             {/* Physical Attributes */}
-            {profile.physical && (
+            {p.physicalAttributes && (
               <Section icon={<Activity />} title="Physical Attributes">
-                <InfoRow label="Height" value={profile.physical.height} />
-                <InfoRow label="Weight" value={profile.physical.weight} />
-                <InfoRow label="Eye Color" value={profile.physical.eyeColor} />
-                <InfoRow label="Hair Color" value={profile.physical.hairColor} />
-                <InfoRow label="Skin Tone" value={profile.physical.skinTone} />
-                <InfoRow label="Identification Marks" value={profile.physical.identificationMarks} />
-                {profile.physical.disabilities && (
-                  <InfoRow label="Disabilities" value={profile.physical.disabilities} />
-                )}
+                <InfoRow label="Height" value={p.physicalAttributes.height} />
+                <InfoRow label="Weight" value={p.physicalAttributes.weight} />
+                <InfoRow label="Eye Color" value={p.physicalAttributes.eyeColor} />
+                <InfoRow label="Hair Color" value={p.physicalAttributes.hairColor} />
+                <InfoRow label="Skin Tone" value={p.physicalAttributes.skinTone} />
+                <InfoRow label="ID Marks" value={p.physicalAttributes.identificationMarks} />
+                <InfoRow label="Disabilities" value={p.physicalAttributes.disabilities} />
               </Section>
             )}
 
-            {/* Address Information */}
-            {profile.address && (
-              <Section icon={<MapPin />} title="Address Information">
-                <InfoRow label="Address" value={`${profile.address.addressLine1 || ''} ${profile.address.addressLine2 || ''}`} />
-                <InfoRow label="City" value={profile.address.city} />
-                <InfoRow label="State" value={profile.address.state} />
-                <InfoRow label="Pincode" value={profile.address.pincode} />
-                <InfoRow label="Country" value={profile.address.country} />
+            {/* Address */}
+            {p.address && (
+              <Section icon={<MapPin />} title="Address">
+                <InfoRow label="Address" value={[p.address.addressLine1, p.address.addressLine2].filter(Boolean).join(', ')} />
+                <InfoRow label="City" value={p.address.city} />
+                <InfoRow label="State" value={p.address.state} />
+                <InfoRow label="Pincode" value={p.address.pincode} />
+                <InfoRow label="Country" value={p.address.country} />
               </Section>
             )}
 
-            {/* Contact Information */}
-            {profile.contact && (
+            {/* Contact */}
+            {p.contactInfo && (
               <Section icon={<Phone />} title="Contact Information">
-                <InfoRow label="Primary Phone" value={profile.contact.primaryPhone} />
-                <InfoRow label="Secondary Phone" value={profile.contact.secondaryPhone} />
-                <InfoRow label="Primary Email" value={profile.contact.primaryEmail} />
-                <InfoRow label="Secondary Email" value={profile.contact.secondaryEmail} />
-                {profile.contact.emergencyContactName && (
+                <InfoRow label="Primary Phone" value={p.contactInfo.primaryPhone} />
+                <InfoRow label="Secondary Phone" value={p.contactInfo.secondaryPhone} />
+                <InfoRow label="Primary Email" value={p.contactInfo.primaryEmail} />
+                <InfoRow label="Secondary Email" value={p.contactInfo.secondaryEmail} />
+                {p.contactInfo.emergencyContactName && (
                   <>
                     <div className="border-t pt-2 mt-2">
                       <p className="text-sm font-semibold text-gray-700 mb-1">Emergency Contact</p>
                     </div>
-                    <InfoRow label="Name" value={profile.contact.emergencyContactName} />
-                    <InfoRow label="Phone" value={profile.contact.emergencyContactPhone} />
-                    <InfoRow label="Relation" value={profile.contact.emergencyContactRelation} />
+                    <InfoRow label="Name" value={p.contactInfo.emergencyContactName} />
+                    <InfoRow label="Phone" value={p.contactInfo.emergencyContactPhone} />
+                    <InfoRow label="Relation" value={p.contactInfo.emergencyContactRelation} />
                   </>
                 )}
               </Section>
             )}
 
-            {/* Identification Documents */}
-            {profile.identification && (
+            {/* ID Documents */}
+            {p.identificationDocs && (
               <Section icon={<FileText />} title="Identification Documents" fullWidth>
                 <div className="grid grid-cols-2 gap-4">
-                  <InfoRow label="Employee ID" value={profile.identification.employeeId} />
-                  <InfoRow label="Aadhaar Number" value={profile.identification.aadhaarNumber} />
-                  <InfoRow label="PAN Number" value={profile.identification.panNumber} />
-                  <InfoRow label="Driving License" value={profile.identification.drivingLicense} />
-                  <InfoRow label="Passport Number" value={profile.identification.passportNumber} />
-                  {profile.identification.otherIdType && (
-                    <InfoRow label={profile.identification.otherIdType} value={profile.identification.otherIdNumber} />
+                  <InfoRow label="Aadhaar" value={p.identificationDocs.aadhaarNumber} />
+                  <InfoRow label="PAN" value={p.identificationDocs.panNumber} />
+                  <InfoRow label="Driving License" value={p.identificationDocs.drivingLicense} />
+                  <InfoRow label="Passport" value={p.identificationDocs.passportNumber} />
+                  <InfoRow label="Employee ID" value={p.identificationDocs.employeeId} />
+                  {p.identificationDocs.otherIdType && (
+                    <InfoRow label={p.identificationDocs.otherIdType} value={p.identificationDocs.otherIdNumber} />
                   )}
                 </div>
               </Section>
             )}
 
             {/* Business Activities */}
-            {profile.businessActivities && (
+            {p.businessActivities && (
               <Section icon={<Briefcase />} title="Business Activities" fullWidth>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="p-3 bg-blue-50 rounded-lg">
                     <p className="text-xs text-gray-600 mb-1">Retailer</p>
-                    <p className="font-semibold text-sm">{profile.businessActivities.retailerStatus || 'N/A'}</p>
-                    <p className="text-xs text-gray-500">{profile.businessActivities.retailerType}</p>
+                    <p className="font-semibold text-sm">{p.businessActivities.retailerStatus || 'N/A'}</p>
+                    <p className="text-xs text-gray-500">{p.businessActivities.retailerType}</p>
                   </div>
                   <div className="p-3 bg-green-50 rounded-lg">
                     <p className="text-xs text-gray-600 mb-1">Supplier</p>
-                    <p className="font-semibold text-sm">{profile.businessActivities.supplierStatus || 'N/A'}</p>
-                    <p className="text-xs text-gray-500">{profile.businessActivities.supplierType}</p>
+                    <p className="font-semibold text-sm">{p.businessActivities.supplierStatus || 'N/A'}</p>
+                    <p className="text-xs text-gray-500">{p.businessActivities.supplierType}</p>
                   </div>
                   <div className="p-3 bg-purple-50 rounded-lg">
                     <p className="text-xs text-gray-600 mb-1">Manufacturer</p>
-                    <p className="font-semibold text-sm">{profile.businessActivities.manufacturerStatus || 'N/A'}</p>
-                    <p className="text-xs text-gray-500">{profile.businessActivities.manufacturerType}</p>
+                    <p className="font-semibold text-sm">{p.businessActivities.manufacturerStatus || 'N/A'}</p>
+                    <p className="text-xs text-gray-500">{p.businessActivities.manufacturerType}</p>
                   </div>
                 </div>
               </Section>
             )}
 
-            {/* Entity & Organization */}
-            {profile.entityOrganization?.associatedCompanies && profile.entityOrganization.associatedCompanies.length > 0 && (
+            {/* Associated Companies */}
+            {p.associatedCompanies && p.associatedCompanies.length > 0 && (
               <Section icon={<Building2 />} title="Associated Companies" fullWidth>
                 <div className="space-y-2">
-                  {profile.entityOrganization.associatedCompanies.map((company, index) => (
-                    <div key={index} className="p-3 bg-gray-50 rounded-lg">
-                      <p className="font-semibold text-sm">{company.companyName}</p>
-                      <p className="text-xs text-gray-600">{company.relationshipNature}</p>
-                      {company.details && <p className="text-xs text-gray-500 mt-1">{company.details}</p>}
+                  {p.associatedCompanies.map((c, i) => (
+                    <div key={i} className="p-3 bg-gray-50 rounded-lg">
+                      <p className="font-semibold text-sm">{c.companyName}</p>
+                      <p className="text-xs text-gray-600">{c.relationshipNature}</p>
+                      {c.details && <p className="text-xs text-gray-500 mt-1">{c.details}</p>}
                     </div>
                   ))}
                 </div>
@@ -156,34 +208,24 @@ const ProfilePreview = ({ profile, onClose, onEdit }: Props) => {
             )}
 
             {/* Geographic Exposure */}
-            {profile.geographicExposure && (
+            {p.geographicExposure && (
               <Section icon={<Globe />} title="Geographic Exposure">
-                {profile.geographicExposure.operatingRegions && profile.geographicExposure.operatingRegions.length > 0 && (
+                {p.geographicExposure.operatingRegions && p.geographicExposure.operatingRegions.length > 0 && (
                   <div className="mb-3">
                     <p className="text-xs font-semibold text-gray-700 mb-1">Operating Regions</p>
                     <div className="flex flex-wrap gap-1">
-                      {profile.geographicExposure.operatingRegions.map((region, idx) => (
-                        <span key={idx} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">{region}</span>
+                      {p.geographicExposure.operatingRegions.map((r, i) => (
+                        <span key={i} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">{r}</span>
                       ))}
                     </div>
                   </div>
                 )}
-                {profile.geographicExposure.markets && profile.geographicExposure.markets.length > 0 && (
+                {p.geographicExposure.markets && p.geographicExposure.markets.length > 0 && (
                   <div className="mb-3">
                     <p className="text-xs font-semibold text-gray-700 mb-1">Markets</p>
                     <div className="flex flex-wrap gap-1">
-                      {profile.geographicExposure.markets.map((market, idx) => (
-                        <span key={idx} className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">{market}</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {profile.geographicExposure.jurisdictions && profile.geographicExposure.jurisdictions.length > 0 && (
-                  <div>
-                    <p className="text-xs font-semibold text-gray-700 mb-1">Jurisdictions</p>
-                    <div className="flex flex-wrap gap-1">
-                      {profile.geographicExposure.jurisdictions.map((jurisdiction, idx) => (
-                        <span key={idx} className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded">{jurisdiction}</span>
+                      {p.geographicExposure.markets.map((m, i) => (
+                        <span key={i} className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">{m}</span>
                       ))}
                     </div>
                   </div>
@@ -191,12 +233,12 @@ const ProfilePreview = ({ profile, onClose, onEdit }: Props) => {
               </Section>
             )}
 
-            {/* Related FIRs & Cases */}
-            {profile.relatedFIRsCases?.firs && profile.relatedFIRsCases.firs.length > 0 && (
-              <Section icon={<Scale />} title="Related FIRs & Cases" fullWidth>
+            {/* FIRs */}
+            {p.firs && p.firs.length > 0 && (
+              <Section icon={<Scale />} title="Related FIRs" fullWidth>
                 <div className="space-y-3">
-                  {profile.relatedFIRsCases.firs.map((fir, index) => (
-                    <div key={index} className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                  {p.firs.map((fir, i) => (
+                    <div key={i} className="p-3 bg-red-50 border border-red-200 rounded-lg">
                       <div className="flex justify-between items-start mb-2">
                         <div>
                           <p className="font-semibold text-sm">FIR: {fir.firNumber}</p>
@@ -206,13 +248,6 @@ const ProfilePreview = ({ profile, onClose, onEdit }: Props) => {
                           <span className="px-2 py-1 bg-red-200 text-red-800 text-xs rounded">{fir.status}</span>
                         )}
                       </div>
-                      {fir.sections && fir.sections.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mb-2">
-                          {fir.sections.map((section, idx) => (
-                            <span key={idx} className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded">{section}</span>
-                          ))}
-                        </div>
-                      )}
                       {fir.dateRegistered && (
                         <p className="text-xs text-gray-500">Registered: {new Date(fir.dateRegistered).toLocaleDateString()}</p>
                       )}
@@ -223,7 +258,7 @@ const ProfilePreview = ({ profile, onClose, onEdit }: Props) => {
             )}
 
             {/* Material Seized */}
-            {profile.relatedFIRsCases?.materialSeized && profile.relatedFIRsCases.materialSeized.length > 0 && (
+            {p.materialSeized && p.materialSeized.length > 0 && (
               <Section icon={<Package />} title="Material Seized" fullWidth>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
@@ -233,18 +268,16 @@ const ProfilePreview = ({ profile, onClose, onEdit }: Props) => {
                         <th className="text-left p-2">Company</th>
                         <th className="text-left p-2">Quantity</th>
                         <th className="text-left p-2">Location</th>
-                        <th className="text-left p-2">Authority</th>
                         <th className="text-left p-2">Date</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {profile.relatedFIRsCases.materialSeized.map((item, index) => (
-                        <tr key={index} className="border-t">
+                      {p.materialSeized.map((item, i) => (
+                        <tr key={i} className="border-t">
                           <td className="p-2">{item.brandName}</td>
                           <td className="p-2">{item.company}</td>
                           <td className="p-2">{item.quantity}</td>
                           <td className="p-2">{item.location}</td>
-                          <td className="p-2">{item.raidingAuthority === 'Other' ? item.raidingAuthorityOther : item.raidingAuthority}</td>
                           <td className="p-2">{item.dateSeized ? new Date(item.dateSeized).toLocaleDateString() : 'N/A'}</td>
                         </tr>
                       ))}
@@ -254,17 +287,17 @@ const ProfilePreview = ({ profile, onClose, onEdit }: Props) => {
               </Section>
             )}
 
-            {/* Assets - Vehicles */}
-            {profile.assets?.vehicles && profile.assets.vehicles.length > 0 && (
-              <Section icon={<Car />} title="Vehicles Owned">
+            {/* Vehicles */}
+            {p.vehicles && p.vehicles.length > 0 && (
+              <Section icon={<Car />} title="Vehicles">
                 <div className="space-y-2">
-                  {profile.assets.vehicles.map((vehicle, index) => (
-                    <div key={index} className="p-3 bg-gray-50 rounded-lg flex justify-between items-center">
+                  {p.vehicles.map((v, i) => (
+                    <div key={i} className="p-3 bg-gray-50 rounded-lg flex justify-between items-center">
                       <div>
-                        <p className="font-semibold text-sm">{vehicle.make} {vehicle.model}</p>
-                        <p className="text-xs text-gray-600">{vehicle.registrationNumber}</p>
+                        <p className="font-semibold text-sm">{v.make} {v.model}</p>
+                        <p className="text-xs text-gray-600">{v.registrationNumber}</p>
                       </div>
-                      <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">{vehicle.ownershipType}</span>
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">{v.ownershipType}</span>
                     </div>
                   ))}
                 </div>
@@ -272,18 +305,17 @@ const ProfilePreview = ({ profile, onClose, onEdit }: Props) => {
             )}
 
             {/* Known Associates */}
-            {profile.associations?.knownAssociates && profile.associations.knownAssociates.length > 0 && (
+            {p.knownAssociates && p.knownAssociates.length > 0 && (
               <Section icon={<Users />} title="Known Associates" fullWidth>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {profile.associations.knownAssociates.map((associate, index) => (
-                    <div key={index} className="p-3 bg-blue-50 rounded-lg">
-                      <p className="font-semibold text-sm">{associate.name}</p>
-                      <p className="text-xs text-gray-600">{associate.relationship}</p>
+                  {p.knownAssociates.map((a, i) => (
+                    <div key={i} className="p-3 bg-blue-50 rounded-lg">
+                      <p className="font-semibold text-sm">{a.name}</p>
+                      <p className="text-xs text-gray-600">{a.relationship}</p>
                       <div className="flex items-center justify-between mt-2">
-                        <span className="px-2 py-1 bg-blue-200 text-blue-800 text-xs rounded">{associate.role}</span>
-                        {associate.contactInfo && <p className="text-xs text-gray-500">{associate.contactInfo}</p>}
+                        <span className="px-2 py-1 bg-blue-200 text-blue-800 text-xs rounded">{a.role}</span>
+                        {a.contactInfo && <p className="text-xs text-gray-500">{a.contactInfo}</p>}
                       </div>
-                      {associate.notes && <p className="text-xs text-gray-500 mt-1">{associate.notes}</p>}
                     </div>
                   ))}
                 </div>
@@ -291,18 +323,16 @@ const ProfilePreview = ({ profile, onClose, onEdit }: Props) => {
             )}
 
             {/* Known Employees */}
-            {profile.associations?.knownEmployees && profile.associations.knownEmployees.length > 0 && (
+            {p.knownEmployees && p.knownEmployees.length > 0 && (
               <Section icon={<Users />} title="Known Employees" fullWidth>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {profile.associations.knownEmployees.map((employee, index) => (
-                    <div key={index} className="p-3 bg-green-50 rounded-lg">
-                      <p className="font-semibold text-sm">{employee.name}</p>
-                      <p className="text-xs text-gray-600">{employee.relationship}</p>
+                  {p.knownEmployees.map((e, i) => (
+                    <div key={i} className="p-3 bg-green-50 rounded-lg">
+                      <p className="font-semibold text-sm">{e.name}</p>
+                      <p className="text-xs text-gray-600">{e.relationship}</p>
                       <div className="flex items-center justify-between mt-2">
-                        <span className="px-2 py-1 bg-green-200 text-green-800 text-xs rounded">{employee.role}</span>
-                        {employee.contactInfo && <p className="text-xs text-gray-500">{employee.contactInfo}</p>}
+                        <span className="px-2 py-1 bg-green-200 text-green-800 text-xs rounded">{e.role}</span>
                       </div>
-                      {employee.notes && <p className="text-xs text-gray-500 mt-1">{employee.notes}</p>}
                     </div>
                   ))}
                 </div>
@@ -310,89 +340,75 @@ const ProfilePreview = ({ profile, onClose, onEdit }: Props) => {
             )}
 
             {/* Products & Operations */}
-            {profile.productsOperations && (
+            {p.productsOperations && (
               <Section icon={<ShoppingBag />} title="Products & Operations" fullWidth>
-                {profile.productsOperations.productsInfringed && profile.productsOperations.productsInfringed.length > 0 && (
+                {p.productsOperations.productsInfringed && p.productsOperations.productsInfringed.length > 0 && (
                   <div className="mb-4">
                     <p className="text-sm font-semibold text-gray-700 mb-2">Products Infringed</p>
                     <div className="grid grid-cols-2 gap-2">
-                      {profile.productsOperations.productsInfringed.map((product, index) => (
-                        <div key={index} className="p-2 bg-orange-50 border border-orange-200 rounded">
-                          <p className="font-semibold text-xs">{product.brandName}</p>
-                          <p className="text-xs text-gray-600">{product.companyName}</p>
-                          {product.productType && <p className="text-xs text-gray-500">{product.productType}</p>}
+                      {p.productsOperations.productsInfringed.map((prod, i) => (
+                        <div key={i} className="p-2 bg-orange-50 border border-orange-200 rounded">
+                          <p className="font-semibold text-xs">{prod.brandName}</p>
+                          <p className="text-xs text-gray-600">{prod.companyName}</p>
+                          {prod.productType && <p className="text-xs text-gray-500">{prod.productType}</p>}
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
-                {profile.productsOperations.knownModusOperandi && (
-                  <div className="mb-4">
+                {p.productsOperations.knownModusOperandi && (
+                  <div className="mb-3">
                     <p className="text-sm font-semibold text-gray-700 mb-1">Modus Operandi</p>
-                    <p className="text-xs text-gray-600 bg-gray-50 p-3 rounded">{profile.productsOperations.knownModusOperandi}</p>
-                  </div>
-                )}
-                {profile.productsOperations.knownLocations && profile.productsOperations.knownLocations.length > 0 && (
-                  <div>
-                    <p className="text-sm font-semibold text-gray-700 mb-1">Known Locations</p>
-                    <div className="flex flex-wrap gap-1">
-                      {profile.productsOperations.knownLocations.map((location, idx) => (
-                        <span key={idx} className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded">{location}</span>
-                      ))}
-                    </div>
+                    <p className="text-xs text-gray-600 bg-gray-50 p-3 rounded">{p.productsOperations.knownModusOperandi}</p>
                   </div>
                 )}
               </Section>
             )}
 
             {/* Family Background */}
-            {profile.familyBackground && (
+            {p.familyBackground && (
               <Section icon={<Heart />} title="Family Background">
-                {profile.familyBackground.fatherName && (
+                {p.familyBackground.fatherName && (
                   <div className="mb-3 p-3 bg-blue-50 rounded-lg">
                     <p className="text-xs font-semibold text-gray-700">Father</p>
-                    <p className="font-semibold text-sm">{profile.familyBackground.fatherName}</p>
-                    <p className="text-xs text-gray-600">{profile.familyBackground.fatherOccupation}</p>
-                    {profile.familyBackground.fatherContact && <p className="text-xs text-gray-500">{profile.familyBackground.fatherContact}</p>}
+                    <p className="font-semibold text-sm">{p.familyBackground.fatherName}</p>
+                    <InfoRow label="Occupation" value={p.familyBackground.fatherOccupation} />
                   </div>
                 )}
-                {profile.familyBackground.motherName && (
+                {p.familyBackground.motherName && (
                   <div className="mb-3 p-3 bg-pink-50 rounded-lg">
                     <p className="text-xs font-semibold text-gray-700">Mother</p>
-                    <p className="font-semibold text-sm">{profile.familyBackground.motherName}</p>
-                    <p className="text-xs text-gray-600">{profile.familyBackground.motherOccupation}</p>
-                    {profile.familyBackground.motherContact && <p className="text-xs text-gray-500">{profile.familyBackground.motherContact}</p>}
+                    <p className="font-semibold text-sm">{p.familyBackground.motherName}</p>
+                    <InfoRow label="Occupation" value={p.familyBackground.motherOccupation} />
                   </div>
                 )}
-                {profile.familyBackground.siblings && profile.familyBackground.siblings.length > 0 && (
+                {p.familyBackground.siblings && p.familyBackground.siblings.length > 0 && (
                   <div>
                     <p className="text-xs font-semibold text-gray-700 mb-2">Siblings</p>
-                    <div className="space-y-2">
-                      {profile.familyBackground.siblings.map((sibling, index) => (
-                        <div key={index} className="p-2 bg-gray-50 rounded">
-                          <p className="font-semibold text-xs">{sibling.name}</p>
-                          <p className="text-xs text-gray-600">{sibling.relationship} - {sibling.occupation}</p>
-                        </div>
-                      ))}
-                    </div>
+                    {p.familyBackground.siblings.map((s, i) => (
+                      <div key={i} className="p-2 bg-gray-50 rounded mb-1">
+                        <p className="font-semibold text-xs">{s.name}</p>
+                        <p className="text-xs text-gray-600">{s.relationship} — {s.occupation}</p>
+                      </div>
+                    ))}
                   </div>
                 )}
               </Section>
             )}
 
             {/* Influential Links */}
-            {profile.associations?.influentialLinks && profile.associations.influentialLinks.length > 0 && (
+            {p.influentialLinks && p.influentialLinks.length > 0 && (
               <Section icon={<Award />} title="Influential Links" fullWidth>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {profile.associations.influentialLinks.map((link, index) => (
-                    <div key={index} className="p-3 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg">
-                      <div className="flex justify-between items-start mb-2">
-                        <p className="font-semibold text-sm">{link.personName}</p>
-                        {link.relationship && (
-                          <span className="px-2 py-1 bg-purple-200 text-purple-800 text-xs rounded">{link.relationship}</span>
+                  {p.influentialLinks.map((l, i) => (
+                    <div key={i} className="p-3 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg">
+                      <div className="flex justify-between items-start mb-1">
+                        <p className="font-semibold text-sm">{l.personName}</p>
+                        {l.relationship && (
+                          <span className="px-2 py-1 bg-purple-200 text-purple-800 text-xs rounded">{l.relationship}</span>
                         )}
                       </div>
-                      <p className="text-xs text-gray-600">{link.profile}</p>
+                      {l.profile && <p className="text-xs text-gray-600">{l.profile}</p>}
                     </div>
                   ))}
                 </div>
@@ -400,41 +416,41 @@ const ProfilePreview = ({ profile, onClose, onEdit }: Props) => {
             )}
 
             {/* Current Status */}
-            {profile.currentStatus && (
+            {p.currentStatus && (
               <Section icon={<AlertCircle />} title="Current Status">
-                <InfoRow label="Status" value={profile.currentStatus.status} />
-                <InfoRow label="Last Known Location" value={profile.currentStatus.lastKnownLocation} />
-                <InfoRow label="Status Date" value={profile.currentStatus.statusDate ? new Date(profile.currentStatus.statusDate).toLocaleDateString() : undefined} />
-                {profile.currentStatus.remarks && (
+                <InfoRow label="Status" value={p.currentStatus.status} />
+                <InfoRow label="Last Known Location" value={p.currentStatus.lastKnownLocation} />
+                <InfoRow label="Status Date" value={p.currentStatus.statusDate ? new Date(p.currentStatus.statusDate).toLocaleDateString() : undefined} />
+                {p.currentStatus.remarks && (
                   <div className="mt-2 p-3 bg-yellow-50 rounded-lg">
                     <p className="text-xs font-semibold text-gray-700 mb-1">Remarks</p>
-                    <p className="text-xs text-gray-600">{profile.currentStatus.remarks}</p>
+                    <p className="text-xs text-gray-600">{p.currentStatus.remarks}</p>
                   </div>
                 )}
               </Section>
             )}
 
-            {/* Additional Information */}
-            {profile.additional && (
+            {/* Additional Info */}
+            {p.additionalInfo && (
               <Section icon={<FileText />} title="Additional Information" fullWidth>
-                {profile.additional.notes && (
+                {p.additionalInfo.notes && (
                   <div className="mb-3">
                     <p className="text-sm font-semibold text-gray-700 mb-1">Notes</p>
-                    <p className="text-xs text-gray-600 bg-gray-50 p-3 rounded">{profile.additional.notes}</p>
+                    <p className="text-xs text-gray-600 bg-gray-50 p-3 rounded">{p.additionalInfo.notes}</p>
                   </div>
                 )}
-                {profile.additional.behavioralNotes && (
+                {p.additionalInfo.behavioralNotes && (
                   <div className="mb-3">
                     <p className="text-sm font-semibold text-gray-700 mb-1">Behavioral Observations</p>
-                    <p className="text-xs text-gray-600 bg-gray-50 p-3 rounded">{profile.additional.behavioralNotes}</p>
+                    <p className="text-xs text-gray-600 bg-gray-50 p-3 rounded">{p.additionalInfo.behavioralNotes}</p>
                   </div>
                 )}
-                {profile.additional.tags && profile.additional.tags.length > 0 && (
+                {p.additionalInfo.tags && p.additionalInfo.tags.length > 0 && (
                   <div>
                     <p className="text-sm font-semibold text-gray-700 mb-1">Tags</p>
                     <div className="flex flex-wrap gap-1">
-                      {profile.additional.tags.map((tag, idx) => (
-                        <span key={idx} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">{tag}</span>
+                      {p.additionalInfo.tags.map((tag, i) => (
+                        <span key={i} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">{tag}</span>
                       ))}
                     </div>
                   </div>
@@ -444,26 +460,24 @@ const ProfilePreview = ({ profile, onClose, onEdit }: Props) => {
 
           </div>
 
-          {/* Metadata Footer */}
-          <div className="mt-6 pt-6 border-t">
-            <div className="grid grid-cols-3 gap-4 text-xs text-gray-500">
-              <div>
-                <p className="font-semibold text-gray-700">Created At</p>
-                <p>{new Date(profile.createdAt).toLocaleString()}</p>
-              </div>
-              <div>
-                <p className="font-semibold text-gray-700">Created By</p>
-                <p>{profile.createdBy}</p>
-              </div>
-              <div>
-                <p className="font-semibold text-gray-700">Last Updated</p>
-                <p>{new Date(profile.lastUpdated).toLocaleString()}</p>
-              </div>
+          {/* Metadata */}
+          <div className="mt-6 pt-6 border-t grid grid-cols-3 gap-4 text-xs text-gray-500">
+            <div>
+              <p className="font-semibold text-gray-700">Created At</p>
+              <p>{new Date(p.createdAt).toLocaleString()}</p>
+            </div>
+            <div>
+              <p className="font-semibold text-gray-700">Created By</p>
+              <p>{p.createdBy}</p>
+            </div>
+            <div>
+              <p className="font-semibold text-gray-700">Last Updated</p>
+              <p>{new Date(p.updatedAt).toLocaleString()}</p>
             </div>
           </div>
         </div>
 
-        {/* Footer Actions */}
+        {/* Footer */}
         <div className="bg-gray-50 p-4 border-t flex justify-end gap-3">
           <button onClick={onClose} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100">
             Close
@@ -479,8 +493,10 @@ const ProfilePreview = ({ profile, onClose, onEdit }: Props) => {
   );
 };
 
-// Helper Components
-const Section = ({ icon, title, children, fullWidth = false }: { icon: React.ReactNode; title: string; children: React.ReactNode; fullWidth?: boolean }) => (
+// Helper components
+const Section = ({ icon, title, children, fullWidth = false }: {
+  icon: React.ReactNode; title: string; children: React.ReactNode; fullWidth?: boolean;
+}) => (
   <div className={`bg-white border rounded-lg p-4 ${fullWidth ? 'lg:col-span-2' : ''}`}>
     <div className="flex items-center gap-2 mb-3 pb-2 border-b">
       <div className="text-blue-600">{icon}</div>
