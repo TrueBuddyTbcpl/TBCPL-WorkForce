@@ -18,7 +18,7 @@ const apiClient: AxiosInstance = axios.create({
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = storageHelper.get<string>(STORAGE_KEYS.AUTH_TOKEN);
-    
+
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -26,7 +26,7 @@ apiClient.interceptors.request.use(
     if (userInfo && config.headers) {
       config.headers['X-Username'] = userInfo.empId ?? userInfo.fullName ?? 'unknown';
     }
-    
+
     return config;
   },
   (error: AxiosError) => {
@@ -38,72 +38,65 @@ apiClient.interceptors.request.use(
 let hasShownSessionExpiredMessage = false;
 
 // Response interceptor - Handle common errors
+// Response interceptor - Handle common errors
 apiClient.interceptors.response.use(
-  (response: AxiosResponse) => {
-    return response;
-  },
+  (response: AxiosResponse) => response,
   (error: AxiosError) => {
-    // Handle common errors
-    if (error.response?.status === 401) {
-      // ✅ Unauthorized - Session expired or invalid token
+    const status = error.response?.status;
+    const requestUrl = error.config?.url || '';
+
+    // ✅ Endpoints that should NEVER trigger session-expired logout
+    const isManagementEndpoint =
+      requestUrl.includes('/auth/employees') ||
+      requestUrl.includes('/auth/resend-verification') ||
+      requestUrl.includes('/auth/verify-email') ||
+      requestUrl.includes('/auth/departments') ||
+      requestUrl.includes('/auth/roles');
+
+    if (status === 401 && !isManagementEndpoint) {  // ← ONLY CHANGE HERE
       console.error('Unauthorized access - Session expired');
-      
-      // Clear all auth data from localStorage
+
       storageHelper.remove(STORAGE_KEYS.AUTH_TOKEN);
       storageHelper.remove(STORAGE_KEYS.USER_INFO);
       storageHelper.remove(STORAGE_KEYS.TOKEN_EXPIRY);
-      
-      // ✅ Clear Zustand store (dynamic import to avoid circular dependency)
+
       import('../../stores/authStore').then(({ useAuthStore }) => {
         useAuthStore.getState().clearAuth();
       });
-      
-      // ✅ Show session expired alert only once
+
       if (!hasShownSessionExpiredMessage) {
         hasShownSessionExpiredMessage = true;
-        
-        // ✅ Show custom alert with confirm button
+
         const userConfirmed = window.confirm(
           'Your session has expired! You need to login again.\n\nClick OK to go to the login page.'
         );
-        
-        // Reset flag after showing alert
-        setTimeout(() => {
-          hasShownSessionExpiredMessage = false;
-        }, 2000);
-        
-        // ✅ Redirect to login page
+
+        setTimeout(() => { hasShownSessionExpiredMessage = false; }, 2000);
+
         const currentPath = window.location.pathname;
         if (currentPath !== '/auth/login' && currentPath !== '/admin/login') {
           if (userConfirmed) {
             window.location.href = '/auth/login';
           } else {
-            // If user clicks Cancel, still redirect after 3 seconds
-            setTimeout(() => {
-              window.location.href = '/auth/login';
-            }, 3000);
+            setTimeout(() => { window.location.href = '/auth/login'; }, 3000);
           }
         }
       }
-    } else if (error.response?.status === 403) {
-      // ✅ Forbidden
-      console.error('Forbidden access');
-      toast.error('You do not have permission to access this resource.');
-    } else if (error.response?.status === 409) {
-      // ✅ Conflict - Duplicate session
+    } else if (status === 403) {
+      if (!requestUrl.includes('/auth/login')) {
+        toast.error('You do not have permission to access this resource.');
+      }
+    } else if (status === 409) {
       const errorMessage = (error.response?.data as any)?.message || 'You are already logged in on another device.';
-      toast.error(errorMessage, {
-        duration: 5000,
-        position: 'top-center',
-      });
-    } else if (error.response?.status === 500) {
-      // ✅ Server error
+      toast.error(errorMessage, { duration: 5000, position: 'top-center' });
+    } else if (status === 500) {
       console.error('Server error');
       toast.error('Server error. Please try again later.');
     }
-    
+
     return Promise.reject(error);
   }
 );
+
 
 export default apiClient;

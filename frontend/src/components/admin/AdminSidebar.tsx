@@ -8,7 +8,6 @@ import {
   Briefcase,
   ChevronDown,
   Home,
-  User,
   Settings,
   LogOut,
   FileText,
@@ -39,7 +38,6 @@ interface AdminSidebarProps {
   filters: Filters;
   onFiltersChange: (filters: Filters) => void;
 }
-
 
 
 const AdminSidebar: React.FC<AdminSidebarProps> = ({
@@ -251,18 +249,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
                     <p className="text-xs text-gray-500 truncate">{adminEmail}</p>
                   </div>
 
-
-
-                  <button
-                    onClick={() => {
-                      navigate('/admin/profile');
-                      setShowProfileMenu(false);
-                    }}
-                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
-                  >
-                    <User className="w-4 h-4" />
-                    My Profile
-                  </button>
 
 
 

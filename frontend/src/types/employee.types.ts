@@ -1,4 +1,5 @@
 export interface Employee {
+  id: number;
   empId: string;
   email: string;
   firstName: string;
@@ -7,6 +8,10 @@ export interface Employee {
   fullName: string;
   departmentName: string;
   roleName: string;
+  reportingManagerEmpId?: string;         // ← ADD
+  reportingManagerName?: string;          // ← ADD
+  profilePhotoUrl?: string;               // ← ADD
+  emailVerified: boolean;
   isActive: boolean;
   lastPasswordChangeDate: string;
   createdAt: string;
@@ -15,13 +20,15 @@ export interface Employee {
 }
 
 export interface CreateEmployeeRequest {
-  email: string;
-  password: string;
   firstName: string;
-  middleName?: string;
   lastName: string;
+  middleName?: string;
+  emailPrefix: string;    // ← ADD THIS
+  emailDomain: string;    // ← already exists, keep it
+  password: string;
   departmentId: number;
   roleId: number;
+  reportingManagerEmpId?: string;
 }
 
 export interface UpdateEmployeeRequest {
@@ -34,11 +41,13 @@ export interface UpdateEmployeeRequest {
 }
 
 export interface EmployeeListResponse {
-  employees: Employee[];
-  currentPage: number;
+  content: Employee[];        // ← Spring Page uses "content"
+  number: number;             // ← Spring Page uses "number" for current page
   totalPages: number;
   totalElements: number;
-  pageSize: number;
+  size: number;
+  first: boolean;
+  last: boolean;
 }
 
 export interface EmployeeFilters {
@@ -47,6 +56,13 @@ export interface EmployeeFilters {
   departmentId?: number;
   roleId?: number;
   search?: string;
+}
+
+export interface ReportingManagerOption {
+  empId: string;
+  fullName: string;
+  roleName: string;
+  departmentName: string;
 }
 
 export interface Department {

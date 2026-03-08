@@ -21,7 +21,6 @@ const ClientManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddClientModal, setShowAddClientModal] = useState(false);
   const [showAddProductModal, setShowAddProductModal] = useState(false);
-  const [expandedClientId, setExpandedClientId] = useState<number | null>(null);
 
   // Fetch all clients
   const { data: clientsResponse, isLoading } = useQuery({
@@ -59,9 +58,6 @@ const ClientManagement: React.FC = () => {
   };
 
 
-  const toggleClientExpand = (clientId: number) => {
-    setExpandedClientId(expandedClientId === clientId ? null : clientId);
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -121,16 +117,15 @@ const ClientManagement: React.FC = () => {
           <p className="text-gray-600">No clients found</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredClients.map((client) => (
             <ClientCard
-              key={client.clientId}  // ✅ Changed from client.id
+              key={client.clientId}
               client={client}
-              isExpanded={expandedClientId === client.clientId}  // ✅ Changed
-              onToggleExpand={() => toggleClientExpand(client.clientId)}  // ✅ Changed
-              onDelete={() => handleDeleteClient(client.clientId, client.clientName)}  // ✅ Changed
+              isExpanded={false}        // no longer used but keeps type happy
+              onToggleExpand={() => { }} // no longer used
+              onDelete={() => handleDeleteClient(client.clientId, client.clientName)}
             />
-
           ))}
         </div>
       )}

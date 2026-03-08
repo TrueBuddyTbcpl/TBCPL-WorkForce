@@ -5,8 +5,8 @@ export const emailSchema = z
   .string()
   .min(1, 'Email is required')
   .email('Invalid email format')
-  .refine((email) => email.endsWith('@gnsp.co.in'), {
-    message: 'Email must end with @gnsp.co.in',
+  .refine((email) => email.endsWith('@gnsp.co.in') || email.endsWith('@tbcpl.co.in'), {
+    message: 'Email must end with @gnsp.co.in or @tbcpl.co.in',
   });
 
 // Password validation

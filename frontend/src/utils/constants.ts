@@ -64,6 +64,8 @@ export const RiskLevel = {
 } as const;
 export type RiskLevel = (typeof RiskLevel)[keyof typeof RiskLevel];
 
+
+
 // Product Category (TrueBuddy)
 export const ProductCategory = {
   CROP_PROTECTION: 'CROP_PROTECTION',
@@ -206,14 +208,23 @@ export const AUTH_ENDPOINTS = {
   LOGOUT: '/auth/logout',
   ADMIN_RESET_PASSWORD: '/auth/admin/reset-password',
   CHANGE_PASSWORD: '/auth/change-password',
+  EMPLOYEE_BY_DB_ID: (id: number) => `/auth/employees/${id}`, 
   RESET_PASSWORD: '/auth/reset-password',
+  RESEND_VERIFICATION: (empId: string) => `/auth/resend-verification/${empId}`, 
+  PROFILE: '/auth/profile',                                              // ← ADD
+  VERIFY_EMAIL: (token: string) => `/auth/verify-email?token=${token}`,
   EMPLOYEES: '/auth/employees',
   EMPLOYEE_BY_ID: (empId: string) => `/auth/employees/empId/${empId}`,
+  EMPLOYEE_BY_EMP_ID: (empId: string) => `/auth/employees/emp/${empId}`, // ← ADD (matches backend)
+  EMPLOYEE_PROFILE_PHOTO: (id: number) => `/auth/employees/${id}/profile-photo`, // ← ADD
+  REPORTING_MANAGERS: '/auth/employees/reporting-managers',  
   DEPARTMENTS: '/auth/departments',
   DEPARTMENT_BY_ID: (id: number) => `/auth/departments/${id}`,
   ROLES: '/auth/roles',
   ROLE_BY_ID: (id: number) => `/auth/roles/${id}`,
+  ROLES_ASSIGNABLE: '/auth/roles/assignable', 
   LOGIN_ATTEMPTS: '/auth/login-attempts',
+  LOGIN_ATTEMPTS_BLOCKED: '/auth/login-attempts/blocked',
   LOGIN_ATTEMPTS_BY_EMP: (empId: string) => `/auth/login-attempts/employee/${empId}`,
 
    LOGIN_HISTORY: '/auth/login-history',
@@ -221,12 +232,17 @@ export const AUTH_ENDPOINTS = {
 
 // Query Keys - Auth Module
 export const AUTH_QUERY_KEYS = {
-  EMPLOYEES: ['employees'],
+  EMPLOYEES: 'employees',                                  // ← Changed array to string (consistent)
   EMPLOYEE_DETAIL: (empId: string) => ['employee', empId],
-  DEPARTMENTS: ['departments'],
-  ROLES: ['roles'],
-  LOGIN_ATTEMPTS: ['loginAttempts'],
+  DEPARTMENTS: 'departments',
+  ROLES: 'roles',
+  ROLES_ASSIGNABLE: 'roles-assignable',                   // ← ADD
+  REPORTING_MANAGERS: 'reporting-managers',               // ← ADD
+  LOGIN_ATTEMPTS: 'loginAttempts',
+  LOGIN_ATTEMPTS_BLOCKED: 'loginAttemptsBlocked',         // ← ADD
   LOGIN_ATTEMPTS_BY_EMP: (empId: string) => ['loginAttempts', empId],
+  LOGIN_HISTORY: 'loginHistory',                          // ← ADD
+  LOGIN_HISTORY_BY_EMP: (empId: string) => ['loginHistory', empId], // ← ADD
 } as const;
 
 // Add to ADMIN_ENDPOINTS

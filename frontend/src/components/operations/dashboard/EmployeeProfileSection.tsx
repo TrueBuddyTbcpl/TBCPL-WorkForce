@@ -1,12 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, LogOut, Settings, Key, AlertTriangle } from 'lucide-react';
+import EmployeeProfileDrawer from './EmployeeProfileDrawer';
 import { useAuthStore } from '../../../stores/authStore';
 import apiClient from '../../../services/api/apiClient';
 
+// In EmployeeProfileSection.tsx — update the interface
 interface EmployeeDetails {
   empId: string;
   fullName: string;
+  firstName: string;       // ✅ ADD
+  lastName: string;        // ✅ ADD
+  middleName?: string;     // ✅ ADD (optional)
   email: string;
   roleName: string;
   departmentName: string;
@@ -14,13 +19,20 @@ interface EmployeeDetails {
   phone?: string;
   passwordExpiryDate?: string;
   lastPasswordChangedDate?: string;
+  lastLoginDate?: string;  // ✅ ADD (used in drawer)
+  createdAt?: string;      // ✅ ADD (used in drawer)
+  createdBy?: string;      // ✅ ADD (used in drawer)
+  passwordExpired?: boolean;           // ✅ ADD (used in drawer)
+  daysUntilPasswordExpiry?: number;    // ✅ ADD (used in drawer)
   isActive: boolean;
 }
+
 
 const EmployeeProfileSection: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [isProfileDrawerOpen, setIsProfileDrawerOpen] = useState(false);
 
   const [employee, setEmployee] = useState<EmployeeDetails | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -63,6 +75,8 @@ const EmployeeProfileSection: React.FC = () => {
           setEmployee({
             empId: user.empId,
             fullName: user.fullName || 'Unknown User',
+            firstName: user.fullName?.split(' ')[0] || '',   // ✅ ADD
+            lastName: user.fullName?.split(' ').slice(-1)[0] || '',  // ✅ ADD
             email: user.email || '',
             roleName: user.roleName || 'Employee',
             departmentName: user.departmentName || 'N/A',
@@ -88,8 +102,11 @@ const EmployeeProfileSection: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleViewProfile    = () => { setIsDropdownOpen(false); navigate('/operations/employee/profile'); };
-  const handleSettings       = () => { setIsDropdownOpen(false); navigate('/operations/settings'); };
+  const handleViewProfile = () => {
+    setIsDropdownOpen(false);
+    setIsProfileDrawerOpen(true); // ← was navigate('/operations/employee/profile')
+  };
+  const handleSettings = () => { setIsDropdownOpen(false); navigate('/operations/settings'); };
   const handleChangePassword = () => { setIsDropdownOpen(false); navigate('/auth/change-password'); };
 
   const handleLogout = async () => {
@@ -211,9 +228,9 @@ const EmployeeProfileSection: React.FC = () => {
             {/* Menu Items */}
             <div className="p-2">
               {[
-                { icon: User,     label: 'View Full Profile',  action: handleViewProfile,    hoverBg: 'hover:bg-blue-500/10',   hoverText: 'group-hover:text-blue-400'   },
-                { icon: Key,      label: 'Change Password',    action: handleChangePassword, hoverBg: 'hover:bg-purple-500/10', hoverText: 'group-hover:text-purple-400' },
-                { icon: Settings, label: 'Settings',           action: handleSettings,       hoverBg: 'hover:bg-white/5',       hoverText: 'group-hover:text-gray-200'   },
+                { icon: User, label: 'View Full Profile', action: handleViewProfile, hoverBg: 'hover:bg-blue-500/10', hoverText: 'group-hover:text-blue-400' },
+                { icon: Key, label: 'Change Password', action: handleChangePassword, hoverBg: 'hover:bg-purple-500/10', hoverText: 'group-hover:text-purple-400' },
+                { icon: Settings, label: 'Settings', action: handleSettings, hoverBg: 'hover:bg-white/5', hoverText: 'group-hover:text-gray-200' },
               ].map(({ icon: Icon, label, action, hoverBg, hoverText }) => (
                 <button
                   key={label}
@@ -241,7 +258,13 @@ const EmployeeProfileSection: React.FC = () => {
             </div>
           </div>
         )}
+
       </div>
+      <EmployeeProfileDrawer
+        isOpen={isProfileDrawerOpen}
+        onClose={() => setIsProfileDrawerOpen(false)}
+        employee={employee}
+      />
     </div>
   );
 };

@@ -1,57 +1,58 @@
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
-import { loginUser, logoutUser } from '../services/api/auth.api';
+import { loginUser, logoutUser, resendVerificationEmail } from '../services/api/auth.api';
 import { getDeviceFingerprint, getUserIP } from '../utils/deviceFingerprint';
 import { getErrorMessage } from '../utils/errorHandler';
 import type { LoginFormData } from '../schemas/auth.schema';
 import { queryClient } from '../lib/queryClient';
+import { toast } from 'sonner';
 
 export const useAuth = () => {
   const navigate = useNavigate();
   const { login, logout, user, isAuthenticated, isTokenExpired } = useAuthStore();
 
   // Login mutation
+  // In useAuth.ts — update loginMutation:
+
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginFormData) => {
       const deviceId = getDeviceFingerprint();
       const ipAddress = await getUserIP();
-
-      return loginUser({
-        ...credentials,
-        deviceId,
-        ipAddress,
-      });
+      return loginUser({ ...credentials, deviceId, ipAddress });
     },
     onSuccess: (response) => {
       if (response.success && response.data) {
         const { token, expiresIn, empId, email, fullName, departmentName, roleName } = response.data;
-
-        // Store in Zustand store (which also saves to localStorage)
-        login(
-          token,
-          {
-            empId,
-            email,
-            fullName,
-            departmentName,
-            roleName,
-          },
-          expiresIn
-        );
-
-        // ✅ Smart redirect based on role
+        login(token, { empId, email, fullName, departmentName, roleName }, expiresIn);
         const isAdmin = roleName === 'SUPER_ADMIN' || roleName === 'HR_MANAGER';
-        const redirectPath = isAdmin ? '/admin' : '/operations/dashboard';
+        navigate(isAdmin ? '/admin' : '/operations/dashboard', { replace: true });
+      }
+    },
 
-        console.log('✅ Login Success - Role:', roleName);
-        console.log('✅ Is Admin?', isAdmin);
-        console.log('✅ Redirecting to:', redirectPath);
+    // ← REPLACE your existing onError:
+    onError: (error: any) => {
+      const status = error?.response?.status;
+      const message = error?.response?.data?.message || '';
 
-        navigate(redirectPath, { replace: true });
+      if (status === 403 && message.toLowerCase().includes('not verified')) {
+        // ← Email verification specific — show info toast, NOT error
+        toast.info('📧 ' + message, {
+          duration: 8000,
+          position: 'top-center',
+          description: 'Please check your inbox (and spam folder) for the verification link.',
+        });
+      } else if (status === 409) {
+        toast.error(message || 'You are already logged in on another device.', {
+          duration: 5000,
+          position: 'top-center',
+        });
+      } else {
+        // Generic error — will show in the loginError state on the form
       }
     },
   });
+
 
   // Logout mutation
   const logoutMutation = useMutation({
@@ -82,6 +83,26 @@ export const useAuth = () => {
     },
   });
 
+  // Resend verification email
+  const resendMutation = useMutation({
+    mutationFn: async (email: string) => {
+      const deviceId = getDeviceFingerprint();
+      const ipAddress = await getUserIP();
+      return resendVerificationEmail({ email, deviceId, ipAddress });
+    },
+    onSuccess: () => {
+      toast.success('Verification email sent! Check your inbox (and spam folder).', {
+        duration: 5000,
+        position: 'top-center',
+      });
+    },
+    onError: (error: any) => {
+      const message = error?.response?.data?.message || 'Failed to resend verification email.';
+      toast.error(message, { duration: 5000 });
+    },
+  });
+
+
   return {
     user,
     isAuthenticated,
@@ -92,5 +113,7 @@ export const useAuth = () => {
     isLoggingOut: logoutMutation.isPending,
     loginError: loginMutation.error ? getErrorMessage(loginMutation.error) : null,
     resetLoginError: loginMutation.reset,
+    resendVerification: resendMutation.mutate,
+  isResending: resendMutation.isPending,
   };
 };

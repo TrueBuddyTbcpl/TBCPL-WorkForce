@@ -1,6 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query'; // ✅ ADD THIS
 import { useUpdateStep } from '../../../../../hooks/prereport/useUpdateStep';
 import { clientLeadStep5Schema } from '../../../../../schemas/prereport.schemas';
 import { LeadType } from '../../../../../utils/constants';
@@ -25,6 +26,7 @@ export const Step5Observations = ({
   onSkip,
 }: Step5ObservationsProps) => {
   const updateMutation = useUpdateStep();
+  const queryClient = useQueryClient(); // ✅ ADD THIS
 
   const {
     register,
@@ -50,6 +52,10 @@ export const Step5Observations = ({
         leadType: LeadType.CLIENT_LEAD,
         reportId,
       });
+
+      // ✅ Invalidate the prereport query so sidebar re-fetches fresh step statuses
+      await queryClient.invalidateQueries({ queryKey: ['prereport', prereportId] });
+
       onNext();
     } catch (error) {
       console.error('Error saving step:', error);

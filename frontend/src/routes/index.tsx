@@ -38,6 +38,7 @@ import CaseDashboard from '../components/operations/Cases/CaseDashboard';
 import FinalReportList from '../components/operations/dashboard/FinalReportList';
 // ADD this import at the top alongside existing imports
 import DashboardLayout from '../components/operations/dashboard/DashboardLayout';
+import VerifyEmailPage from '../components/auth/VerifyEmailPage';
 
 
 // Wrapper component for ProfileForm
@@ -73,6 +74,7 @@ const AppRoutes = () => {
       {/* Login Routes - Two paths for backward compatibility */}
       <Route path="/auth/login" element={<LoginPage />} />
       <Route path="/admin/login" element={<Login />} />
+      <Route path="/auth/verify-email" element={<VerifyEmailPage />} />
 
       {/* Default redirect */}
       <Route

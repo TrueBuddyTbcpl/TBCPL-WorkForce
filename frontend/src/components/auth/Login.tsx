@@ -9,22 +9,36 @@ import { useAuthStore } from '../../stores/authStore';
 import { storageHelper } from '../../utils/storageHelper';
 import { STORAGE_KEYS } from '../../utils/constants';
 import apiClient from '../../services/api/apiClient';
+import { toast } from 'sonner';
+
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, user, clearAuth } = useAuthStore();
-  const { login, isLoggingIn, loginError, resetLoginError } = useAuth();
+
+  // FIX 1: Single useAuth() call — destructure everything together
+  const {
+    login,
+    isLoggingIn,
+    loginError,
+    resetLoginError,
+    resendVerification,
+    isResending,
+  } = useAuth();
+
   const [showPassword, setShowPassword] = useState(false);
   const [isValidatingToken, setIsValidatingToken] = useState(true);
 
   const {
     register,
     handleSubmit,
+    getValues, // FIX 2: Use getValues instead of document.querySelector
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
+
 
   useEffect(() => {
     const validateToken = async () => {
@@ -46,11 +60,24 @@ export const Login: React.FC = () => {
     validateToken();
   }, []);
 
+
   useEffect(() => {
     return () => { resetLoginError(); };
   }, [resetLoginError]);
 
+
   const onSubmit = (data: LoginFormData) => { login(data); };
+
+  // FIX 3: Proper handler — reads email via getValues, wraps resendVerification correctly
+  const handleResendVerification = () => {
+    const emailValue = getValues('email');
+    if (!emailValue) {
+      toast.error('Please enter your email first.');
+      return;
+    }
+    resendVerification(emailValue);
+  };
+
 
   // ── Token validation loading ──────────────────────────────────────
   if (isValidatingToken) {
@@ -68,6 +95,7 @@ export const Login: React.FC = () => {
       </div>
     );
   }
+
 
   return (
     <div
@@ -118,24 +146,21 @@ export const Login: React.FC = () => {
             </div>
           </div>
 
-          {/* ✅ Updated heading */}
           <h1 className="text-3xl font-bold text-white mb-3">
             Universal Management
           </h1>
 
-          {/* ✅ Updated & corrected description */}
           <p className="text-gray-400 text-base max-w-sm leading-relaxed mx-auto">
             A unified management platform serving all departments of
             <span className="text-[#4BA3D4] font-medium"> True Buddy Consulting Pvt. Ltd.</span>
           </p>
 
-          {/* ✅ Updated department pills */}
           <div className="flex flex-wrap gap-3 justify-center mt-8">
             {[
-              { label: 'Admin',          color: 'rgba(75,163,212,0.15)',  border: 'rgba(75,163,212,0.3)',  text: '#4BA3D4'  },
-              { label: 'Operations',     color: 'rgba(99,179,237,0.15)',  border: 'rgba(99,179,237,0.3)',  text: '#63b3ed'  },
-              { label: 'Human Resource', color: 'rgba(129,140,248,0.15)', border: 'rgba(129,140,248,0.3)', text: '#818cf8'  },
-              { label: 'Accounts',       color: 'rgba(52,211,153,0.15)',  border: 'rgba(52,211,153,0.3)',  text: '#34d399'  },
+              { label: 'Admin', color: 'rgba(75,163,212,0.15)', border: 'rgba(75,163,212,0.3)', text: '#4BA3D4' },
+              { label: 'Operations', color: 'rgba(99,179,237,0.15)', border: 'rgba(99,179,237,0.3)', text: '#63b3ed' },
+              { label: 'Human Resource', color: 'rgba(129,140,248,0.15)', border: 'rgba(129,140,248,0.3)', text: '#818cf8' },
+              { label: 'Accounts', color: 'rgba(52,211,153,0.15)', border: 'rgba(52,211,153,0.3)', text: '#34d399' },
             ].map(({ label, color, border, text }) => (
               <span
                 key={label}
@@ -147,7 +172,6 @@ export const Login: React.FC = () => {
             ))}
           </div>
 
-          {/* Divider line */}
           <div
             className="w-24 h-px mx-auto mt-10"
             style={{ background: 'linear-gradient(90deg, transparent, #4BA3D4, transparent)' }}
@@ -157,6 +181,7 @@ export const Login: React.FC = () => {
           </p>
         </div>
       </div>
+
 
       {/* ── RIGHT PANEL — Login Form ─────────────────────────────────── */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12">
@@ -340,6 +365,30 @@ export const Login: React.FC = () => {
                 Previous sessions will be terminated upon login.
               </p>
             </div>
+
+            {loginError?.toLowerCase().includes('not verified') && (
+              <div className="mt-4 text-center">
+                {/* FIX 4: onClick uses named handler — not the mutate fn directly */}
+                <button
+                  type="button"
+                  onClick={handleResendVerification}
+                  disabled={isResending}
+                  className="text-xs text-blue-400 hover:text-blue-300 underline flex items-center justify-center gap-1 mx-auto transition-colors"
+                >
+                  {isResending ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      Resending...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="w-3 h-3" />
+                      Didn't receive verification email? Resend
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Footer */}
@@ -354,5 +403,6 @@ export const Login: React.FC = () => {
     </div>
   );
 };
+
 
 export default Login;

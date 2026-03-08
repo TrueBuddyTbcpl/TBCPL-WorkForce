@@ -23,3 +23,20 @@
 .animate-in {
   animation: fade-in 0.2s ease-out, zoom-in 0.2s ease-out;
 }
+
+/* index.css */
+@keyframes modalZoom {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-modal-zoom {
+  animation: modalZoom 0.2s ease-out forwards;
+}
+

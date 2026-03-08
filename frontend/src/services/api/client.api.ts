@@ -68,6 +68,9 @@ export const createClient = async (
   return response.data;
 };
 
+
+
+
 /**
  * Update client
  */
@@ -82,6 +85,8 @@ export const updateClient = async (
   return response.data;
 };
 
+
+
 /**
  * Delete client
  */
@@ -95,21 +100,17 @@ export const deleteClient = async (clientId: number): Promise<ApiResponse<null>>
 /**
  * Upload client logo
  */
-export const uploadClientLogo = async (
-  clientId: number,
-  file: File
-): Promise<ApiResponse<Client>> => {
+// Add to src/services/api/client.api.ts
+export const uploadClientLogo = async (clientId: number, file: File) => {
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append('file', file); // must match @RequestParam("file") in backend
 
-  const response = await apiClient.post<ApiResponse<Client>>(
-    ADMIN_ENDPOINTS.CLIENT_LOGO(clientId),
+  const { data } = await apiClient.post(
+    `/admin/clients/${clientId}/logo`,
     formData,
-    {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    }
+    { headers: { 'Content-Type': 'multipart/form-data' } }
   );
-  return response.data;
+
+  return data.data; // returns ClientResponseDTO
 };
+

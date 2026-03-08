@@ -26,6 +26,15 @@ export const logoutUser = async (): Promise<ApiResponse<null>> => {
   return response.data;
 };
 
+export const resendVerificationEmail = (data: {
+  email: string;
+  deviceId: string;
+  ipAddress: string;
+}) => {
+  return apiClient.post('/auth/resend-verification', data);
+};
+
+
 /**
  * Change own password
  */

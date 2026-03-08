@@ -96,6 +96,10 @@ export const useUpdateStep = () => {
       queryClient.invalidateQueries({ 
         queryKey: QUERY_KEYS.PREREPORT_DETAIL(variables.reportId) 
       });
+
+      queryClient.invalidateQueries({
+        queryKey: ['prereport-step-status', variables.prereportId],
+      });
     },
   });
 };

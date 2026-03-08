@@ -8,8 +8,8 @@ import { getRoles } from '../../services/api/role.api';
 import { toast } from 'sonner';
 import { AUTH_QUERY_KEYS } from '../../utils/constants';
 import {
-  ArrowLeft, Mail,  Calendar, User, 
-  Building2, Edit, Trash2, X, Save
+  ArrowLeft, Mail, Calendar, User,
+  Building2, Edit, Trash2, X, Save, UserCheck
 } from 'lucide-react';
 
 const EmployeeProfile: React.FC = () => {
@@ -17,60 +17,37 @@ const EmployeeProfile: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // ✅ ADD THIS LINE - Decode the URL-encoded empId
-  const decodedEmpId = employeeId ? decodeURIComponent(employeeId) : '';
-
-  // 🔥 ADD DEBUG LOGS
-  console.log('🔍 Raw employeeId from URL:', employeeId);
-  console.log('🔍 Decoded empId:', decodedEmpId);
-  console.log('🌐 Will call API with:', `/auth/employees/empId/${decodedEmpId}`);
+  // ✅ Use numeric DB id — avoids %2F slash issue with empId in URL
+  const numericId = employeeId ? Number(employeeId) : null;
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  // ✅ CHANGE: Use decodedEmpId instead of employeeId
-  // Fetch employee data - USE decodedEmpId
-  const { data: employeeResponse, isLoading, error } = useQuery({
-    queryKey: ['employee-detail', decodedEmpId], // ✅ Simple queryKey
-    queryFn: async () => {
-      console.log('🔥 Fetching employee with empId:', decodedEmpId);
-      const result = await getEmployeeById(decodedEmpId);
-      console.log('✅ Employee fetched:', result);
-      return result;
-    },
-    enabled: !!decodedEmpId,
-    staleTime: 0, // ✅ Force fresh fetch
-    gcTime: 0,    // ✅ Don't cache (React Query v5)
+  const { data: employeeResponse, isLoading } = useQuery({
+    queryKey: ['employee-detail', numericId],
+    queryFn: () => getEmployeeById(numericId!),  // ← numeric id, uses /employees/{id}
+    enabled: !!numericId && !isNaN(numericId),
+    staleTime: 0,
+    gcTime: 0,
   });
 
-
-  // 🔥 ADD MORE DEBUG LOGS
-  console.log('📊 isLoading:', isLoading);
-  console.log('📊 error:', error);
-  console.log('📊 employeeResponse:', employeeResponse);
-
-
-  // Fetch departments for edit modal
   const { data: departmentsResponse } = useQuery({
     queryKey: [AUTH_QUERY_KEYS.DEPARTMENTS],
     queryFn: getDepartments,
   });
 
-  // Fetch roles for edit modal
   const { data: rolesResponse } = useQuery({
     queryKey: [AUTH_QUERY_KEYS.ROLES],
     queryFn: getRoles,
   });
 
-  // Update employee mutation
   const updateMutation = useMutation({
-    mutationFn: (data: { empId: string; updateData: UpdateEmployeeRequest }) =>
-      updateEmployee(data.empId, data.updateData),
+    mutationFn: (data: { id: number; updateData: UpdateEmployeeRequest }) =>
+      updateEmployee(data.id, data.updateData),  // ← numeric id
     onSuccess: () => {
       toast.success('Employee updated successfully!');
       setShowEditModal(false);
-      // ✅ CHANGE: Use decodedEmpId
-      queryClient.invalidateQueries({ queryKey: [AUTH_QUERY_KEYS.EMPLOYEE_DETAIL(decodedEmpId)] });
+      queryClient.invalidateQueries({ queryKey: ['employee-detail', numericId] });
       queryClient.invalidateQueries({ queryKey: [AUTH_QUERY_KEYS.EMPLOYEES] });
     },
     onError: (error: any) => {
@@ -78,12 +55,11 @@ const EmployeeProfile: React.FC = () => {
     },
   });
 
-
-  // Delete employee mutation
   const deleteMutation = useMutation({
-    mutationFn: (empId: string) => deleteEmployee(empId),
+    mutationFn: (id: number) => deleteEmployee(id),  // ← numeric id
     onSuccess: () => {
-      toast.success('Employee deleted successfully!');
+      toast.success('Employee deactivated successfully!');
+      queryClient.invalidateQueries({ queryKey: [AUTH_QUERY_KEYS.EMPLOYEES] });
       navigate('/admin');
     },
     onError: (error: any) => {
@@ -91,9 +67,9 @@ const EmployeeProfile: React.FC = () => {
     },
   });
 
-  const employee = employeeResponse?.data;
-  const departments = departmentsResponse?.data || [];
-  const roles = rolesResponse?.data || [];
+  const employee: Employee | undefined = employeeResponse?.data;
+  const departments: Department[] = departmentsResponse?.data || [];
+  const roles: Role[] = rolesResponse?.data || [];
 
   if (isLoading) {
     return (
@@ -139,17 +115,18 @@ const EmployeeProfile: React.FC = () => {
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                 {employee.fullName}
-                <span className={`text-xs px-3 py-1 rounded-full font-medium ${employee.isActive
-                  ? 'bg-green-100 text-green-800'
-                  : 'bg-red-100 text-red-800'
-                  }`}>
+                <span className={`text-xs px-3 py-1 rounded-full font-medium ${
+                  employee.isActive
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-red-100 text-red-800'
+                }`}>
                   {employee.isActive ? 'Active' : 'Inactive'}
                 </span>
               </h1>
               <p className="text-gray-600">{employee.roleName} - {employee.departmentName}</p>
+              <p className="text-xs text-gray-500 font-mono">{employee.empId}</p>
             </div>
 
-            {/* Action Buttons */}
             <div className="flex gap-2">
               <button
                 onClick={() => setShowEditModal(true)}
@@ -163,7 +140,7 @@ const EmployeeProfile: React.FC = () => {
                 className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium"
               >
                 <Trash2 className="w-4 h-4" />
-                Delete
+                Deactivate
               </button>
             </div>
           </div>
@@ -171,14 +148,14 @@ const EmployeeProfile: React.FC = () => {
       </div>
 
       <div className="p-6">
-        {/* Contact & Basic Info */}
+        {/* Info Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition">
             <div className="flex items-center gap-3">
               <div className="bg-blue-50 p-2 rounded-lg">
                 <Mail className="w-5 h-5 text-blue-600" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs text-gray-600">Email</p>
                 <p className="text-sm font-medium text-gray-900 truncate">{employee.email}</p>
               </div>
@@ -206,9 +183,7 @@ const EmployeeProfile: React.FC = () => {
                 <p className="text-xs text-gray-600">Created At</p>
                 <p className="text-sm font-medium text-gray-900">
                   {new Date(employee.createdAt).toLocaleDateString('en-IN', {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric'
+                    day: 'numeric', month: 'short', year: 'numeric'
                   })}
                 </p>
               </div>
@@ -228,10 +203,10 @@ const EmployeeProfile: React.FC = () => {
           </div>
         </div>
 
-        {/* Additional Info Card */}
+        {/* Additional Info */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Additional Information</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <p className="text-sm text-gray-600">Created By</p>
               <p className="text-base font-medium text-gray-900">{employee.createdBy}</p>
@@ -240,38 +215,48 @@ const EmployeeProfile: React.FC = () => {
               <p className="text-sm text-gray-600">Last Updated</p>
               <p className="text-base font-medium text-gray-900">
                 {new Date(employee.updatedAt).toLocaleDateString('en-IN', {
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
+                  day: 'numeric', month: 'short', year: 'numeric'
                 })}
               </p>
+            </div>
+            {/* Reporting Manager */}
+            <div>
+              <p className="text-sm text-gray-600 flex items-center gap-1">
+                <UserCheck className="w-4 h-4" /> Reporting Manager
+              </p>
+              {employee.reportingManagerName ? (
+                <p className="text-base font-medium text-gray-900">
+                  {employee.reportingManagerName}
+                  <span className="text-xs text-gray-500 ml-1 font-mono">
+                    ({employee.reportingManagerEmpId})
+                  </span>
+                </p>
+              ) : (
+                <p className="text-base text-gray-400 italic">Not assigned</p>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Edit Employee Modal */}
       {showEditModal && (
         <EditEmployeeModal
           employee={employee}
           departments={departments}
           roles={roles}
           onClose={() => setShowEditModal(false)}
-          onSubmit={(updateData) => {
-            updateMutation.mutate({ empId: employee.empId, updateData });
-          }}
+          onSubmit={(updateData) =>
+            updateMutation.mutate({ id: employee.id, updateData })  // ← numeric id
+          }
           loading={updateMutation.isPending}
         />
       )}
 
-      {/* Delete Confirmation Modal */}
       {showDeleteModal && (
         <DeleteConfirmationModal
           employeeName={employee.fullName}
           onClose={() => setShowDeleteModal(false)}
-          onConfirm={() => deleteMutation.mutate(employee.empId)}
+          onConfirm={() => deleteMutation.mutate(employee.id)}  // ← numeric id
           loading={deleteMutation.isPending}
         />
       )}
@@ -279,7 +264,7 @@ const EmployeeProfile: React.FC = () => {
   );
 };
 
-// Edit Employee Modal Component
+// ── EditEmployeeModal ─────────────────────────────────────────────────────────
 interface EditEmployeeModalProps {
   employee: Employee;
   departments: Department[];
@@ -290,12 +275,7 @@ interface EditEmployeeModalProps {
 }
 
 const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({
-  employee,
-  departments,
-  roles,
-  onClose,
-  onSubmit,
-  loading
+  employee, departments, roles, onClose, onSubmit, loading
 }) => {
   const [formData, setFormData] = useState<UpdateEmployeeRequest>({
     firstName: employee.firstName,
@@ -320,11 +300,7 @@ const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({
               <Edit className="w-6 h-6 text-blue-600" />
               Edit Employee Profile
             </h3>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-all"
-              disabled={loading}
-            >
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg" disabled={loading}>
               <X className="w-5 h-5 text-gray-500" />
             </button>
           </div>
@@ -402,7 +378,7 @@ const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-all"
+              className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium"
               disabled={loading}
             >
               Cancel
@@ -410,18 +386,12 @@ const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({
             <button
               type="submit"
               disabled={loading || !formData.departmentId || !formData.roleId}
-              className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium transition-all flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium flex items-center justify-center gap-2"
             >
               {loading ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Updating...
-                </>
+                <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />Updating...</>
               ) : (
-                <>
-                  <Save className="w-4 h-4" />
-                  Update Employee
-                </>
+                <><Save className="w-4 h-4" />Update Employee</>
               )}
             </button>
           </div>
@@ -431,7 +401,7 @@ const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({
   );
 };
 
-// Delete Confirmation Modal Component
+// ── DeleteConfirmationModal ───────────────────────────────────────────────────
 interface DeleteConfirmationModalProps {
   employeeName: string;
   onClose: () => void;
@@ -440,57 +410,47 @@ interface DeleteConfirmationModalProps {
 }
 
 const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
-  employeeName,
-  onClose,
-  onConfirm,
-  loading
-}) => {
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
-        <div className="p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="bg-red-100 p-3 rounded-full">
-              <Trash2 className="w-6 h-6 text-red-600" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900">Delete Employee</h3>
+  employeeName, onClose, onConfirm, loading
+}) => (
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+      <div className="p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="bg-red-100 p-3 rounded-full">
+            <Trash2 className="w-6 h-6 text-red-600" />
           </div>
-          <p className="text-gray-600 mb-2">
-            Are you sure you want to delete <span className="font-semibold text-gray-900">{employeeName}</span>?
-          </p>
-          <p className="text-sm text-red-600 mb-6">
-            ⚠️ This action cannot be undone. All employee data will be permanently removed.
-          </p>
-          <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-all"
-              disabled={loading}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={onConfirm}
-              disabled={loading}
-              className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 font-medium transition-all flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Deleting...
-                </>
-              ) : (
-                <>
-                  <Trash2 className="w-4 h-4" />
-                  Delete Employee
-                </>
-              )}
-            </button>
-          </div>
+          <h3 className="text-xl font-semibold text-gray-900">Deactivate Employee</h3>
+        </div>
+        <p className="text-gray-600 mb-2">
+          Are you sure you want to deactivate{' '}
+          <span className="font-semibold text-gray-900">{employeeName}</span>?
+        </p>
+        <p className="text-sm text-amber-600 mb-6">
+          ⚠️ This is a soft delete — the employee record is retained but access is revoked.
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium"
+            disabled={loading}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 font-medium flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />Deactivating...</>
+            ) : (
+              <><Trash2 className="w-4 h-4" />Deactivate</>
+            )}
+          </button>
         </div>
       </div>
     </div>
-  );
-};
+  </div>
+);
 
 export default EmployeeProfile;
