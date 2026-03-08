@@ -1,6 +1,5 @@
 // src/components/operations/dashboard/EmployeeProfileDrawer.tsx
 import React, { useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   X,
   User,
@@ -38,14 +37,15 @@ interface EmployeeProfileDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   employee: EmployeeDetails | null;
+  onChangePassword?: () => void;
 }
 
 const EmployeeProfileDrawer: React.FC<EmployeeProfileDrawerProps> = ({
   isOpen,
   onClose,
   employee,
+  onChangePassword,
 }) => {
-  const navigate = useNavigate();
   const drawerRef = useRef<HTMLDivElement>(null);
 
   // Close on Escape key
@@ -107,18 +107,16 @@ const EmployeeProfileDrawer: React.FC<EmployeeProfileDrawerProps> = ({
     <>
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 bg-black/40 z-[60] transition-opacity duration-300 ${
-          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
+        className={`fixed inset-0 bg-black/40 z-[60] transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
         onClick={onClose}
       />
 
       {/* Drawer */}
       <div
         ref={drawerRef}
-        className={`fixed top-0 right-0 h-full w-[420px] max-w-full bg-white shadow-2xl z-[70] flex flex-col transition-transform duration-300 ease-in-out ${
-          isOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
+        className={`fixed top-0 right-0 h-full w-[420px] max-w-full bg-white shadow-2xl z-[70] flex flex-col transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'
+          }`}
       >
         {/* ── Header ── */}
         <div
@@ -155,11 +153,10 @@ const EmployeeProfileDrawer: React.FC<EmployeeProfileDrawerProps> = ({
                 <p className="text-sm text-blue-300 mt-0.5">{employee.roleName}</p>
                 <div className="flex items-center gap-2 mt-1.5">
                   <span
-                    className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${
-                      employee.isActive
+                    className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${employee.isActive
                         ? 'bg-green-500/20 text-green-300 border border-green-500/30'
                         : 'bg-red-500/20 text-red-300 border border-red-500/30'
-                    }`}
+                      }`}
                   >
                     {employee.isActive ? (
                       <><CheckCircle2 className="w-3 h-3" /> Active</>
@@ -232,7 +229,10 @@ const EmployeeProfileDrawer: React.FC<EmployeeProfileDrawerProps> = ({
         {/* ── Footer Actions ── */}
         <div className="px-6 py-4 border-t border-gray-200 flex-shrink-0 space-y-2 bg-white">
           <button
-            onClick={() => { onClose(); navigate('/auth/change-password'); }}
+            onClick={() => {
+              onClose();
+              onChangePassword?.();
+            }}
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-blue-600 text-blue-600 font-semibold rounded-lg hover:bg-blue-50 transition-colors text-sm"
           >
             <Key className="w-4 h-4" />

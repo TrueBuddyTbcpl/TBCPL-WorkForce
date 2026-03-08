@@ -11,6 +11,7 @@ import Login from '../components/auth/Login';
 import EmployeeChangeHistoryReport from '../components/admin/EmployeeChangeHistoryReport';
 import NotFound from './NotFound';
 import ClientManagement from '../components/admin/ClientManagement';
+import ResetPasswordPage from '../pages/ResetPasswordPage';
 
 // ✅ Import Pre-Report Components
 import { EmployeePreReportList } from '../components/operations/dashboard/EmployeePreReportList';
@@ -75,6 +76,7 @@ const AppRoutes = () => {
       <Route path="/auth/login" element={<LoginPage />} />
       <Route path="/admin/login" element={<Login />} />
       <Route path="/auth/verify-email" element={<VerifyEmailPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       {/* Default redirect */}
       <Route

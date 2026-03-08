@@ -4,6 +4,7 @@ import { User, LogOut, Settings, Key, AlertTriangle } from 'lucide-react';
 import EmployeeProfileDrawer from './EmployeeProfileDrawer';
 import { useAuthStore } from '../../../stores/authStore';
 import apiClient from '../../../services/api/apiClient';
+import ChangePasswordModal from '../../admin/ChangePasswordModal';
 
 // In EmployeeProfileSection.tsx — update the interface
 interface EmployeeDetails {
@@ -39,6 +40,8 @@ const EmployeeProfileSection: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [daysUntilPasswordExpiry, setDaysUntilPasswordExpiry] = useState<number | null>(null);
+
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   useEffect(() => {
     const fetchEmployeeDetails = async () => {
@@ -107,7 +110,10 @@ const EmployeeProfileSection: React.FC = () => {
     setIsProfileDrawerOpen(true); // ← was navigate('/operations/employee/profile')
   };
   const handleSettings = () => { setIsDropdownOpen(false); navigate('/operations/settings'); };
-  const handleChangePassword = () => { setIsDropdownOpen(false); navigate('/auth/change-password'); };
+  const handleChangePassword = () => {
+    setIsDropdownOpen(false);
+    setShowChangePassword(true);
+  };
 
   const handleLogout = async () => {
     setIsDropdownOpen(false);
@@ -264,7 +270,15 @@ const EmployeeProfileSection: React.FC = () => {
         isOpen={isProfileDrawerOpen}
         onClose={() => setIsProfileDrawerOpen(false)}
         employee={employee}
+        onChangePassword={() => {                    // ← ADD
+          setIsProfileDrawerOpen(false);
+          setShowChangePassword(true);
+        }}
       />
+
+      {showChangePassword && (
+        <ChangePasswordModal onClose={() => setShowChangePassword(false)} />
+      )}
     </div>
   );
 };
