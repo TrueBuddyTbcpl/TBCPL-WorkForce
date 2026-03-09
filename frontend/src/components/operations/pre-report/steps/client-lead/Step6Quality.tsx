@@ -35,8 +35,8 @@ export const Step6Quality = ({
     defaultValues: {
       qaCompleteness: data?.qaCompleteness || QACompleteness.INCOMPLETE,
       qaAccuracy: data?.qaAccuracy || QAAccuracy.UNCERTAIN,
-      qaIndependentInvestigation: data?.qaIndependentInvestigation || YesNoUnknown.UNKNOWN,
-      qaPriorConfrontation: data?.qaPriorConfrontation || YesNoUnknown.UNKNOWN,
+      qaIndependentInvestigation: data?.qaIndependentInvestigation ,
+      qaPriorConfrontation: data?.qaPriorConfrontation ,
       qaContaminationRisk: data?.qaContaminationRisk || RiskLevel.MEDIUM,
     },
   });

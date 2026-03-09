@@ -14,7 +14,7 @@ import type { EmployeeFilters } from '../types/employee.types';
  */
 export const useEmployees = (filters?: EmployeeFilters) => {
   return useQuery({
-    queryKey: [...AUTH_QUERY_KEYS.EMPLOYEES, filters],
+    queryKey: [AUTH_QUERY_KEYS.EMPLOYEES, filters],
     queryFn: () => getEmployees(filters),
   });
 };
@@ -25,7 +25,7 @@ export const useEmployees = (filters?: EmployeeFilters) => {
 export const useEmployee = (empId: string) => {
   return useQuery({
     queryKey: AUTH_QUERY_KEYS.EMPLOYEE_DETAIL(empId),
-    queryFn: () => getEmployeeById(empId),
+    queryFn: () => getEmployeeById(Number(empId)),
     enabled: !!empId,
   });
 };
@@ -39,7 +39,7 @@ export const useCreateEmployee = () => {
   return useMutation({
     mutationFn: createEmployee,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.EMPLOYEES });
+      queryClient.invalidateQueries({ queryKey: [AUTH_QUERY_KEYS.EMPLOYEES] });
     },
   });
 };
@@ -49,15 +49,11 @@ export const useCreateEmployee = () => {
  */
 export const useUpdateEmployee = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: ({ empId, data }: { empId: string; data: any }) =>
-      updateEmployee(empId, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.EMPLOYEES });
-      queryClient.invalidateQueries({
-        queryKey: AUTH_QUERY_KEYS.EMPLOYEE_DETAIL(variables.empId),
-      });
+    mutationFn: ({ id, data }: { id: number; data: any }) =>  // ✅ id: number
+      updateEmployee(id, data),                               // ✅ matches
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [AUTH_QUERY_KEYS.EMPLOYEES] });
     },
   });
 };
@@ -71,7 +67,7 @@ export const useDeleteEmployee = () => {
   return useMutation({
     mutationFn: deleteEmployee,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.EMPLOYEES });
+      queryClient.invalidateQueries({ queryKey: [AUTH_QUERY_KEYS.EMPLOYEES] });
     },
   });
 };

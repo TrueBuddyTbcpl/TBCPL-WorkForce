@@ -29,8 +29,8 @@ const TrueBuddyStep6Risk: React.FC<Step6Props> = ({ data, onNext, onBack,onSkip 
     defaultValues: {
       riskSourceReliability: data.riskSourceReliability || RiskLevel.LOW,
       riskClientConflict: data.riskClientConflict || RiskLevel.LOW,
-      riskImmediateAction: data.riskImmediateAction || YesNoUnknown.UNKNOWN,
-      riskControlledValidation: data.riskControlledValidation || YesNoUnknown.UNKNOWN,
+      riskImmediateAction: data.riskImmediateAction,
+      riskControlledValidation: data.riskControlledValidation,
       riskPrematureDisclosure: data.riskPrematureDisclosure || RiskLevel.LOW,
     },
   });
@@ -62,8 +62,6 @@ const TrueBuddyStep6Risk: React.FC<Step6Props> = ({ data, onNext, onBack,onSkip 
         return 'bg-green-100 text-green-800 border-green-300';
       case YesNoUnknown.NO:
         return 'bg-red-100 text-red-800 border-red-300';
-      case YesNoUnknown.UNKNOWN:
-        return 'bg-gray-100 text-gray-800 border-gray-300';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-300';
     }

@@ -12,8 +12,8 @@ import { AUTH_QUERY_KEYS } from '../utils/constants';
  * Hook to fetch all roles
  */
 export const useRoles = () => {
-  return useQuery({
-    queryKey: AUTH_QUERY_KEYS.ROLES,
+  return useQuery<{ data: any[] }>({
+    queryKey: [AUTH_QUERY_KEYS.ROLES],          // ✅ Array
     queryFn: getRoles,
   });
 };
@@ -38,7 +38,7 @@ export const useCreateRole = () => {
   return useMutation({
     mutationFn: createRole,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.ROLES });
+      queryClient.invalidateQueries({ queryKey: [AUTH_QUERY_KEYS.ROLES] });
     },
   });
 };
@@ -52,7 +52,7 @@ export const useUpdateRole = () => {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) => updateRole(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.ROLES });
+      queryClient.invalidateQueries({ queryKey: [AUTH_QUERY_KEYS.ROLES] });
     },
   });
 };
@@ -66,7 +66,7 @@ export const useDeleteRole = () => {
   return useMutation({
     mutationFn: deleteRole,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.ROLES });
+      queryClient.invalidateQueries({ queryKey: [AUTH_QUERY_KEYS.ROLES] });
     },
   });
 };

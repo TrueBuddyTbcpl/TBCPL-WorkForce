@@ -1,3 +1,20 @@
+export interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+  timestamp: string;
+}
+
+export interface Department {
+  id: number;
+  departmentName: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+}
+
+
 export interface Employee {
   id: number;
   empId: string;

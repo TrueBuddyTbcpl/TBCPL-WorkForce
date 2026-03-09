@@ -32,12 +32,10 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onCreateClick, onEdi
 
   const deleteEmployeeMutation = useDeleteEmployee();
 
-  const handleDelete = (empId: string) => {
-    deleteEmployeeMutation.mutate(empId);
-  };
+
 
   // Filter employees by search query (client-side)
-  const filteredEmployees = data?.data?.employees?.filter((emp: Employee) => {
+  const filteredEmployees = data?.data?.content?.filter((emp: Employee) => {
     const searchLower = searchQuery.toLowerCase();
     return (
       emp.fullName.toLowerCase().includes(searchLower) ||
@@ -93,18 +91,21 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onCreateClick, onEdi
         employees={filteredEmployees}
         onView={setSelectedEmployee}
         onEdit={onEditClick}
-        onDelete={handleDelete}
+        onDelete={(empId: string) => {
+          const employee = filteredEmployees.find((e: Employee) => e.empId === empId);
+          if (employee) deleteEmployeeMutation.mutate(employee.id);
+        }}
         isDeleting={deleteEmployeeMutation.isPending}
       />
 
       {/* Pagination */}
       {data?.data && (
         <Pagination
-          currentPage={data.data.currentPage}
+          currentPage={data.data.number}
           totalPages={data.data.totalPages}
           onPageChange={setPage}
           totalElements={data.data.totalElements}
-          pageSize={data.data.pageSize}
+          pageSize={data.data.size}
         />
       )}
 

@@ -14,18 +14,34 @@ export const EmployeeCreatePage: React.FC = () => {
   const createEmployeeMutation = useCreateEmployee();
 
   const handleSubmit = (data: CreateEmployeeFormData) => {
-    createEmployeeMutation.mutate(data, {
-      onSuccess: (response) => {
-        success(`Employee created successfully! Employee ID: ${response.data.empId}`);
-        setTimeout(() => {
-          navigate('/admin/employees');
-        }, 2000);
+    // ✅ Split email into prefix and domain for backend
+    const [emailPrefix, emailDomain] = data.email.split('@');
+
+    createEmployeeMutation.mutate(
+      {
+        firstName: data.firstName,
+        middleName: data.middleName,
+        lastName: data.lastName,
+        emailPrefix,              // ✅ e.g. "john.doe.2024"
+        emailDomain,              // ✅ e.g. "gnsp.co.in"
+        password: data.password,
+        departmentId: data.departmentId,
+        roleId: data.roleId,
       },
-      onError: (err) => {
-        error(getErrorMessage(err));
-      },
-    });
+      {
+        onSuccess: (response) => {
+          success(`Employee created successfully! Employee ID: ${response.data.empId}`);
+          setTimeout(() => {
+            navigate('/admin/employees');
+          }, 2000);
+        },
+        onError: (err) => {
+          error(getErrorMessage(err));
+        },
+      }
+    );
   };
+
 
   return (
     <div className="max-w-4xl mx-auto">
