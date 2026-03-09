@@ -18,10 +18,10 @@ export const EmployeeEditPage: React.FC = () => {
   const updateEmployeeMutation = useUpdateEmployee();
 
   const handleSubmit = (data: UpdateEmployeeFormData) => {
-    if (!empId) return;
+    if (!empId || !employeeResponse?.data) return; 
 
     updateEmployeeMutation.mutate(
-      { empId, data },
+      { id: employeeResponse.data.id, data },  // ✅ numeric DB id
       {
         onSuccess: () => {
           success('Employee updated successfully!');
