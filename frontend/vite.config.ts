@@ -1,8 +1,26 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react-swc'
 
-// https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({    // ✅ function form, receives mode
   plugins: [react()],
-  base: '/',
-})
+  define: {
+    __DEV_CONFIG__: JSON.stringify({
+      mockApi: mode === 'development',           // ✅ use mode, not import.meta.env
+      apiDelay: 500,
+    }),
+  },
+  server: {
+    port: 3000,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
+  build: {
+    outDir: 'dist',
+    sourcemap: mode !== 'production',
+  },
+}))                                             // ✅ closing )) not });

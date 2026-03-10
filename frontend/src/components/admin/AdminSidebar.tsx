@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
 import type { Department } from './types/admin.types';
 import {
   Building2,
@@ -8,14 +7,10 @@ import {
   Briefcase,
   ChevronDown,
   Home,
-  Settings,
-  LogOut,
   FileText,
   UserCheck,
   ClipboardCheck,
 } from 'lucide-react';
-import { useAuthStore } from '../../stores/authStore';
-import { useAuth } from '../../hooks/useAuth';
 
 
 
@@ -45,19 +40,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   viewMode,
   onViewModeChange,
 }) => {
-  const navigate = useNavigate();
-  const { user } = useAuthStore();
-  const { logout } = useAuth();
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
-
-
-
-  const adminName = user?.fullName || 'Admin User';
-  const adminEmail = user?.email || 'admin@tbcpl.com';
-  const adminRole = user?.roleName || 'Administrator';
-
-
-
   const departments: { value: Department; label: string; icon: any; color: string }[] = [
     { value: 'Operations', label: 'Operations', icon: Building2, color: 'blue' },
     { value: 'HR', label: 'Human Resources', icon: Users, color: 'green' },
@@ -70,10 +52,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
 
 
-  const handleLogout = () => {
-    logout();
-    setShowProfileMenu(false);
-  };
+
 
 
 
@@ -213,72 +192,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
 
 
-        {/* Admin Profile Section (Bottom) */}
-        <div className="border-t border-gray-200 p-4">
-          <div className="relative">
-            <button
-              onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="w-full flex items-center gap-3 p-3 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold shadow-sm">
-                {adminName.charAt(0).toUpperCase()}
-              </div>
-              <div className="flex-1 text-left">
-                <p className="text-sm font-semibold text-gray-900 truncate">
-                  {adminName}
-                </p>
-                <p className="text-xs text-gray-500 truncate">{adminRole}</p>
-              </div>
-              <ChevronDown
-                className={`w-4 h-4 text-gray-500 transition-transform ${showProfileMenu ? 'rotate-180' : ''
-                  }`}
-              />
-            </button>
 
-
-
-            {showProfileMenu && (
-              <>
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setShowProfileMenu(false)}
-                />
-                <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
-                  <div className="px-4 py-3 border-b border-gray-100">
-                    <p className="text-sm font-semibold text-gray-900">{adminName}</p>
-                    <p className="text-xs text-gray-500 truncate">{adminEmail}</p>
-                  </div>
-
-
-
-
-                  <button
-                    onClick={() => {
-                      navigate('/admin/settings');
-                      setShowProfileMenu(false);
-                    }}
-                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
-                  >
-                    <Settings className="w-4 h-4" />
-                    Settings
-                  </button>
-
-
-
-                  <div className="border-t border-gray-100 mt-1 pt-1">
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Logout
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
       </div>
     </>
   );

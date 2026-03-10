@@ -73,9 +73,8 @@ const AdminProfile: React.FC = () => {
   }, []);
 
   const handleLogout = () => {
-    setDropdownOpen(false);
     logout();
-    navigate('/auth/login', { replace: true });
+    setDropdownOpen(false);
   };
 
   const adminName = employee?.fullName || user?.fullName || 'Admin User';
