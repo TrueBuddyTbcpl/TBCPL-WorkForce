@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import type { Department, DepartmentStats } from './types/admin.types';
 import { getEmployeesByDepartment, getManagerByDepartment } from '../../data/mockData/mockEmployees';
 import { mockCases } from '../../data/mockData/mockCases';
@@ -14,6 +13,7 @@ import { AdminPreReportList } from './prereport/AdminPreReportList'; // ✅ Add 
 import ClientManagement from './ClientManagement';
 import AdminFinalReportList from './finalreports/AdminFinalReportList';
 import AdminCaseList from './cases/AdminCaseList';
+import AdminProfileList from './AdminProfileList';
 
 
 type ViewMode = 'employees' | 'cases' | 'profiles' | 'prereports' | 'clients' | 'finalreports';
@@ -66,51 +66,7 @@ const AdminDashboard: React.FC = () => {
     setSelectedDepartment(dept);
   };
 
-  // Filter data based on search and filters
-  const getFilteredData = () => {
-    if (viewMode === 'employees') {
-      let employees = getEmployeesByDepartment(selectedDepartment);
 
-      if (searchQuery) {
-        employees = employees.filter(emp =>
-          emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          emp.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          emp.role.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-      }
-
-      if (filters.role !== 'all') {
-        employees = employees.filter(emp => emp.role === filters.role);
-      }
-
-      return employees;
-    } else if (viewMode === 'cases') {
-      let cases = mockCases;
-      if (searchQuery) {
-        cases = cases.filter(c =>
-          c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          c.caseNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          c.client.name.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-      }
-      if (filters.status !== 'all') {
-        cases = cases.filter(c => c.status === filters.status);
-      }
-      return cases;
-    } else {
-      let profiles = mockProfiles;
-      if (searchQuery) {
-        profiles = profiles.filter(p =>
-          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.alias.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-      }
-      if (filters.status !== 'all') {
-        profiles = profiles.filter(p => p.status.toLowerCase() === filters.status.toLowerCase());
-      }
-      return profiles;
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -135,7 +91,7 @@ const AdminDashboard: React.FC = () => {
           <div className="flex-1 p-6">
 
             {/* ✅ Search Bar Only - Hide for prereports and clients */}
-            {viewMode !== 'prereports' && viewMode !== 'clients' && viewMode !== 'finalreports' &&  (
+            {viewMode !== 'prereports' && viewMode !== 'clients' && viewMode !== 'finalreports' && viewMode !== 'profiles' && (
               <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -189,7 +145,7 @@ const AdminDashboard: React.FC = () => {
             ) : viewMode === 'cases' ? (
               <AdminCaseList />
             ) : viewMode === 'profiles' ? (
-              <ProfilesView profiles={getFilteredData() as any} />
+              <AdminProfileList />
             ) : viewMode === 'prereports' ? ( // ✅ Add this
               <AdminPreReportList />
             ) : viewMode === 'clients' ? (
@@ -208,45 +164,6 @@ const AdminDashboard: React.FC = () => {
   );
 };
 
-// Profiles View Component
-const ProfilesView: React.FC<{ profiles: any[] }> = ({ profiles }) => {
-  const navigate = useNavigate();
 
-  return (
-    <div className="bg-white rounded-lg shadow-sm border p-6">
-      <h2 className="text-xl font-semibold text-gray-900 mb-4">Culprit Profiles</h2>
-      {profiles.length === 0 ? (
-        <p className="text-center text-gray-600 py-12">No profiles found</p>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {profiles.map((profile) => (
-            <div
-              key={profile.id}
-              onClick={() => navigate(`/operations/profile/view/${profile.id}`)}
-              className="border border-gray-200 rounded-lg p-4 hover:shadow-md hover:border-blue-300 transition cursor-pointer"
-            >
-              <div className="flex items-start gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
-                  {profile.name.charAt(0)}
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">{profile.name}</h3>
-                  <p className="text-sm text-gray-600">Alias: {profile.alias}</p>
-                  <p className="text-xs text-gray-500 mt-1">{profile.address.city}, {profile.address.state}</p>
-                  <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium mt-2 ${profile.status === 'Active' ? 'bg-green-100 text-green-800' :
-                    profile.status === 'Under Investigation' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
-                    {profile.status}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
 
 export default AdminDashboard;

@@ -121,8 +121,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
               <button
                 onClick={() => onViewModeChange('cases')}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${viewMode === 'cases'
-                    ? 'bg-blue-50 text-blue-600 border-2 border-blue-600 font-semibold'
-                    : 'bg-gray-50 text-gray-700 border border-gray-300 hover:bg-gray-100'
+                  ? 'bg-blue-50 text-blue-600 border-2 border-blue-600 font-semibold'
+                  : 'bg-gray-50 text-gray-700 border border-gray-300 hover:bg-gray-100'
                   }`}
               >
                 <Briefcase className="w-5 h-5" />
@@ -133,11 +133,14 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
               {/* Culprit Profiles button disabled */}
               <button
-                disabled
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-gray-200 text-gray-400 border border-gray-300 cursor-not-allowed opacity-60"
+                onClick={() => onViewModeChange('profiles')}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${viewMode === 'profiles'
+                    ? 'bg-blue-50 text-blue-600 border-2 border-blue-600 font-semibold'
+                    : 'bg-gray-50 text-gray-700 border border-gray-300 hover:bg-gray-100'
+                  }`}
               >
                 <UserCheck className="w-5 h-5" />
-                <span>Culprit Profiles</span>
+                <span>All Offenders</span>
               </button>
             </div>
           </div>
