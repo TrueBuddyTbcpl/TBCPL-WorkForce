@@ -50,12 +50,12 @@ const EntityOrganizationStep = ({ data, onNext, onBack }: Props) => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Relationship Nature</label>
                   <select {...register(`associatedCompanies.${index}.relationshipNature` as const)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                     <option value="">Select Relationship</option>
-                    <option value="Ownership">Ownership</option>
-                    <option value="Control">Control</option>
-                    <option value="Representation">Representation</option>
-                    <option value="Partnership">Partnership</option>
-                    <option value="Supplier">Supplier</option>
-                    <option value="Client">Client</option>
+                    <option value="OWNERSHIP">Ownership</option>
+                    <option value="CONTROL">Control</option>
+                    <option value="REPRESENTATION">Representation</option>
+                    <option value="PARTNERSHIP">Partnership</option>
+                    <option value="SUPPLIER">Supplier</option>
+                    <option value="CLIENT">Client</option>
                   </select>
                 </div>
 

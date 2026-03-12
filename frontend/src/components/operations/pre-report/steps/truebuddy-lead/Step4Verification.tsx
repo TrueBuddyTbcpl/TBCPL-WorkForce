@@ -1,4 +1,10 @@
 // src/components/operations/pre-report/steps/truebuddy-lead/Step4Verification.tsx
+import { useState, useEffect } from 'react';
+import { Plus, Trash2, Loader2 } from 'lucide-react';
+import { useAuthStore } from '../../../../../stores/authStore';
+import apiClient from '../../../../../services/api/apiClient';
+import { toast } from 'sonner';
+
 import React from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -38,9 +44,89 @@ const TrueBuddyStep4Verification: React.FC<Step4Props> = ({ data, onNext, onBack
     },
   });
 
+  const [customVerifData, setCustomVerifData] = useState<
+  Record<number, { status: string; notes: string }>
+>(() => {
+  const map: Record<number, { status: string; notes: string }> = {};
+  data?.verificationCustomData?.forEach((e: any) => {
+    map[e.optionId] = { status: e.status, notes: e.notes ?? '' };
+  });
+  return map;
+});
+
+// ── Add these right after customVerifData state ────────────────────────────
+const { user } = useAuthStore();
+const canDelete =
+  (user?.roleName === 'ADMIN' || user?.roleName === 'SUPER_ADMIN') &&
+  user?.departmentName === 'Admin';
+
+interface CustomOption { id: number; optionName: string; }
+
+const [customOptions, setCustomOptions] = useState<CustomOption[]>([]);
+const [loadingOpts,   setLoadingOpts]   = useState(true);
+const [showAddForm,   setShowAddForm]   = useState(false);
+const [newOptName,    setNewOptName]    = useState('');
+const [addingOpt,     setAddingOpt]     = useState(false);
+const [deletingId,    setDeletingId]    = useState<number | null>(null);
+
+useEffect(() => {
+  apiClient.get('/operation/prereport/custom-options?stepNumber=4&leadType=TRUEBUDDY_LEAD')
+    .then(res => setCustomOptions(res.data.data ?? []))
+    .catch(() => toast.error('Failed to load custom options'))
+    .finally(() => setLoadingOpts(false));
+}, []);
+
+const handleAddOption = async () => {
+  if (!newOptName.trim()) return;
+  setAddingOpt(true);
+  try {
+    const res = await apiClient.post('/operation/prereport/custom-options', {
+      stepNumber: 4,
+      leadType:   'TRUEBUDDY_LEAD',
+      optionName: newOptName.trim(),
+    });
+    setCustomOptions(prev => [...prev, res.data.data]);
+    setNewOptName('');
+    setShowAddForm(false);
+    toast.success('Custom verification item added');
+  } catch {
+    toast.error('Failed to add option');
+  } finally {
+    setAddingOpt(false);
+  }
+};
+
+const handleDeleteOption = async (id: number) => {
+  if (!window.confirm('Delete this custom verification item permanently?')) return;
+  setDeletingId(id);
+  try {
+    await apiClient.delete(`/operation/prereport/custom-options/${id}`);
+    setCustomOptions(prev => prev.filter(o => o.id !== id));
+    setCustomVerifData(prev => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    toast.success('Item deleted');
+  } catch {
+    toast.error('Failed to delete');
+  } finally {
+    setDeletingId(null);
+  }
+};
+
+  
+
   const onSubmit = async (formData: TrueBuddyLeadStep4Input) => {
     try {
-      await onNext(formData);
+      await onNext({
+      ...formData,
+      verificationCustomData: Object.entries(customVerifData).map(([id, val]) => ({
+        optionId: Number(id),
+        status:   val.status,
+        notes:    val.notes,
+      })),
+    })
     } catch (error) {
       console.error('Error submitting Step 4:', error);
     }
@@ -185,6 +271,155 @@ const TrueBuddyStep4Verification: React.FC<Step4Props> = ({ data, onNext, onBack
               </div>
             );
           })}
+
+                    {/* ── Custom Verification Items ─────────────────────────────────── */}
+          <div className="border-t border-dashed border-gray-300 pt-5">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-semibold text-gray-600">Custom Verification Items</p>
+              <button
+                type="button"
+                onClick={() => setShowAddForm(s => !s)}
+                className="flex items-center gap-1 text-xs px-3 py-1.5 bg-indigo-50
+                           text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-100"
+              >
+                <Plus className="w-3.5 h-3.5" /> Add Custom Item
+              </button>
+            </div>
+
+            {/* Inline add form */}
+            {showAddForm && (
+              <div className="flex items-center gap-2 mb-4">
+                <input
+                  type="text"
+                  value={newOptName}
+                  onChange={e => setNewOptName(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddOption())}
+                  placeholder="Verification item name..."
+                  className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg
+                             focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddOption}
+                  disabled={addingOpt || !newOptName.trim()}
+                  className="px-3 py-1.5 bg-indigo-600 text-white text-sm rounded-lg
+                             hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {addingOpt ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowAddForm(false); setNewOptName(''); }}
+                  className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+
+            {/* Loading */}
+            {loadingOpts && (
+              <div className="flex items-center gap-2 text-sm text-gray-400 py-2">
+                <Loader2 className="w-4 h-4 animate-spin" /> Loading custom items...
+              </div>
+            )}
+
+            {/* Empty state */}
+            {!loadingOpts && customOptions.length === 0 && !showAddForm && (
+              <p className="text-xs text-gray-400 italic py-1">
+                No custom items yet. Click "Add Custom Item" to create one.
+              </p>
+            )}
+
+            {/* Custom cards — styled to match existing fixed item cards above */}
+            {!loadingOpts && customOptions.map(opt => (
+              <div
+                key={opt.id}
+                className="border border-indigo-200 rounded-lg p-6 space-y-4 mb-4 bg-indigo-50"
+              >
+                {/* Card header */}
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                      {opt.optionName}
+                    </h3>
+                    <p className="text-sm text-gray-500">Custom verification item</p>
+                  </div>
+                  {canDelete && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteOption(opt.id)}
+                      disabled={deletingId === opt.id}
+                      className="p-1 text-gray-300 hover:text-red-500 transition-colors"
+                      title="Delete item (Admin only)"
+                    >
+                      {deletingId === opt.id
+                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        : <Trash2 className="w-3.5 h-3.5" />
+                      }
+                    </button>
+                  )}
+                </div>
+
+                {/* Status — button-toggle style matching existing fixed items */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Status
+                  </label>
+                  <div className="flex gap-3">
+                    {Object.values(VerificationStatus).map(status => (
+                      <button
+                        key={status}
+                        type="button"
+                        onClick={() =>
+                          setCustomVerifData(prev => ({
+                            ...prev,
+                            [opt.id]: { ...prev[opt.id], status },
+                          }))
+                        }
+                        className={`flex-1 px-4 py-2 border rounded-lg text-sm font-medium
+                                    transition-colors ${
+                          (customVerifData[opt.id]?.status ?? VerificationStatus.NOT_DONE) === status
+                            ? getStatusColor(status)
+                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        {status.replace(/_/g, ' ')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Notes */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Notes{' '}
+                    {(customVerifData[opt.id]?.status ?? VerificationStatus.NOT_DONE)
+                      !== VerificationStatus.NOT_DONE && '(Recommended)'}
+                  </label>
+                  <textarea
+                    value={customVerifData[opt.id]?.notes ?? ''}
+                    onChange={e =>
+                      setCustomVerifData(prev => ({
+                        ...prev,
+                        [opt.id]: { ...prev[opt.id], notes: e.target.value },
+                      }))
+                    }
+                    rows={3}
+                    placeholder={
+                      (customVerifData[opt.id]?.status ?? VerificationStatus.NOT_DONE)
+                        === VerificationStatus.NOT_DONE
+                        ? 'Optional notes'
+                        : 'Provide details about the verification conducted...'
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg
+                               focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
 
           {/* Form Actions */}
           <div className="flex justify-between pt-6 border-t">

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Loader2,
   AlertCircle,
@@ -58,6 +58,7 @@ const CaseDashboard = ({ isAdminView = false }: Props) => {
   const { caseId } = useParams<{ caseId: string }>();
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const location = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── ALL useState FIRST — never moved ──────────────────────────────
@@ -101,15 +102,7 @@ const CaseDashboard = ({ isAdminView = false }: Props) => {
   const deleteMutation = useDeleteDocument(parsedCaseId ?? 0);
 
   // ── Helpers ────────────────────────────────────────────────────────
-  const getStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'open': return 'bg-blue-100 text-blue-800';
-      case 'in-progress': return 'bg-yellow-100 text-yellow-800';
-      case 'on-hold': return 'bg-gray-100 text-gray-800';
-      case 'closed': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
+
 
   const getPriorityColor = (priority: string) => {
     switch (priority?.toLowerCase()) {
@@ -171,6 +164,48 @@ const CaseDashboard = ({ isAdminView = false }: Props) => {
 
     checkExistingReport();
   }, [parsedCaseId]);
+
+  // ── Auto-link profile when returning from ProfileForm ──────────────────────
+  useEffect(() => {
+    const autoLinkProfileId = location.state?.autoLinkProfileId as number | undefined;
+    if (!autoLinkProfileId || !parsedCaseId) return;
+
+    // Clear state immediately to prevent re-triggering on re-renders
+    window.history.replaceState({}, '', window.location.pathname);
+
+    const doAutoLink = async () => {
+      // Avoid linking if already linked
+      if (linkedProfiles.some(lp => lp.profileId === autoLinkProfileId)) {
+        toast.info('Profile is already linked to this case');
+        return;
+      }
+
+      try {
+        setLinkingId(autoLinkProfileId);
+        // Fetch the profile details so we have name & profileNumber
+        const res = await apiClient.get(`/operation/profiles/${autoLinkProfileId}`);
+        const profile: ApiProfileDetail = res.data.data;
+
+        const linked = await linkProfile(
+          parsedCaseId,
+          profile.id,
+          profile.profileNumber,
+          profile.name
+        );
+        setLinkedProfiles(prev => [...prev, linked]);
+        toast.success(`"${profile.name}" created and linked to this case ✓`);
+      } catch (err: any) {
+        toast.error(err.response?.data?.message || 'Profile created but failed to auto-link');
+      } finally {
+        setLinkingId(null);
+      }
+    };
+
+    doAutoLink();
+    // ✅ Run only once on mount when state is present — empty dep array is intentional
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // intentionally run once — state check inside handles the condition
+
 
 
   const handleUpload = async (file: File) => {
@@ -451,12 +486,6 @@ const CaseDashboard = ({ isAdminView = false }: Props) => {
 
           <div className="flex flex-wrap items-center gap-4 mt-4">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">Status:</span>
-              <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(caseDetail.status)}`}>
-                {caseDetail.status}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600">Priority:</span>
               <span className={`px-3 py-1 rounded-full text-sm font-semibold border ${getPriorityColor(caseDetail.priority)}`}>
                 {caseDetail.priority}
@@ -720,9 +749,29 @@ const CaseDashboard = ({ isAdminView = false }: Props) => {
                           <Loader2 className="w-5 h-5 animate-spin text-indigo-500" />
                         </div>
                       ) : searchResults.length === 0 ? (
-                        <div className="text-center py-6 text-sm text-gray-500">
-                          No profiles found
+                        <div className="flex flex-col items-center py-5 px-3 gap-3">
+                          <p className="text-sm text-gray-500">
+                            {profileSearch.trim()
+                              ? `No profiles found for "${profileSearch}"`
+                              : 'No profiles available'}
+                          </p>
+                          <button
+                            onClick={() => {
+                              setShowLinkDropdown(false);
+                              setProfileSearch('');
+                              navigate('/operations/profile-form', {
+                                state: { fromCaseId: parsedCaseId },   // ← passes caseId back
+                              });
+                            }}
+                            className="w-full flex items-center justify-center gap-2 px-3 py-2 
+                 bg-indigo-600 text-white text-sm font-medium rounded-lg 
+                 hover:bg-indigo-700 transition-colors"
+                          >
+                            <span className="text-base leading-none">+</span>
+                            Create New Profile
+                          </button>
                         </div>
+
                       ) : (
                         searchResults.map(profile => {
                           const isAlreadyLinked = linkedProfiles.some(lp => lp.profileId === profile.id);

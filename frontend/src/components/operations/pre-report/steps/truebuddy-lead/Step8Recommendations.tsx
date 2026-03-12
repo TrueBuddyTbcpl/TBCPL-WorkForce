@@ -1,11 +1,18 @@
 // src/components/operations/pre-report/steps/truebuddy-lead/Step8Recommendations.tsx
+// ADD alongside existing imports:
+import { useState, useEffect } from 'react';
+import { Plus, Trash2, Loader2 } from 'lucide-react';
+import { useAuthStore } from '../../../../../stores/authStore';
+import apiClient from '../../../../../services/api/apiClient';
+import { toast } from 'sonner';
+
 import React from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type {
   TrueBuddyLeadStep8Input,
 } from '../../../../../schemas/prereport.schemas';
-import {trueBuddyLeadStep8Schema} from '../../../../../schemas/prereport.schemas';
+import { trueBuddyLeadStep8Schema } from '../../../../../schemas/prereport.schemas';
 import type { TrueBuddyLeadData } from '../../../../../types/prereport.types';
 
 interface Step8Props {
@@ -15,7 +22,7 @@ interface Step8Props {
   onSkip: () => void;
 }
 
-const TrueBuddyStep8Recommendations: React.FC<Step8Props> = ({ data, onNext, onBack,onSkip }) => {
+const TrueBuddyStep8Recommendations: React.FC<Step8Props> = ({ data, onNext, onBack, onSkip }) => {
   const {
     control,
     handleSubmit,
@@ -33,9 +40,76 @@ const TrueBuddyStep8Recommendations: React.FC<Step8Props> = ({ data, onNext, onB
     },
   });
 
+  // ── Custom Recommendations State ───────────────────────────────────────────
+  const { user } = useAuthStore();
+  const canDelete =
+    (user?.roleName === 'ADMIN' || user?.roleName === 'SUPER_ADMIN') &&
+    user?.departmentName === 'Admin';
+
+  interface CustomOption { id: number; optionName: string; optionDescription?: string; }
+
+  const [customOptions, setCustomOptions] = useState<CustomOption[]>([]);
+  const [loadingOpts, setLoadingOpts] = useState(true);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newOptName, setNewOptName] = useState('');
+  const [newOptDesc, setNewOptDesc] = useState('');
+  const [addingOpt, setAddingOpt] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [checkedCustomIds, setCheckedCustomIds] = useState<number[]>(
+    data?.recCustomIds ?? []
+  );
+
+  // Track total selected count including custom
+  const customSelectedCount = checkedCustomIds.length;
+
+  useEffect(() => {
+    apiClient.get('/operation/prereport/custom-options?stepNumber=8&leadType=TRUEBUDDY_LEAD')
+      .then(res => setCustomOptions(res.data.data ?? []))
+      .catch(() => toast.error('Failed to load custom options'))
+      .finally(() => setLoadingOpts(false));
+  }, []);
+
+  const handleAddOption = async () => {
+    if (!newOptName.trim()) return;
+    setAddingOpt(true);
+    try {
+      const res = await apiClient.post('/operation/prereport/custom-options', {
+        stepNumber: 8,
+        leadType: 'TRUEBUDDY_LEAD',
+        optionName: newOptName.trim(),
+        optionDescription: newOptDesc.trim() || undefined,
+      });
+      setCustomOptions(prev => [...prev, res.data.data]);
+      setNewOptName('');
+      setNewOptDesc('');
+      setShowAddForm(false);
+      toast.success('Custom recommendation added');
+    } catch {
+      toast.error('Failed to add option');
+    } finally {
+      setAddingOpt(false);
+    }
+  };
+
+  const handleDeleteOption = async (id: number) => {
+    if (!window.confirm('Delete this custom recommendation permanently?')) return;
+    setDeletingId(id);
+    try {
+      await apiClient.delete(`/operation/prereport/custom-options/${id}`);
+      setCustomOptions(prev => prev.filter(o => o.id !== id));
+      setCheckedCustomIds(prev => prev.filter(x => x !== id));
+      toast.success('Recommendation deleted');
+    } catch {
+      toast.error('Failed to delete');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+
   const onSubmit = async (formData: TrueBuddyLeadStep8Input) => {
     try {
-      await onNext(formData);
+      await onNext({ ...formData, recCustomIds: checkedCustomIds });
     } catch (error) {
       console.error('Error submitting Step 8:', error);
     }
@@ -138,7 +212,8 @@ const TrueBuddyStep8Recommendations: React.FC<Step8Props> = ({ data, onNext, onB
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-gray-700">Selected:</span>
             <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
-              {selectedCount}
+              {selectedCount + customSelectedCount}
+
             </span>
           </div>
         </div>
@@ -147,7 +222,7 @@ const TrueBuddyStep8Recommendations: React.FC<Step8Props> = ({ data, onNext, onB
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {recommendationOptions.map((option) => {
               const isSelected = watch(option.name);
-              
+
               return (
                 <Controller
                   key={option.name}
@@ -157,20 +232,18 @@ const TrueBuddyStep8Recommendations: React.FC<Step8Props> = ({ data, onNext, onB
                     <button
                       type="button"
                       onClick={() => field.onChange(!field.value)}
-                      className={`relative text-left p-5 border-2 rounded-lg transition-all ${
-                        isSelected
+                      className={`relative text-left p-5 border-2 rounded-lg transition-all ${isSelected
                           ? `${colorClasses[option.color as keyof typeof colorClasses]} border-current shadow-md`
                           : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm'
-                      }`}
+                        }`}
                     >
                       {/* Checkbox */}
                       <div className="absolute top-4 right-4">
                         <div
-                          className={`h-6 w-6 rounded border-2 flex items-center justify-center transition-colors ${
-                            isSelected
+                          className={`h-6 w-6 rounded border-2 flex items-center justify-center transition-colors ${isSelected
                               ? 'bg-current border-current'
                               : 'border-gray-300'
-                          }`}
+                            }`}
                         >
                           {isSelected && (
                             <svg
@@ -196,14 +269,12 @@ const TrueBuddyStep8Recommendations: React.FC<Step8Props> = ({ data, onNext, onB
                       </div>
 
                       {/* Content */}
-                      <h3 className={`text-lg font-semibold mb-2 pr-8 ${
-                        isSelected ? 'text-current' : 'text-gray-900'
-                      }`}>
+                      <h3 className={`text-lg font-semibold mb-2 pr-8 ${isSelected ? 'text-current' : 'text-gray-900'
+                        }`}>
                         {option.label}
                       </h3>
-                      <p className={`text-sm ${
-                        isSelected ? 'opacity-90' : 'text-gray-600'
-                      }`}>
+                      <p className={`text-sm ${isSelected ? 'opacity-90' : 'text-gray-600'
+                        }`}>
                         {option.description}
                       </p>
                     </button>
@@ -212,6 +283,159 @@ const TrueBuddyStep8Recommendations: React.FC<Step8Props> = ({ data, onNext, onB
               );
             })}
           </div>
+
+                    {/* ── Custom Recommendations ────────────────────────────────────── */}
+          <div className="border-t border-dashed border-gray-300 pt-5">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm font-semibold text-gray-600">Custom Recommendations</p>
+              <button
+                type="button"
+                onClick={() => setShowAddForm(s => !s)}
+                className="flex items-center gap-1 text-xs px-3 py-1.5 bg-indigo-50
+                           text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-100"
+              >
+                <Plus className="w-3.5 h-3.5" /> Add Custom Option
+              </button>
+            </div>
+
+            {/* Inline add form — label + description, same as Step 6 */}
+            {showAddForm && (
+              <div className="flex flex-col gap-2 mb-4 p-3 border border-indigo-200
+                              bg-indigo-50 rounded-lg">
+                <input
+                  type="text"
+                  value={newOptName}
+                  onChange={e => setNewOptName(e.target.value)}
+                  placeholder="Recommendation label (required)..."
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg
+                             focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                />
+                <input
+                  type="text"
+                  value={newOptDesc}
+                  onChange={e => setNewOptDesc(e.target.value)}
+                  placeholder="Short description (optional)..."
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg
+                             focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleAddOption}
+                    disabled={addingOpt || !newOptName.trim()}
+                    className="px-3 py-1.5 bg-indigo-600 text-white text-sm rounded-lg
+                               hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {addingOpt ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setShowAddForm(false); setNewOptName(''); setNewOptDesc(''); }}
+                    className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Loading */}
+            {loadingOpts && (
+              <div className="flex items-center gap-2 text-sm text-gray-400 py-2">
+                <Loader2 className="w-4 h-4 animate-spin" /> Loading custom recommendations...
+              </div>
+            )}
+
+            {/* Empty state */}
+            {!loadingOpts && customOptions.length === 0 && !showAddForm && (
+              <p className="text-xs text-gray-400 italic py-1">
+                No custom recommendations yet. Click "Add Custom Option" to create one.
+              </p>
+            )}
+
+            {/* Custom cards — styled to match existing Step 8 card style exactly */}
+            {!loadingOpts && customOptions.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {customOptions.map(opt => {
+                  const isSelected = checkedCustomIds.includes(opt.id);
+                  return (
+                    <div
+                      key={opt.id}
+                      className={`relative text-left p-5 border-2 rounded-lg transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-indigo-50 border-indigo-400 shadow-md'
+                          : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                      }`}
+                      onClick={() =>
+                        setCheckedCustomIds(prev =>
+                          prev.includes(opt.id)
+                            ? prev.filter(x => x !== opt.id)
+                            : [...prev, opt.id]
+                        )
+                      }
+                    >
+                      {/* Top-right: delete + checkbox */}
+                      <div className="absolute top-4 right-4 flex items-center gap-1.5">
+                        {canDelete && (
+                          <button
+                            type="button"
+                            onClick={e => { e.stopPropagation(); handleDeleteOption(opt.id); }}
+                            disabled={deletingId === opt.id}
+                            className="p-1 text-gray-300 hover:text-red-500 transition-colors"
+                            title="Delete (Admin only)"
+                          >
+                            {deletingId === opt.id
+                              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              : <Trash2 className="w-3.5 h-3.5" />
+                            }
+                          </button>
+                        )}
+                        {/* Checkbox indicator — matches existing cards exactly */}
+                        <div className={`h-6 w-6 rounded border-2 flex items-center justify-center
+                                        transition-colors ${
+                          isSelected
+                            ? 'bg-indigo-500 border-indigo-500'
+                            : 'border-gray-300'
+                        }`}>
+                          {isSelected && (
+                            <svg className="h-4 w-4 text-white" fill="none"
+                              viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round"
+                                strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Icon placeholder — consistent spacing with fixed cards */}
+                      <div className={`mb-3 ${isSelected ? 'text-indigo-500' : 'text-gray-400'}`}>
+                        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                          stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                      </div>
+
+                      {/* Content */}
+                      <h3 className={`text-lg font-semibold mb-2 pr-16 ${
+                        isSelected ? 'text-indigo-700' : 'text-gray-900'
+                      }`}>
+                        {opt.optionName}
+                      </h3>
+                      {opt.optionDescription && (
+                        <p className={`text-sm ${
+                          isSelected ? 'text-indigo-600 opacity-90' : 'text-gray-600'
+                        }`}>
+                          {opt.optionDescription}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
 
           {Object.keys(errors).length > 0 && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -231,13 +455,13 @@ const TrueBuddyStep8Recommendations: React.FC<Step8Props> = ({ data, onNext, onB
               Back
             </button>
             {/* Skip Button */}
-        <button
-          type="button"
-          onClick={onSkip}
-          className="px-6 py-3 border-2 border-yellow-400 text-yellow-700 font-medium rounded-lg hover:bg-yellow-50 transition-colors"
-        >
-          Skip Step
-        </button>
+            <button
+              type="button"
+              onClick={onSkip}
+              className="px-6 py-3 border-2 border-yellow-400 text-yellow-700 font-medium rounded-lg hover:bg-yellow-50 transition-colors"
+            >
+              Skip Step
+            </button>
             <button
               type="submit"
               disabled={isSubmitting}

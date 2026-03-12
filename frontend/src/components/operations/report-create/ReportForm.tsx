@@ -78,14 +78,14 @@ const ReportForm = ({
         title: initialData.header.title,
         subtitle: initialData.header.subtitle,
         preparedFor: initialData.header.preparedFor,
-        preparedBy: initialData.header.preparedBy,
+        preparedBy: 'TBCPL',
         date: initialData.header.date,
       }
       : {
         title: '',
         subtitle: '',
         preparedFor: prefill?.clientName ?? '',
-        preparedBy: '',
+        preparedBy: 'TBCPL',
         date: new Date().toISOString().split('T')[0],
       },
   });
@@ -311,13 +311,15 @@ const ReportForm = ({
                 </label>
                 <input
                   {...register('preparedBy')}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="e.g., True Buddy Consulting Pvt Ltd"
+                  readOnly                                   // ← readOnly keeps value in form state
+                  value="TBCPL"                              // ← locked display value
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg 
+               bg-gray-100 text-gray-500 cursor-not-allowed select-none"
                 />
-                {errors.preparedBy && (
-                  <p className="mt-1 text-sm text-red-600">{errors.preparedBy.message}</p>
-                )}
+                <p className="text-xs text-gray-400 mt-1">Auto-filled by system</p>
+                {/* ← removed error display, field is always valid */}
               </div>
+
             </div>
 
 

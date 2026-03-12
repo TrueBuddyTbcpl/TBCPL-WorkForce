@@ -33,8 +33,6 @@ export const Step1BasicInfo = ({
     resolver: zodResolver(clientLeadStep1Schema),
     defaultValues: {
       dateInfoReceived: data?.dateInfoReceived || '',
-      clientSpocName: data?.clientSpocName || '',
-      clientSpocContact: data?.clientSpocContact || '',
     },
   });
 
@@ -67,38 +65,6 @@ export const Step1BasicInfo = ({
         />
         {errors.dateInfoReceived && (
           <p className="text-red-500 text-sm mt-1">{errors.dateInfoReceived.message}</p>
-        )}
-      </div>
-
-      {/* Client SPOC Name */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Client SPOC Name <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          {...register('clientSpocName')}
-          placeholder="Enter SPOC name"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        />
-        {errors.clientSpocName && (
-          <p className="text-red-500 text-sm mt-1">{errors.clientSpocName.message}</p>
-        )}
-      </div>
-
-      {/* Client SPOC Contact */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Client SPOC Contact <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="tel"
-          {...register('clientSpocContact')}
-          placeholder="+91-XXXXXXXXXX"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        />
-        {errors.clientSpocContact && (
-          <p className="text-red-500 text-sm mt-1">{errors.clientSpocContact.message}</p>
         )}
       </div>
 

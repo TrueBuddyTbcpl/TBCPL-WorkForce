@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import ReportCreate from '../components/operations/report-create';
 import ProfileIndex from '../components/operations/profile/profile-index';
 import CaseIndex from '../components/operations/Cases/case-index';
@@ -42,17 +42,37 @@ import DashboardLayout from '../components/operations/dashboard/DashboardLayout'
 import VerifyEmailPage from '../components/auth/VerifyEmailPage';
 
 
-// Wrapper component for ProfileForm
+
+// ✅ CORRECT — all logic lives INSIDE the wrapper, not in AppRoutes
 const ProfileFormWrapper = () => {
-  const navigate = useNavigate();
+  const navigate = useNavigate();           // ← hooks called HERE
+  const location = useLocation();           // ← hooks called HERE
+
+  const fromCaseId: number | null = location.state?.fromCaseId ?? null;
 
   return (
     <ProfileForm
-      onSaved={() => navigate('/operations/profile')}
-      onCancel={() => navigate('/operations/profile')}
+      onSaved={(profile) => {
+        if (fromCaseId) {
+          navigate(`/operations/cases/${fromCaseId}`, {
+            state: { autoLinkProfileId: profile.id },
+            replace: true,
+          });
+        } else {
+          navigate('/operations/profile');
+        }
+      }}
+      onCancel={() => {
+        if (fromCaseId) {
+          navigate(`/operations/cases/${fromCaseId}`, { replace: true });
+        } else {
+          navigate('/operations/profile');
+        }
+      }}
     />
   );
 };
+
 
 
 const AppRoutes = () => {
@@ -130,7 +150,7 @@ const AppRoutes = () => {
         path="/operations/profile/create"
         element={
           <ProtectedRoute>
-            <ProfileForm />
+            <ProfileFormWrapper />
           </ProtectedRoute>
         }
       />

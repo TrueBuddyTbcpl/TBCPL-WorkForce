@@ -83,21 +83,6 @@ const InvestigationTracker = ({ caseId, currentStatus, updates, onUpdateAdded }:
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
           <h4 className="font-semibold text-gray-900 mb-4">Add Investigation Update</h4>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Update Status
-              </label>
-              <select
-                value={newUpdate.status}
-                onChange={(e) => setNewUpdate({ ...newUpdate, status: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="open">Open</option>
-                <option value="in-progress">In Progress</option>
-                <option value="on-hold">On Hold</option>
-                <option value="closed">Closed</option>
-              </select>
-            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -154,9 +139,6 @@ const InvestigationTracker = ({ caseId, currentStatus, updates, onUpdateAdded }:
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(update.status)}`}>
-                          {update.status}
-                        </span>
                         {index === 0 && (
                           <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-medium rounded">
                             Latest

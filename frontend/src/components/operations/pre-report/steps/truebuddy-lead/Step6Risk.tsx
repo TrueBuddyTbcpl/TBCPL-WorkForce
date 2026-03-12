@@ -1,4 +1,11 @@
 // src/components/operations/pre-report/steps/truebuddy-lead/Step6Risk.tsx
+// ADD alongside existing imports:
+import { useState, useEffect } from 'react';
+import { Plus, Trash2, Loader2 } from 'lucide-react';
+import { useAuthStore } from '../../../../../stores/authStore';
+import apiClient from '../../../../../services/api/apiClient';
+import { toast } from 'sonner';
+
 import React from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -34,10 +41,89 @@ const TrueBuddyStep6Risk: React.FC<Step6Props> = ({ data, onNext, onBack,onSkip 
       riskPrematureDisclosure: data.riskPrematureDisclosure || RiskLevel.LOW,
     },
   });
+  // ── Custom Risk Fields State ───────────────────────────────────────────────
+const { user } = useAuthStore();
+const canDelete =
+  (user?.roleName === 'ADMIN' || user?.roleName === 'SUPER_ADMIN') &&
+  user?.departmentName === 'Admin';
+
+interface CustomOption { id: number; optionName: string; optionDescription?: string; }
+
+const [customOptions, setCustomOptions] = useState<CustomOption[]>([]);
+const [loadingOpts,   setLoadingOpts]   = useState(true);
+const [showAddForm,   setShowAddForm]   = useState(false);
+const [newOptName,    setNewOptName]    = useState('');
+const [newOptDesc,    setNewOptDesc]    = useState('');
+const [addingOpt,     setAddingOpt]     = useState(false);
+const [deletingId,    setDeletingId]    = useState<number | null>(null);
+
+// Per-option RiskLevel value keyed by optionId
+const [customRiskData, setCustomRiskData] = useState<Record<number, string>>(() => {
+  const map: Record<number, string> = {};
+  data?.riskCustomData?.forEach((e: any) => {
+    map[e.optionId] = e.value ?? RiskLevel.LOW;
+  });
+  return map;
+});
+
+useEffect(() => {
+  apiClient.get('/operation/prereport/custom-options?stepNumber=6&leadType=TRUEBUDDY_LEAD')
+    .then(res => setCustomOptions(res.data.data ?? []))
+    .catch(() => toast.error('Failed to load custom options'))
+    .finally(() => setLoadingOpts(false));
+}, []);
+
+const handleAddOption = async () => {
+  if (!newOptName.trim()) return;
+  setAddingOpt(true);
+  try {
+    const res = await apiClient.post('/operation/prereport/custom-options', {
+      stepNumber:        6,
+      leadType:          'TRUEBUDDY_LEAD',
+      optionName:        newOptName.trim(),
+      optionDescription: newOptDesc.trim() || undefined,
+    });
+    setCustomOptions(prev => [...prev, res.data.data]);
+    setNewOptName('');
+    setNewOptDesc('');
+    setShowAddForm(false);
+    toast.success('Custom risk field added');
+  } catch {
+    toast.error('Failed to add option');
+  } finally {
+    setAddingOpt(false);
+  }
+};
+
+const handleDeleteOption = async (id: number) => {
+  if (!window.confirm('Delete this custom risk field permanently?')) return;
+  setDeletingId(id);
+  try {
+    await apiClient.delete(`/operation/prereport/custom-options/${id}`);
+    setCustomOptions(prev => prev.filter(o => o.id !== id));
+    setCustomRiskData(prev => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    toast.success('Risk field deleted');
+  } catch {
+    toast.error('Failed to delete');
+  } finally {
+    setDeletingId(null);
+  }
+};
+
 
   const onSubmit = async (formData: TrueBuddyLeadStep6Input) => {
     try {
-      await onNext(formData);
+      await onNext({
+      ...formData,
+      riskCustomData: Object.entries(customRiskData).map(([id, value]) => ({
+        optionId: Number(id),
+        value,
+      })),
+    });
     } catch (error) {
       console.error('Error submitting Step 6:', error);
     }
@@ -268,6 +354,132 @@ const TrueBuddyStep6Risk: React.FC<Step6Props> = ({ data, onNext, onBack,onSkip 
               Consider source reliability, communication channels, and stakeholder awareness
             </p>
           </div>
+
+                    {/* ── Custom Risk Fields ────────────────────────────────────────── */}
+          <div className="border-t border-dashed border-gray-300 pt-5">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-semibold text-gray-600">Custom Risk Factors</p>
+              <button
+                type="button"
+                onClick={() => setShowAddForm(s => !s)}
+                className="flex items-center gap-1 text-xs px-3 py-1.5 bg-indigo-50
+                           text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-100"
+              >
+                <Plus className="w-3.5 h-3.5" /> Add Custom Factor
+              </button>
+            </div>
+
+            {/* Inline add form — includes description (same as Step 8 pattern) */}
+            {showAddForm && (
+              <div className="flex flex-col gap-2 mb-4 p-3 border border-indigo-200
+                              bg-indigo-50 rounded-lg">
+                <input
+                  type="text"
+                  value={newOptName}
+                  onChange={e => setNewOptName(e.target.value)}
+                  placeholder="Risk factor label (required)..."
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg
+                             focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                />
+                <input
+                  type="text"
+                  value={newOptDesc}
+                  onChange={e => setNewOptDesc(e.target.value)}
+                  placeholder="Short description (optional)..."
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg
+                             focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleAddOption}
+                    disabled={addingOpt || !newOptName.trim()}
+                    className="px-3 py-1.5 bg-indigo-600 text-white text-sm rounded-lg
+                               hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {addingOpt ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setShowAddForm(false); setNewOptName(''); setNewOptDesc(''); }}
+                    className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Loading */}
+            {loadingOpts && (
+              <div className="flex items-center gap-2 text-sm text-gray-400 py-2">
+                <Loader2 className="w-4 h-4 animate-spin" /> Loading custom risk factors...
+              </div>
+            )}
+
+            {/* Empty state */}
+            {!loadingOpts && customOptions.length === 0 && !showAddForm && (
+              <p className="text-xs text-gray-400 italic py-1">
+                No custom risk factors yet. Click "Add Custom Factor" to create one.
+              </p>
+            )}
+
+            {/* Custom risk cards — RiskLevel button-toggle to match existing Step 6 style */}
+            {!loadingOpts && customOptions.map(opt => (
+              <div
+                key={opt.id}
+                className="border border-indigo-200 rounded-lg p-5 mb-4 bg-indigo-50"
+              >
+                {/* Card header */}
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      {opt.optionName}
+                    </label>
+                    {opt.optionDescription && (
+                      <p className="text-sm text-gray-500 mt-0.5">{opt.optionDescription}</p>
+                    )}
+                  </div>
+                  {canDelete && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteOption(opt.id)}
+                      disabled={deletingId === opt.id}
+                      className="p-1 text-gray-300 hover:text-red-500 transition-colors ml-2 flex-shrink-0"
+                      title="Delete risk factor (Admin only)"
+                    >
+                      {deletingId === opt.id
+                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        : <Trash2 className="w-3.5 h-3.5" />
+                      }
+                    </button>
+                  )}
+                </div>
+
+                {/* RiskLevel button-toggle — matches exact style of fixed fields */}
+                <div className="grid grid-cols-3 gap-3">
+                  {Object.values(RiskLevel).map(level => (
+                    <button
+                      key={level}
+                      type="button"
+                      onClick={() =>
+                        setCustomRiskData(prev => ({ ...prev, [opt.id]: level }))
+                      }
+                      className={`px-4 py-3 border rounded-lg text-sm font-medium
+                                  transition-colors ${
+                        (customRiskData[opt.id] ?? RiskLevel.LOW) === level
+                          ? getRiskColor(level)
+                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {level}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
 
           {/* Form Actions */}
           <div className="flex justify-between pt-6 border-t">

@@ -47,10 +47,9 @@ const PersonalInfoStep = ({ data, onNext, onBack }: Props) => {
 
   // ── field class helper ──────────────────────────────────────────────────────
   const fieldClass = (hasError: boolean) =>
-    `w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors ${
-      hasError
-        ? 'border-red-500 bg-red-50 focus:ring-red-400'
-        : 'border-gray-300'
+    `w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors ${hasError
+      ? 'border-red-500 bg-red-50 focus:ring-red-400'
+      : 'border-gray-300'
     }`;
 
   return (
@@ -145,16 +144,15 @@ const PersonalInfoStep = ({ data, onNext, onBack }: Props) => {
           {/* Last Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Last Name <span className="text-red-500">*</span>
+              Last Name
             </label>
             <input
               type="text"
               {...register('lastName', {
-                required: 'Last name is required',
                 minLength: { value: 2, message: 'Minimum 2 characters' },
               })}
               className={fieldClass(!!errors.lastName)}
-              placeholder="Enter last name"
+              placeholder="Enter last name (optional)"
             />
             {errors.lastName && (
               <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
@@ -178,17 +176,24 @@ const PersonalInfoStep = ({ data, onNext, onBack }: Props) => {
           {/* Gender */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Gender
+              Gender <span className="text-red-500">*</span>
             </label>
             <select
-              {...register('gender')}
-              className={fieldClass(false)}
+              {...register('gender', {
+                required: 'Gender is required',
+              })}
+              className={fieldClass(!!errors.gender)}
             >
               <option value="">Select Gender</option>
               <option value="Male">Male</option>
               <option value="Female">Female</option>
               <option value="Other">Other</option>
             </select>
+            {errors.gender && (
+              <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
+                <span>⚠</span> {errors.gender.message}
+              </p>
+            )}
           </div>
 
           {/* Nationality */}

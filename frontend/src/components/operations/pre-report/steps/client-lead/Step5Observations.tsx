@@ -1,3 +1,10 @@
+// ADD these alongside your existing imports:
+import { useState, useEffect } from 'react';
+import { Plus, Trash2 } from 'lucide-react';
+import { useAuthStore } from '../../../../../stores/authStore';
+import apiClient from '../../../../../services/api/apiClient';
+import { toast } from 'sonner';
+
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
@@ -27,6 +34,75 @@ export const Step5Observations = ({
 }: Step5ObservationsProps) => {
   const updateMutation = useUpdateStep();
   const queryClient = useQueryClient(); // ✅ ADD THIS
+  // ── Custom Observations State ──────────────────────────────────────────────
+  const { user } = useAuthStore();
+  const canDelete =
+    (user?.roleName === 'ADMIN' || user?.roleName === 'SUPER_ADMIN') &&
+    user?.departmentName === 'Admin';
+
+  interface CustomOption { id: number; optionName: string; }
+
+  const [customOptions, setCustomOptions] = useState<CustomOption[]>([]);
+  const [loadingOpts, setLoadingOpts] = useState(true);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newOptName, setNewOptName] = useState('');
+  const [addingOpt, setAddingOpt] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  // Per-option text, keyed by optionId
+  const [customObsData, setCustomObsData] = useState<Record<number, string>>(() => {
+    const map: Record<number, string> = {};
+    data?.observationsCustomData?.forEach((e: any) => {
+      map[e.optionId] = e.text ?? '';
+    });
+    return map;
+  });
+
+  useEffect(() => {
+    apiClient.get('/operation/prereport/custom-options?stepNumber=5')
+      .then(res => setCustomOptions(res.data.data ?? []))
+      .catch(() => toast.error('Failed to load custom options'))
+      .finally(() => setLoadingOpts(false));
+  }, []);
+
+  const handleAddOption = async () => {
+    if (!newOptName.trim()) return;
+    setAddingOpt(true);
+    try {
+      const res = await apiClient.post('/operation/prereport/custom-options', {
+        stepNumber: 5,
+        optionName: newOptName.trim(),
+      });
+      setCustomOptions(prev => [...prev, res.data.data]);
+      setNewOptName('');
+      setShowAddForm(false);
+      toast.success('Custom observation added');
+    } catch {
+      toast.error('Failed to add option');
+    } finally {
+      setAddingOpt(false);
+    }
+  };
+
+  const handleDeleteOption = async (id: number) => {
+    if (!window.confirm('Delete this custom observation permanently?')) return;
+    setDeletingId(id);
+    try {
+      await apiClient.delete(`/operation/prereport/custom-options/${id}`);
+      setCustomOptions(prev => prev.filter(o => o.id !== id));
+      setCustomObsData(prev => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      toast.success('Observation deleted');
+    } catch {
+      toast.error('Failed to delete option');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
 
   const {
     register,
@@ -48,7 +124,13 @@ export const Step5Observations = ({
       await updateMutation.mutateAsync({
         prereportId,
         stepNumber: 5,
-        data: formData,
+        data: {
+          ...formData,
+          observationsCustomData: Object.entries(customObsData).map(([id, text]) => ({
+            optionId: Number(id),
+            text,
+          })),
+        },
         leadType: LeadType.CLIENT_LEAD,
         reportId,
       });
@@ -143,6 +225,103 @@ export const Step5Observations = ({
           <p className="text-red-500 text-sm mt-1">{errors.obsEvidentiary_gaps.message}</p>
         )}
       </div>
+
+      {/* ── Custom Observation Fields ─────────────────────────────────────── */}
+      <div className="border-t border-dashed border-gray-300 pt-5">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm font-semibold text-gray-600">Custom Observations</p>
+          <button
+            type="button"
+            onClick={() => setShowAddForm(s => !s)}
+            className="flex items-center gap-1 text-xs px-3 py-1.5 bg-indigo-50
+                       text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-100"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Add Custom Observation
+          </button>
+        </div>
+
+        {/* Inline add form */}
+        {showAddForm && (
+          <div className="flex items-center gap-2 mb-4">
+            <input
+              type="text"
+              value={newOptName}
+              onChange={e => setNewOptName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddOption())}
+              placeholder="Observation field name..."
+              className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg
+                         focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={handleAddOption}
+              disabled={addingOpt || !newOptName.trim()}
+              className="px-3 py-1.5 bg-indigo-600 text-white text-sm rounded-lg
+                         hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {addingOpt ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setShowAddForm(false); setNewOptName(''); }}
+              className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+
+        {/* Loading state */}
+        {loadingOpts && (
+          <div className="flex items-center gap-2 text-sm text-gray-400 py-2">
+            <Loader2 className="w-4 h-4 animate-spin" /> Loading custom observations...
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!loadingOpts && customOptions.length === 0 && !showAddForm && (
+          <p className="text-xs text-gray-400 italic py-1">
+            No custom observations yet. Click "Add Custom Observation" to create one.
+          </p>
+        )}
+
+        {/* Custom observation textareas — same layout as fixed fields above */}
+        {!loadingOpts && customOptions.map(opt => (
+          <div key={opt.id} className="mb-4">
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm font-medium text-gray-700">
+                {opt.optionName}
+              </label>
+              {canDelete && (
+                <button
+                  type="button"
+                  onClick={() => handleDeleteOption(opt.id)}
+                  disabled={deletingId === opt.id}
+                  className="p-1 text-gray-300 hover:text-red-500 transition-colors"
+                  title="Delete observation (Admin only)"
+                >
+                  {deletingId === opt.id
+                    ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    : <Trash2 className="w-3.5 h-3.5" />
+                  }
+                </button>
+              )}
+            </div>
+            <textarea
+              value={customObsData[opt.id] ?? ''}
+              onChange={e =>
+                setCustomObsData(prev => ({ ...prev, [opt.id]: e.target.value }))
+              }
+              rows={4}
+              placeholder={`Enter observations for ${opt.optionName}`}
+              className="w-full px-3 py-2 border border-indigo-200 bg-indigo-50 rounded-lg
+                         focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+        ))}
+      </div>
+
 
       {/* Actions */}
       <div className="flex items-center gap-3 pt-4 border-t border-gray-200">

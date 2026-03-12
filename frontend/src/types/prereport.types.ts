@@ -54,8 +54,6 @@ export interface OnlinePresence {
 // Client Lead Data Types
 export interface ClientLeadStep1 {
   dateInfoReceived: string;
-  clientSpocName: string;
-  clientSpocContact: string;
 }
 
 export interface ClientLeadStep2 {
@@ -193,6 +191,9 @@ export interface ClientLeadData {
   recClosureHold?: boolean;
   remarks?: string;
   customDisclaimer?: string;
+  verificationCustomData?: { optionId: number; status: string; notes: string }[];
+  observationsCustomData?: { optionId: number; text: string }[];
+  recCustomIds?:           number[];
 }
 
 // TrueBuddy Lead Data Types
@@ -351,6 +352,12 @@ export interface TrueBuddyLeadData {
 
   // Step 11: Disclaimer
   customDisclaimer?: string;
+
+  scopeCustomIds?:            number[];
+  verificationCustomData?:    { optionId: number; status: string; notes: string }[];
+  recCustomIds?:              number[];
+  observationsCustomData?: { optionId: number; text: string }[];
+  riskCustomData?: { optionId: number; value: string }[];
 }
 
 // Report Detail Response
