@@ -10,7 +10,6 @@ import EmployeeProfile from '../components/admin/EmployeeProfile';
 import Login from '../components/auth/Login';
 import EmployeeChangeHistoryReport from '../components/admin/EmployeeChangeHistoryReport';
 import NotFound from './NotFound';
-import ClientManagement from '../components/admin/ClientManagement';
 import ResetPasswordPage from '../pages/ResetPasswordPage';
 
 // ✅ Import Pre-Report Components
@@ -19,7 +18,6 @@ import { CreatePreReport } from '../components/operations/pre-report/CreatePreRe
 import { EditPreReport } from '../components/operations/pre-report/EditPreReport';
 import { PreReportDetails } from '../components/operations/pre-report/PreReportDetails';
 import PreReportPreviewPage from '../components/operations/pre-report/PreReportPreviewPage';
-import AdminFinalReportList from '../components/admin/finalreports/AdminFinalReportList';
 
 // ADD these 3 imports alongside existing imports
 import CreateReportPage from '../components/operations/report-create/CreateReportPage';
@@ -40,6 +38,10 @@ import FinalReportList from '../components/operations/dashboard/FinalReportList'
 // ADD this import at the top alongside existing imports
 import DashboardLayout from '../components/operations/dashboard/DashboardLayout';
 import VerifyEmailPage from '../components/auth/VerifyEmailPage';
+
+import LoaPreviewPage from '../components/admin/loa/LoaPreviewPage';
+import FieldAssociateDashboard from '../components/operations/grnd_operation/FieldAssociateDashboard';
+
 
 
 
@@ -73,6 +75,37 @@ const ProfileFormWrapper = () => {
   );
 };
 
+// ✅ Admin version — navigates to admin routes on save/cancel
+const AdminProfileFormWrapper = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const fromCaseId: number | null = location.state?.fromCaseId ?? null;
+
+  return (
+    <ProfileForm
+      onSaved={(profile) => {
+        if (fromCaseId) {
+          navigate(`/admin/cases/${fromCaseId}`, {
+            state: { autoLinkProfileId: profile.id },
+            replace: true,
+          });
+        } else {
+          navigate('/admin');
+        }
+      }}
+      onCancel={() => {
+        if (fromCaseId) {
+          navigate(`/admin/cases/${fromCaseId}`, { replace: true });
+        } else {
+          navigate('/admin');
+        }
+      }}
+    />
+  );
+};
+
+
 
 
 const AppRoutes = () => {
@@ -80,6 +113,9 @@ const AppRoutes = () => {
 
   const getDefaultRoute = () => {
     if (!user) return '/auth/login';
+
+    // Field Associate → their own dashboard
+    if (user.roleName === 'FIELD_ASSOCIATE') return '/field-associate/dashboard';
 
     // Redirect admins to admin dashboard
     if (user.roleName === 'SUPER_ADMIN' || user.roleName === 'HR_MANAGER') {
@@ -179,7 +215,7 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER']}>
-              <ClientManagement />
+              <AdminDashboard />
             </RoleBasedRoute>
           </ProtectedRoute>
         }
@@ -250,6 +286,84 @@ const AppRoutes = () => {
         }
       />
 
+      {/* ── Field Associate Dashboard ──────────────────────────────── */}
+      <Route
+        path="/field-associate/dashboard"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={['FIELD_ASSOCIATE']}>
+              <FieldAssociateDashboard />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/field-associate/loa"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={['FIELD_ASSOCIATE']}>
+              <FieldAssociateDashboard />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/field-associate/loa/:id/preview"
+        element={
+          <ProtectedRoute>
+            <LoaPreviewPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* ── Admin LOA Routes ────────────────────────────────────────── */}
+      <Route
+        path="/admin/loa"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER', 'ADMIN']}>
+              <AdminDashboard />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/loa/create"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER', 'ADMIN']}>
+              <AdminDashboard />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/loa/:id/edit"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER', 'ADMIN']}>
+              <AdminDashboard />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/loa/:id/preview"
+        element={
+          <ProtectedRoute>
+            <LoaPreviewPage />
+          </ProtectedRoute>
+        }
+      />
+
+
+
+
 
       <Route
         path="/operations/pre-report/:reportId"
@@ -274,7 +388,7 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER']}>
-              <AdminFinalReportList />
+              <AdminDashboard />
             </RoleBasedRoute>
           </ProtectedRoute>
         }
@@ -403,7 +517,29 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER']}>
-              <CaseIndex isAdminView />
+              <AdminDashboard />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/profiles"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER']}>
+              <AdminDashboard />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/pre-reports"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER']}>
+              <AdminDashboard />
             </RoleBasedRoute>
           </ProtectedRoute>
         }
@@ -419,6 +555,76 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+
+      {/* ── Admin Pre-Report Routes ─────────────────────────────────────────── */}
+      <Route
+        path="/admin/pre-report/create"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER']}>
+              <CreatePreReport />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* ── Admin Final Report Routes ────────────────────────────────────────── */}
+      <Route
+        path="/admin/finalreport/create"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER']}>
+              <CreateReportPage />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/finalreport/:reportId/edit"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER']}>
+              <EditReportPage />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/finalreport/:reportId/preview"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER']}>
+              <PreviewReportPage />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* ── Admin Profile Form Routes ────────────────────────────────────────── */}
+      <Route
+        path="/admin/profile/create"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER']}>
+              <AdminProfileFormWrapper />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/profile-form"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER']}>
+              <AdminProfileFormWrapper />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+
 
 
       {/* 404 Not Found */}

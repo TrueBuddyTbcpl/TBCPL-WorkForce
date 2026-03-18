@@ -33,7 +33,8 @@ interface FinalReportListItem {
     caseId: number;
     caseNumber: string;
     createdAt: string;
-    updatedAt: string;
+    updatedAt: string;     // ✅ already exists
+    updatedBy: string | null;
 }
 
 // ── API Calls ────────────────────────────────────────────────────────────────
@@ -337,6 +338,7 @@ const AdminFinalReportList = () => {
                                 <th className="text-left px-4 py-3 font-semibold text-gray-700">Client</th>
                                 <th className="text-left px-4 py-3 font-semibold text-gray-700">Case #</th>
                                 <th className="text-left px-4 py-3 font-semibold text-gray-700">Date</th>
+                                <th className="text-left px-4 py-3 font-semibold text-gray-700">Last Updated</th>
                                 <th className="text-left px-4 py-3 font-semibold text-gray-700">Status</th>
                                 <th className="text-center px-4 py-3 font-semibold text-gray-700">Actions</th>
                             </tr>
@@ -344,7 +346,7 @@ const AdminFinalReportList = () => {
                         <tbody className="divide-y divide-gray-100">
                             {filtered.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} className="text-center py-16 text-gray-400">
+                                    <td colSpan={8} className="text-center py-16 text-gray-400">
                                         <AlertCircle className="w-10 h-10 mx-auto mb-3 text-gray-300" />
                                         <p>No reports found</p>
                                     </td>
@@ -380,6 +382,19 @@ const AdminFinalReportList = () => {
                                         <td className="px-4 py-4 text-gray-500 text-xs whitespace-nowrap">
                                             {format(new Date(report.reportDate), 'dd MMM yyyy')}
                                         </td>
+                                        {/* Last Updated */}
+                                        <td className="px-4 py-4 text-xs text-gray-500">
+                                            <div className="whitespace-nowrap">
+                                                {format(new Date(report.updatedAt), 'dd MMM yyyy')}
+                                            </div>
+                                            <div
+                                                className="text-gray-400 truncate max-w-[120px] mt-0.5"
+                                                title={report.updatedBy ?? '—'}
+                                            >
+                                                {report.updatedBy ?? '—'}
+                                            </div>
+                                        </td>
+
 
                                         {/* ── Status Inline Dropdown ───────────────────── */}
                                         <td className="px-4 py-4">
@@ -417,7 +432,7 @@ const AdminFinalReportList = () => {
 
                                                 <button
                                                     title="Edit Report"
-                                                    onClick={() => navigate(`/operations/finalreport/${report.id}/edit?adminEdit=1`)}
+                                                    onClick={() => navigate(`/admin/finalreport/${report.id}/edit?adminEdit=1`)}
                                                     className="p-2 rounded-lg transition-colors text-orange-500 hover:bg-orange-50 cursor-pointer"
                                                 >
                                                     <Pencil className="w-4 h-4" />
@@ -428,7 +443,7 @@ const AdminFinalReportList = () => {
                                                     title="Preview Report"
                                                     disabled={!previewEnabled(report.reportStatus)}
                                                     onClick={() =>
-                                                        navigate(`/operations/finalreport/${report.id}/preview`)
+                                                        navigate(`/admin/finalreport/${report.id}/preview`)
                                                     }
                                                     className={`p-2 rounded-lg transition-colors ${previewEnabled(report.reportStatus)
                                                         ? 'text-blue-600 hover:bg-blue-50 cursor-pointer'

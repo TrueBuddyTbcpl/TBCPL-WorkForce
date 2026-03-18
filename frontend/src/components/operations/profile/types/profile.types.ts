@@ -8,15 +8,6 @@ export interface PersonalInfo {
   profilePhoto?: string;
 }
 
-export interface PhysicalAttributes {
-  height?: string;
-  weight?: string;
-  eyeColor?: string;
-  hairColor?: string;
-  skinTone?: string;
-  identificationMarks?: string;
-  disabilities?: string;
-}
 
 export interface AddressInfo {
   addressLine1?: string;
@@ -106,7 +97,7 @@ export interface MaterialSeizedItem {
   company?: string;
   quantity?: string;
   location?: string;
-  raidingAuthority?: 'Agriculture' | 'Police' | 'Wing' | 'Other';
+  raidingAuthority?: 'N_A' | 'Agriculture' | 'Police' | 'Wing' | 'Other';
   raidingAuthorityOther?: string;
   dateSeized?: string;
 }
@@ -129,7 +120,7 @@ export interface VehicleInfo {
   make?: string;
   model?: string;
   registrationNumber?: string;
-  ownershipType?: 'Owned' | 'Leased' | 'Unknown';
+  ownershipType?: 'N_A' | 'Owned' | 'Leased' | 'Unknown';
 }
 
 // Assets
@@ -140,9 +131,9 @@ export interface Assets {
 // Associates
 export interface AssociateInfo {
   id?: string;
-  name: string;
+  name?: string;
   relationship?: string;
-  role?: 'Associate' | 'Employee' | 'Family';
+  role?: 'N_A' | 'Associate' | 'Employee' | 'Family';
   contactInfo?: string;
   notes?: string;
 }
@@ -161,8 +152,8 @@ export interface Associations {
 // Products & Operations
 export interface ProductsOperations {
   productsInfringed?: Array<{
-    brandName: string;
-    companyName: string;
+    brandName?: string;
+    companyName?: string;
     productType?: string;
   }>;
   knownModusOperandi?: string;
@@ -210,8 +201,7 @@ export interface AuditTrail {
 // ✅ ProfileData with ALL properties
 export interface ProfileData {
   id?: string;
-  personal?: PersonalInfo;
-  physical?: PhysicalAttributes;  // ✅ Added
+  personal?: PersonalInfo;  // ✅ Added
   address?: AddressInfo;
   contact?: ContactInfo;
   identification?: IdentificationDocs;  // ✅ Added
@@ -239,8 +229,7 @@ export interface CulpritProfile {
   id: string;
   name: string;
   status: string;
-  personal: PersonalInfo;
-  physical?: PhysicalAttributes;  // ✅ Added
+  personal: PersonalInfo;  // ✅ Added
   address?: AddressInfo;
   contact?: ContactInfo;
   identification?: IdentificationDocs;  // ✅ Added

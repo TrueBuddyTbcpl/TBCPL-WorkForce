@@ -143,48 +143,7 @@ const ProfileHeader = ({ data }: Props) => {
         )}
       </div>
 
-      {/* Physical Attributes (if available) */}
-      {data.physical && (data.physical.height || data.physical.eyeColor || data.physical.identificationMarks) && (
-        <div className="mt-6 pt-6 border-t">
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">Physical Attributes</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {data.physical.height && (
-              <div>
-                <p className="text-sm text-gray-600">Height</p>
-                <p className="text-base font-medium text-gray-900">{data.physical.height}</p>
-              </div>
-            )}
-            
-            {data.physical.weight && (
-              <div>
-                <p className="text-sm text-gray-600">Weight</p>
-                <p className="text-base font-medium text-gray-900">{data.physical.weight}</p>
-              </div>
-            )}
-            
-            {data.physical.eyeColor && (
-              <div>
-                <p className="text-sm text-gray-600">Eye Color</p>
-                <p className="text-base font-medium text-gray-900">{data.physical.eyeColor}</p>
-              </div>
-            )}
-            
-            {data.physical.hairColor && (
-              <div>
-                <p className="text-sm text-gray-600">Hair Color</p>
-                <p className="text-base font-medium text-gray-900">{data.physical.hairColor}</p>
-              </div>
-            )}
-          </div>
-          
-          {data.physical.identificationMarks && (
-            <div className="mt-4">
-              <p className="text-sm text-gray-600">Identification Marks</p>
-              <p className="text-base font-medium text-gray-900">{data.physical.identificationMarks}</p>
-            </div>
-          )}
-        </div>
-      )}
+      
 
       {/* Emergency Contact (if available) */}
       {data.contact?.emergencyContactName && (

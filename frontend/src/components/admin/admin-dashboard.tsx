@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import type { Department, DepartmentStats } from './types/admin.types';
 import { getEmployeesByDepartment, getManagerByDepartment } from '../../data/mockData/mockEmployees';
 import { mockCases } from '../../data/mockData/mockCases';
@@ -14,15 +15,30 @@ import ClientManagement from './ClientManagement';
 import AdminFinalReportList from './finalreports/AdminFinalReportList';
 import AdminCaseList from './cases/AdminCaseList';
 import AdminProfileList from './AdminProfileList';
+import AdminLoaList from './loa/AdminLoaList';
+import AdminLoaCreate from './loa/AdminLoaCreate';
 
 
-type ViewMode = 'employees' | 'cases' | 'profiles' | 'prereports' | 'clients' | 'finalreports';
 
+
+type ViewMode = 'employees' | 'cases' | 'profiles' | 'prereports' | 'clients' | 'finalreports' | 'loa';
+
+
+const getViewModeFromPath = (pathname: string): ViewMode => {
+  if (pathname.startsWith('/admin/cases')) return 'cases';
+  if (pathname.startsWith('/admin/profiles')) return 'profiles';
+  if (pathname.startsWith('/admin/pre-reports')) return 'prereports';
+  if (pathname.startsWith('/admin/clients')) return 'clients';
+  if (pathname.startsWith('/admin/finalreports')) return 'finalreports';
+  if (pathname.startsWith('/admin/loa')) return 'loa';
+  return 'employees';
+};
 
 const AdminDashboard: React.FC = () => {
+  const location = useLocation();
   const [selectedDepartment, setSelectedDepartment] = useState<Department>('Operations');
   const [departmentStats, setDepartmentStats] = useState<DepartmentStats | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>('employees'); // ✅ Moved to sidebar
+  const [viewMode, setViewMode] = useState<ViewMode>(() => getViewModeFromPath(location.pathname)); // ✅ Moved to sidebar
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
     role: 'all',
@@ -32,6 +48,10 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     loadDepartmentStats();
   }, [selectedDepartment]);
+
+  useEffect(() => {
+    setViewMode(getViewModeFromPath(location.pathname));
+  }, [location.pathname]);
 
   const loadDepartmentStats = () => {
     const employees = getEmployeesByDepartment(selectedDepartment);
@@ -152,6 +172,13 @@ const AdminDashboard: React.FC = () => {
               <ClientManagement />
             ) : viewMode === 'finalreports' ? (
               <AdminFinalReportList />
+            ) : viewMode === 'loa' ? (
+              (() => {
+                const path = location.pathname;
+                if (path.includes('/create')) return <AdminLoaCreate />;
+                if (path.includes('/edit')) return <AdminLoaCreate />;
+                return <AdminLoaList />;
+              })()
             ) : null}
 
           </div>

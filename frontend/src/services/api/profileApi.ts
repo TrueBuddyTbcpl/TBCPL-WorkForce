@@ -170,11 +170,13 @@ export interface ApiProfileAdditionalInfo {
   tags?: string[];
 }
 
+// FIX — match backend enum exactly ✅
 export interface ApiStepStatus {
   stepNumber: number;
   stepName: string;
-  status: 'NOT_FILLED' | 'PARTIAL' | 'COMPLETE';
+  status: 'NOT_FILLED' | 'HALF_FILLED' | 'COMPLETED';
 }
+
 
 export interface ApiProfileDetail {
   id: number;
@@ -270,7 +272,7 @@ export const initProfile = async (
 ): Promise<ApiProfileDetail> => {
   const payload: ProfileInitRequest = {
     ...data,
-    gender:     up(data.gender),      // Male     → MALE
+    gender: up(data.gender),      // Male     → MALE
     bloodGroup: up(data.bloodGroup),  // A+       → A+  (safe, no-op if already correct)
   };
   const res = await apiClient.post(`${BASE}/init`, payload);
@@ -324,12 +326,12 @@ export const saveBusinessActivities = async (
   data: ApiProfileBusinessActivities
 ): Promise<ApiProfileDetail> => {
   const payload: ApiProfileBusinessActivities = {
-    retailerStatus:     up(data.retailerStatus),      // Individual  → INDIVIDUAL
-    retailerType:       up(data.retailerType),        // Authorized  → AUTHORIZED
-    supplierStatus:     up(data.supplierStatus),
-    supplierType:       up(data.supplierType),
+    retailerStatus: up(data.retailerStatus),      // Individual  → INDIVIDUAL
+    retailerType: up(data.retailerType),        // Authorized  → AUTHORIZED
+    supplierStatus: up(data.supplierStatus),
+    supplierType: up(data.supplierType),
     manufacturerStatus: up(data.manufacturerStatus),
-    manufacturerType:   up(data.manufacturerType),
+    manufacturerType: up(data.manufacturerType),
   };
   const res = await apiClient.put(`${BASE}/${profileId}/business-activities`, payload);
   return res.data;

@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import PersonalInfo from './steps/PersonalInfo';
-import PhysicalAttributes from './steps/PhysicalAttributes';
 import AddressInfo from './steps/AddressInfo';
 import ContactInfo from './steps/ContactInfo';
 import IdentificationDocs from './steps/IdentificationDocs';
@@ -24,7 +23,6 @@ import AdditionalInfo from './steps/AdditionalInfo';
 
 import {
   initProfile,
-  savePhysicalAttributes,
   saveAddress,
   saveContactInfo,
   saveIdentificationDocs,
@@ -46,7 +44,6 @@ import {
 
 import {
   mapToPersonalInfo,
-  mapToPhysicalAttributes,
   mapToAddress,
   mapToContactInfo,
   mapToIdentificationDocs,
@@ -80,24 +77,23 @@ interface Props {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const steps = [
-  { id: 1,  name: 'Personal Info',       component: 'personal'           },
-  { id: 2,  name: 'Physical At...',      component: 'physical'           },
-  { id: 3,  name: 'Address',             component: 'address'            },
-  { id: 4,  name: 'Contact Info',        component: 'contact'            },
-  { id: 5,  name: 'ID Docume...',        component: 'identification'     },
-  { id: 6,  name: 'Business Ac...',      component: 'businessActivities' },
-  { id: 7,  name: 'Entity & Org',        component: 'entityOrganization' },
-  { id: 8,  name: 'Geographic ...',      component: 'geographicExposure' },
-  { id: 9,  name: 'Related FIRs',        component: 'relatedFIRsCases'   },
-  { id: 10, name: 'Material Se...',      component: 'materialSeized'     },
-  { id: 11, name: 'Assets',              component: 'assets'             },
-  { id: 12, name: 'Known Ass...',        component: 'knownAssociates'    },
-  { id: 13, name: 'Known Em...',         component: 'knownEmployees'     },
-  { id: 14, name: 'Products &...',       component: 'productsOperations' },
-  { id: 15, name: 'Family Bac...',       component: 'familyBackground'   },
-  { id: 16, name: 'Influential ...',     component: 'influentialLinks'   },
-  { id: 17, name: 'Current Sta...',      component: 'currentStatus'      },
-  { id: 18, name: 'Additional ...',      component: 'additional'         },
+  { id: 1, name: 'Personal Info', component: 'personal' },
+  { id: 2, name: 'Address', component: 'address' },
+  { id: 3, name: 'Contact Info', component: 'contact' },
+  { id: 4, name: 'ID Docume...', component: 'identification' },
+  { id: 5, name: 'Business Ac...', component: 'businessActivities' },
+  { id: 6, name: 'Entity & Org', component: 'entityOrganization' },
+  { id: 7, name: 'Geographic ...', component: 'geographicExposure' },
+  { id: 8, name: 'Related FIRs', component: 'relatedFIRsCases' },
+  { id: 9, name: 'Material Se...', component: 'materialSeized' },
+  { id: 10, name: 'Assets', component: 'assets' },
+  { id: 11, name: 'Known Ass...', component: 'knownAssociates' },
+  { id: 12, name: 'Known Em...', component: 'knownEmployees' },
+  { id: 13, name: 'Products &...', component: 'productsOperations' },
+  { id: 14, name: 'Family Bac...', component: 'familyBackground' },
+  { id: 15, name: 'Influential ...', component: 'influentialLinks' },
+  { id: 16, name: 'Current Sta...', component: 'currentStatus' },
+  { id: 17, name: 'Additional ...', component: 'additional' },
 ];
 
 // Steps where empty submission is allowed — just advance without saving
@@ -143,18 +139,20 @@ const isStepDataEmpty = (stepComponent: string, data: any): boolean => {
 const ProfileForm = ({ initialData, onSaved, onCancel }: Props) => {
   const navigate = useNavigate();
 
-  const [currentStep, setCurrentStep]     = useState(1);
-  const [saving, setSaving]               = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [saving, setSaving] = useState(false);
   const [savedIndicator, setSavedIndicator] = useState(false);
-  const [profileId, setProfileId]         = useState<number | null>(initialData?.id ?? null);
-  const profileIdRef                      = useRef<number | null>(initialData?.id ?? null);
+  const [profileId, setProfileId] = useState<number | null>(initialData?.id ?? null);
+  const profileIdRef = useRef<number | null>(initialData?.id ?? null);
 
   // Track which steps have been completed (have real saved data)
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(() => {
     if (initialData?.stepStatuses) {
       const completed = new Set<number>();
-      initialData.stepStatuses.forEach(s => {
-        if (s.status === 'COMPLETE') completed.add(s.stepNumber);
+      initialData.stepStatuses?.forEach(s => {
+        if (s.status === 'COMPLETED' || s.status === 'HALF_FILLED') {
+          completed.add(s.stepNumber);
+        }
       });
       return completed;
     }
@@ -199,10 +197,10 @@ const ProfileForm = ({ initialData, onSaved, onCancel }: Props) => {
             return;
           }
           result = await initProfile({
-            firstName:   data.firstName?.trim(),
-            middleName:  data.middleName?.trim() || undefined,
-            lastName:    data.lastName?.trim(),
-            gender:      data.gender || undefined,
+            firstName: data.firstName?.trim(),
+            middleName: data.middleName?.trim() || undefined,
+            lastName: data.lastName?.trim(),
+            gender: data.gender || undefined,
             dateOfBirth: data.dateOfBirth || undefined,
             nationality: data.nationality?.trim() || undefined,
             profilePhoto: data.profilePhoto || undefined,
@@ -211,10 +209,6 @@ const ProfileForm = ({ initialData, onSaved, onCancel }: Props) => {
           setProfileId(result.id);
           break;
         }
-
-        case 'physical':
-          result = await savePhysicalAttributes(id!, data);
-          break;
 
         case 'address':
           result = await saveAddress(id!, data);
@@ -279,7 +273,10 @@ const ProfileForm = ({ initialData, onSaved, onCancel }: Props) => {
         case 'additional': {
           result = await saveAdditionalInfo(id!, data);
           // ✅ Mark final step complete
-          setCompletedSteps(prev => new Set(prev).add(currentStep));
+          const stepInfo = result.stepStatuses?.find(s => s.stepNumber === currentStep);
+          if (stepInfo?.status === 'COMPLETED' || stepInfo?.status === 'HALF_FILLED') {
+            setCompletedSteps(prev => new Set(prev).add(currentStep));
+          }
           showSaved();
           toast.success('Profile saved successfully!');
           if (onSaved) onSaved(result!);
@@ -294,7 +291,16 @@ const ProfileForm = ({ initialData, onSaved, onCancel }: Props) => {
       }
 
       // ✅ Mark this step as complete (real data was saved)
-      setCompletedSteps(prev => new Set(prev).add(currentStep));
+      const stepInfo = result.stepStatuses?.find(s => s.stepNumber === currentStep);
+      if (stepInfo?.status === 'COMPLETED' || stepInfo?.status === 'HALF_FILLED') {
+        setCompletedSteps(prev => new Set(prev).add(currentStep));
+      } else {
+        setCompletedSteps(prev => {
+          const updated = new Set(prev);
+          updated.delete(currentStep);
+          return updated;
+        });
+      }
       showSaved();
       advanceStep();
 
@@ -325,47 +331,45 @@ const ProfileForm = ({ initialData, onSaved, onCancel }: Props) => {
   // ── Render Step ───────────────────────────────────────────────────────────
 
   const renderStep = () => {
-    const step   = steps[currentStep - 1];
+    const step = steps[currentStep - 1];
     const onNext = (data: any) => handleStep(step.component, data);
-    const d      = initialData;
+    const d = initialData;
 
     switch (step.component) {
       case 'personal':
-        return <PersonalInfo         data={mapToPersonalInfo(d)}         onNext={onNext} onBack={currentStep > 1 ? handleBack : undefined} />;
-      case 'physical':
-        return <PhysicalAttributes   data={mapToPhysicalAttributes(d)}   onNext={onNext} onBack={handleBack} />;
+        return <PersonalInfo data={mapToPersonalInfo(d)} onNext={onNext} onBack={currentStep > 1 ? handleBack : undefined} />;
       case 'address':
-        return <AddressInfo          data={mapToAddress(d)}              onNext={onNext} onBack={handleBack} />;
+        return <AddressInfo data={mapToAddress(d)} onNext={onNext} onBack={handleBack} />;
       case 'contact':
-        return <ContactInfo          data={mapToContactInfo(d)}          onNext={onNext} onBack={handleBack} />;
+        return <ContactInfo data={mapToContactInfo(d)} onNext={onNext} onBack={handleBack} />;
       case 'identification':
-        return <IdentificationDocs   data={mapToIdentificationDocs(d)}   onNext={onNext} onBack={handleBack} />;
+        return <IdentificationDocs data={mapToIdentificationDocs(d)} onNext={onNext} onBack={handleBack} />;
       case 'businessActivities':
-        return <BusinessActivities   data={mapToBusinessActivities(d)}   onNext={onNext} onBack={handleBack} />;
+        return <BusinessActivities data={mapToBusinessActivities(d)} onNext={onNext} onBack={handleBack} />;
       case 'entityOrganization':
-        return <EntityOrganization   data={mapToEntityOrganization(d)}   onNext={onNext} onBack={handleBack} />;
+        return <EntityOrganization data={mapToEntityOrganization(d)} onNext={onNext} onBack={handleBack} />;
       case 'geographicExposure':
-        return <GeographicExposure   data={mapToGeographicExposure(d)}   onNext={onNext} onBack={handleBack} />;
+        return <GeographicExposure data={mapToGeographicExposure(d)} onNext={onNext} onBack={handleBack} />;
       case 'relatedFIRsCases':
-        return <RelatedFIRsCases     data={mapToRelatedFIRs(d)}          onNext={onNext} onBack={handleBack} />;
+        return <RelatedFIRsCases data={mapToRelatedFIRs(d)} onNext={onNext} onBack={handleBack} />;
       case 'materialSeized':
-        return <MaterialSeized       data={mapToMaterialSeized(d)}       onNext={onNext} onBack={handleBack} />;
+        return <MaterialSeized data={mapToMaterialSeized(d)} onNext={onNext} onBack={handleBack} />;
       case 'assets':
-        return <Assets               data={mapToAssets(d)}               onNext={onNext} onBack={handleBack} />;
+        return <Assets data={mapToAssets(d)} onNext={onNext} onBack={handleBack} />;
       case 'knownAssociates':
-        return <KnownAssociates      data={mapToKnownAssociates(d)}      onNext={onNext} onBack={handleBack} />;
+        return <KnownAssociates data={mapToKnownAssociates(d)} onNext={onNext} onBack={handleBack} />;
       case 'knownEmployees':
-        return <KnownEmployees       data={mapToKnownEmployees(d)}       onNext={onNext} onBack={handleBack} />;
+        return <KnownEmployees data={mapToKnownEmployees(d)} onNext={onNext} onBack={handleBack} />;
       case 'productsOperations':
-        return <ProductsOperations   data={mapToProductsOperations(d)}   onNext={onNext} onBack={handleBack} />;
+        return <ProductsOperations data={mapToProductsOperations(d)} onNext={onNext} onBack={handleBack} />;
       case 'familyBackground':
-        return <FamilyBackground     data={mapToFamilyBackground(d)}     onNext={onNext} onBack={handleBack} />;
+        return <FamilyBackground data={mapToFamilyBackground(d)} onNext={onNext} onBack={handleBack} />;
       case 'influentialLinks':
-        return <InfluentialLinks     data={mapToInfluentialLinks(d)}     onNext={onNext} onBack={handleBack} />;
+        return <InfluentialLinks data={mapToInfluentialLinks(d)} onNext={onNext} onBack={handleBack} />;
       case 'currentStatus':
-        return <CurrentStatus        data={mapToCurrentStatus(d)}        onNext={onNext} onBack={handleBack} />;
+        return <CurrentStatus data={mapToCurrentStatus(d)} onNext={onNext} onBack={handleBack} />;
       case 'additional':
-        return <AdditionalInfo       data={mapToAdditionalInfo(d)}       onNext={onNext} onBack={handleBack} />;
+        return <AdditionalInfo data={mapToAdditionalInfo(d)} onNext={onNext} onBack={handleBack} />;
       default:
         return null;
     }
@@ -445,7 +449,7 @@ const ProfileForm = ({ initialData, onSaved, onCancel }: Props) => {
           <div className="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-9 gap-1">
             {steps.map((step) => {
               const isCompleted = completedSteps.has(step.id);
-              const isCurrent   = step.id === currentStep;
+              const isCurrent = step.id === currentStep;
 
               return (
                 <div
@@ -461,8 +465,8 @@ const ProfileForm = ({ initialData, onSaved, onCancel }: Props) => {
                     ${isCompleted
                       ? 'bg-green-100 text-green-700 cursor-pointer hover:bg-green-200 border border-green-200'
                       : isCurrent
-                      ? 'bg-blue-100 text-blue-700 font-semibold border border-blue-300 cursor-default'
-                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        ? 'bg-blue-100 text-blue-700 font-semibold border border-blue-300 cursor-default'
+                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                     }`}
                 >
                   {isCompleted

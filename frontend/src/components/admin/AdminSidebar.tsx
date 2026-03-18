@@ -1,5 +1,8 @@
+
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { Department } from './types/admin.types';
+
 import {
   Building2,
   Users,
@@ -10,11 +13,13 @@ import {
   FileText,
   UserCheck,
   ClipboardCheck,
+  FileSignature,
 } from 'lucide-react';
 
 
 
-export type ViewMode = 'employees' | 'cases' | 'profiles' | 'prereports' | 'clients' | 'finalreports';
+export type ViewMode = 'employees' | 'cases' | 'profiles' | 'prereports' | 'clients' | 'finalreports' | 'loa';
+
 
 
 
@@ -35,11 +40,14 @@ interface AdminSidebarProps {
 }
 
 
+
+
 const AdminSidebar: React.FC<AdminSidebarProps> = ({
   selectedDepartment,
   viewMode,
-  onViewModeChange,
 }) => {
+
+  const navigate = useNavigate();
   const departments: { value: Department; label: string; icon: any; color: string }[] = [
     { value: 'Operations', label: 'Operations', icon: Building2, color: 'blue' },
     { value: 'HR', label: 'Human Resources', icon: Users, color: 'green' },
@@ -105,7 +113,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
             </label>
             <div className="space-y-2">
               <button
-                onClick={() => onViewModeChange('employees')}
+                onClick={() => navigate('/admin')}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${viewMode === 'employees'
                   ? 'bg-blue-50 text-blue-600 border-2 border-blue-600 font-semibold'
                   : 'bg-gray-50 text-gray-700 border border-gray-300 hover:bg-gray-100'
@@ -119,7 +127,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
               {/* Cases button enabled */}
               <button
-                onClick={() => onViewModeChange('cases')}
+                onClick={() => navigate('/admin/cases')}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${viewMode === 'cases'
                   ? 'bg-blue-50 text-blue-600 border-2 border-blue-600 font-semibold'
                   : 'bg-gray-50 text-gray-700 border border-gray-300 hover:bg-gray-100'
@@ -133,10 +141,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
               {/* Culprit Profiles button disabled */}
               <button
-                onClick={() => onViewModeChange('profiles')}
+                onClick={() => navigate('/admin/profiles')}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${viewMode === 'profiles'
-                    ? 'bg-blue-50 text-blue-600 border-2 border-blue-600 font-semibold'
-                    : 'bg-gray-50 text-gray-700 border border-gray-300 hover:bg-gray-100'
+                  ? 'bg-blue-50 text-blue-600 border-2 border-blue-600 font-semibold'
+                  : 'bg-gray-50 text-gray-700 border border-gray-300 hover:bg-gray-100'
                   }`}
               >
                 <UserCheck className="w-5 h-5" />
@@ -151,7 +159,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
           <div className="space-y-2">
             {/* Preliminary Reports */}
             <button
-              onClick={() => onViewModeChange('prereports')}
+              onClick={() => navigate('/admin/pre-reports')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition font-medium ${viewMode === 'prereports'
                 ? 'bg-blue-50 text-blue-600 border-2 border-blue-600'
                 : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
@@ -165,7 +173,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
             {/* Client Management */}
             <button
-              onClick={() => onViewModeChange('clients')}
+              onClick={() => navigate('/admin/clients')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition font-medium ${viewMode === 'clients'
                 ? 'bg-blue-50 text-blue-600 border-2 border-blue-600'
                 : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
@@ -179,9 +187,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
             {/* ✅ NEW: Final Reports */}
             <button
-              onClick={() => {
-                onViewModeChange('finalreports');
-              }}
+              onClick={() => navigate('/admin/finalreports')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition font-medium ${viewMode === 'finalreports'
                 ? 'bg-blue-50 text-blue-600 border-2 border-blue-600'
                 : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
@@ -190,6 +196,19 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
               <ClipboardCheck className="w-5 h-5" />
               Final Reports
             </button>
+
+            {/* Authority Letters (LOA) */}
+            <button
+              onClick={() => navigate('/admin/loa')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition font-medium ${viewMode === 'loa'
+                  ? 'bg-blue-50 text-blue-600 border-2 border-blue-600'
+                  : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                }`}
+            >
+              <FileSignature className="w-5 h-5" />
+              Authority Letters
+            </button>
+
           </div>
         </div>
 

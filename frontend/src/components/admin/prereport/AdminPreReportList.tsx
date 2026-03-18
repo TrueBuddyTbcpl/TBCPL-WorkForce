@@ -285,7 +285,7 @@ export const AdminPreReportList: React.FC = () => {
       toast.success(`Case ${caseData?.caseNumber} created successfully!`);
       setModalReport(null);
       refetch();
-      navigate(`/operations/cases/${caseData?.id}`);
+      navigate(`/admin/cases/${caseData?.id}`);
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to create case');
     } finally {
@@ -368,7 +368,7 @@ export const AdminPreReportList: React.FC = () => {
         </div>
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate('/operations/pre-report/create')}
+            onClick={() => navigate('/admin/pre-report/create')}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
           >
             <FileText className="w-4 h-4" />
@@ -741,7 +741,7 @@ export const AdminPreReportList: React.FC = () => {
                           {/* ✅ Case Number clickable badge — only when CASE_GENERATED */}
                           {report.reportStatus === 'CASE_GENERATED' && report.caseNumber && (
                             <button
-                              onClick={() => navigate(`/operations/cases/${report.caseId}`)}
+                              onClick={() => navigate(`/admin/cases/${report.caseId}`)}
                               className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-semibold rounded-lg hover:bg-indigo-100 hover:border-indigo-400 transition-colors"
                               title="Click to open case details"
                             >

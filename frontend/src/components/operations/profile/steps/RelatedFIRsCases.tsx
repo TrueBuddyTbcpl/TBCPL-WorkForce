@@ -110,11 +110,12 @@ const RelatedFIRsCasesStep = ({ data, onNext, onBack }: Props) => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select Status</option>
+                    <option value="N_A">N/A</option>
                     <option value="Open">Open</option>
-                    <option value="Under Investigation">Under Investigation</option>
+                    <option value="Under_Investigation">Under Investigation</option>
                     <option value="Closed">Closed</option>
                     <option value="Pending">Pending</option>
-                    <option value="Chargesheet Filed">Chargesheet Filed</option>
+                    <option value="Chargesheet_Filed">Chargesheet Filed</option>
                   </select>
                 </div>
               </div>

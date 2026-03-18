@@ -21,10 +21,6 @@ export const mapToPersonalInfo = (d?: ApiProfileDetail) => {
   };
 };
 
-export const mapToPhysicalAttributes = (d?: ApiProfileDetail) => {
-  if (!d?.physicalAttributes) return undefined;
-  return { ...d.physicalAttributes };
-};
 
 export const mapToAddress = (d?: ApiProfileDetail) => {
   if (!d?.address) return undefined;
@@ -92,7 +88,7 @@ export const mapToMaterialSeized = (d?: ApiProfileDetail) => {
       company:              m.company,
       quantity:             m.quantity,
       location:             m.location,
-      raidingAuthority:     cast<'Agriculture' | 'Police' | 'Wing' | 'Other'>(m.raidingAuthority),
+      raidingAuthority:     cast<'N_A' | 'Agriculture' | 'Police' | 'Wing' | 'Other'>(m.raidingAuthority),
       raidingAuthorityOther: m.raidingAuthorityOther,
       dateSeized:           m.dateSeized,
     })),
@@ -107,7 +103,7 @@ export const mapToAssets = (d?: ApiProfileDetail) => {
       make:               v.make,
       model:              v.model,
       registrationNumber: v.registrationNumber,
-      ownershipType:      cast<'Owned' | 'Leased' | 'Unknown'>(v.ownershipType),
+      ownershipType:      cast<'N_A' | 'Owned' | 'Leased' | 'Unknown'>(v.ownershipType),
     })),
   };
 };
@@ -119,7 +115,7 @@ export const mapToKnownAssociates = (d?: ApiProfileDetail) => {
       id:          a.id?.toString(),
       name:        a.name,
       relationship: a.relationship,
-      role:        cast<'Associate' | 'Employee' | 'Family'>(a.role),
+      role:        cast<'N_A' | 'Associate' | 'Employee' | 'Family'>(a.role),
       contactInfo: a.contactInfo,
       notes:       a.notes,
     })),
@@ -133,7 +129,7 @@ export const mapToKnownEmployees = (d?: ApiProfileDetail) => {
       id:          e.id?.toString(),
       name:        e.name,
       relationship: e.relationship,
-      role:        cast<'Associate' | 'Employee' | 'Family'>(e.role),
+      role:        cast<'N_A' | 'Associate' | 'Employee' | 'Family'>(e.role),
       contactInfo: e.contactInfo,
       notes:       e.notes,
     })),

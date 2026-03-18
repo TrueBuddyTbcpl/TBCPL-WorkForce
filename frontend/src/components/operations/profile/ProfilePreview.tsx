@@ -1,7 +1,7 @@
 import {
   X, Edit, Trash2, User, MapPin, Phone, FileText, Briefcase,
   Building2, Globe, Scale, Package, Car, Users, ShoppingBag,
-  Heart, Award, Activity, AlertCircle
+  Heart, Award, AlertCircle
 } from 'lucide-react';
 import type { ApiProfileDetail } from '../../../services/api/profileApi';
 
@@ -109,18 +109,7 @@ const ProfilePreview = ({ profile, onClose, onEdit, onDelete }: Props) => {
               <InfoRow label="Blood Group" value={pi?.bloodGroup} />
             </Section>
 
-            {/* Physical Attributes */}
-            {p.physicalAttributes && (
-              <Section icon={<Activity />} title="Physical Attributes">
-                <InfoRow label="Height" value={p.physicalAttributes.height} />
-                <InfoRow label="Weight" value={p.physicalAttributes.weight} />
-                <InfoRow label="Eye Color" value={p.physicalAttributes.eyeColor} />
-                <InfoRow label="Hair Color" value={p.physicalAttributes.hairColor} />
-                <InfoRow label="Skin Tone" value={p.physicalAttributes.skinTone} />
-                <InfoRow label="ID Marks" value={p.physicalAttributes.identificationMarks} />
-                <InfoRow label="Disabilities" value={p.physicalAttributes.disabilities} />
-              </Section>
-            )}
+            
 
             {/* Address */}
             {p.address && (
