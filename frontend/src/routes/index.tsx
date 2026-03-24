@@ -16,15 +16,15 @@ import ResetPasswordPage from '../pages/ResetPasswordPage';
 import { EmployeePreReportList } from '../components/operations/dashboard/EmployeePreReportList';
 import { CreatePreReport } from '../components/operations/pre-report/CreatePreReport';
 import { EditPreReport } from '../components/operations/pre-report/EditPreReport';
-import  PreReportDetails from '../components/operations/pre-report/PreReportDetails';
+import PreReportDetails from '../components/operations/pre-report/PreReportDetails';
 import PreReportPreviewPage from '../components/operations/pre-report/PreReportPreviewPage';
 
 // ADD these 3 imports alongside existing imports
 import CreateReportPage from '../components/operations/report-create/CreateReportPage';
 import EditReportPage from '../components/operations/report-create/EditReportPage';
 import PreviewReportPage from '../components/operations/report-create/PreviewReportPage';
-import CreateProposalPage    from '../components/admin/proposal/CreateProposalPage';
-import ProposalPreviewPage   from '../components/admin/proposal/ProposalPreviewPage';
+import CreateProposalPage from '../components/admin/proposal/CreateProposalPage';
+import ProposalPreviewPage from '../components/admin/proposal/ProposalPreviewPage';
 
 
 // ✅ Import Auth Pages & Route Guards
@@ -113,21 +113,21 @@ const AdminProfileFormWrapper = () => {
 const AppRoutes = () => {
   const { user } = useAuthStore();
 
-const getDefaultRoute = () => {
-  if (!user) return '/auth/login';
+  const getDefaultRoute = () => {
+    if (!user) return '/auth/login';
 
-  if (user.roleName === 'FIELD_ASSOCIATE') return '/field-associate/dashboard';
+    if (user.roleName === 'FIELD_ASSOCIATE') return '/field-associate/dashboard';
 
-  if (
-    user.roleName === 'SUPER_ADMIN' ||
-    user.roleName === 'ADMIN' ||        // ← ADD
-    user.roleName === 'HR_MANAGER'
-  ) return '/admin';
+    if (
+      user.roleName === 'SUPER_ADMIN' ||
+      user.roleName === 'ADMIN' ||        // ← ADD
+      user.roleName === 'HR_MANAGER'
+    ) return '/admin';
 
-  if (user.roleName === 'ASSOCIATE') return '/operations/dashboard';
+    if (user.roleName === 'ASSOCIATE') return '/operations/dashboard';
 
-  return '/auth/login';
-};
+    return '/auth/login';
+  };
 
   return (
     <Routes>
@@ -175,16 +175,20 @@ const getDefaultRoute = () => {
         }
       />
 
+      // routes/index.tsx
+
       <Route
         path="/operations/pre-report/:reportId/preview"
         element={
           <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER']}>
-              <PreReportPreviewPage /> {/* ✅ Use page component */}
+            {/* ← ADD 'ADMIN' to allowed roles */}
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'ASSOCIATE']}>
+              <PreReportPreviewPage />
             </RoleBasedRoute>
           </ProtectedRoute>
         }
       />
+
 
       <Route
         path="/operations/profile/create"
@@ -218,7 +222,7 @@ const getDefaultRoute = () => {
         path="/admin/clients"
         element={
           <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['SUPER_ADMIN','ADMIN']}>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
               <AdminDashboard />
             </RoleBasedRoute>
           </ProtectedRoute>
@@ -327,7 +331,7 @@ const getDefaultRoute = () => {
         path="/admin/loa"
         element={
           <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['SUPER_ADMIN','ADMIN']}>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
               <AdminDashboard />
             </RoleBasedRoute>
           </ProtectedRoute>
@@ -338,7 +342,7 @@ const getDefaultRoute = () => {
         path="/admin/loa/create"
         element={
           <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['SUPER_ADMIN','ADMIN']}>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
               <AdminDashboard />
             </RoleBasedRoute>
           </ProtectedRoute>
@@ -398,49 +402,49 @@ const getDefaultRoute = () => {
         }
       />
 
-<Route
-  path="/admin/proposals"
-  element={
-    <ProtectedRoute>
-      <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
-        <AdminDashboard />
-      </RoleBasedRoute>
-    </ProtectedRoute>
-  }
-/>
+      <Route
+        path="/admin/proposals"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
+              <AdminDashboard />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
 
-<Route
-  path="/admin/proposals/create"
-  element={
-    <ProtectedRoute>
-      <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
-        <CreateProposalPage />
-      </RoleBasedRoute>
-    </ProtectedRoute>
-  }
-/>
+      <Route
+        path="/admin/proposals/create"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
+              <CreateProposalPage />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
 
-<Route
-  path="/admin/proposals/:id/edit"
-  element={
-    <ProtectedRoute>
-      <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
-        <CreateProposalPage />
-      </RoleBasedRoute>
-    </ProtectedRoute>
-  }
-/>
+      <Route
+        path="/admin/proposals/:id/edit"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
+              <CreateProposalPage />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
 
-<Route
-  path="/admin/proposals/:id/preview"
-  element={
-    <ProtectedRoute>
-      <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
-        <ProposalPreviewPage />
-      </RoleBasedRoute>
-    </ProtectedRoute>
-  }
-/>
+      <Route
+        path="/admin/proposals/:id/preview"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
+              <ProposalPreviewPage />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
 
 
       {/* ✅ Change Password - Protected (All authenticated users) */}

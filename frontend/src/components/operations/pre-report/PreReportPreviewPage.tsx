@@ -5,64 +5,56 @@ import { usePreReportDetail } from '../../../hooks/prereport/usePreReportDetail'
 import { openPreReportInNewTab, type PreReportPDFData } from '../../../utils/preReportPdfExport';
 import { toast } from 'sonner';
 import { useAuthStore } from '../../../stores/authStore';
-
-const DASHBOARD_PATH = '/dashboard';
+import { useDashboardPath } from '../../../hooks/useDashboardPath'; // ← ADD
 
 const PreReportPreviewPage: React.FC = () => {
   const { reportId } = useParams<{ reportId: string }>();
   const navigate = useNavigate();
 
   const { user } = useAuthStore();
-  const isAdmin =
-    user?.roleName === 'SUPER_ADMIN' || user?.roleName === 'HR_MANAGER';
+  const dashboardPath = useDashboardPath(); // ← role-aware redirect path
+
+  // ── FIX 1: include ADMIN and ASSOCIATE ───────────────────────────────────
+  const canPreview =
+    user?.roleName === 'SUPER_ADMIN' ||
+    user?.roleName === 'ADMIN' ||
+    user?.roleName === 'ASSOCIATE';
 
   const { data, isLoading, isError } = usePreReportDetail(reportId!);
 
-  // ── Intercept browser/hardware back button ─────────────────────────────────
-  // Pushes a dummy state so there is something to pop, then on popstate
-  // (back button pressed) we replace the entire stack entry with dashboard.
+  // ── Intercept browser back button ────────────────────────────────────────
   useEffect(() => {
-    // Push a state so back button has something to trigger against
     window.history.pushState({ preReportPreview: true }, '');
-
-    const handlePopState = () => {
-      // User pressed back — send them to dashboard, remove this page from stack
-      navigate(DASHBOARD_PATH, { replace: true });
-    };
-
+    const handlePopState = () => navigate(dashboardPath, { replace: true });
     window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [navigate, dashboardPath]);
 
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, [navigate]);
-
-  // ── Access guard ───────────────────────────────────────────────────────────
+  // ── FIX 2: use dashboardPath instead of hardcoded '/dashboard' ────────────
   useEffect(() => {
-    if (!isAdmin) {
-      toast.error('Access denied. Admin only.');
-      // replace: true → preview page is NOT kept in history
-      navigate(DASHBOARD_PATH, { replace: true });
+    if (!canPreview) {
+      toast.error('Access denied. You do not have permission to preview.');
+      navigate(dashboardPath, { replace: true });
     }
-  }, [isAdmin, navigate]);
+  }, [canPreview, navigate, dashboardPath]);
 
-  // ── Trigger PDF once data is ready ────────────────────────────────────────
+  // ── Trigger PDF once data is ready ───────────────────────────────────────
   useEffect(() => {
-    if (data && !isLoading && isAdmin) {
+    if (data && !isLoading && canPreview) {
       openPreview();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, isLoading]);
 
-  // ── Error guard ────────────────────────────────────────────────────────────
+  // ── Error guard ───────────────────────────────────────────────────────────
   useEffect(() => {
     if (isError) {
       toast.error('Failed to load report data.');
-      navigate(DASHBOARD_PATH, { replace: true });
+      navigate(dashboardPath, { replace: true });
     }
-  }, [isError, navigate]);
+  }, [isError, navigate, dashboardPath]);
 
-  // ── PDF data builder ───────────────────────────────────────────────────────
+  // ── PDF data builder ──────────────────────────────────────────────────────
   const preparePDFData = (): PreReportPDFData | null => {
     if (!data) return null;
 
@@ -79,9 +71,7 @@ const PreReportPreviewPage: React.FC = () => {
       createdAt:  preReport.createdAt,
       updatedAt:  preReport.updatedAt,
       products: preReport.productNames?.map((name: string) => ({
-        name,
-        category: 'N/A',
-        status: 'ACTIVE',
+        name, category: 'N/A', status: 'ACTIVE',
       })),
     };
 
@@ -94,35 +84,31 @@ const PreReportPreviewPage: React.FC = () => {
     return pdfData;
   };
 
-  // ── Open PDF then redirect ─────────────────────────────────────────────────
+  // ── Open PDF then redirect ────────────────────────────────────────────────
   const openPreview = async () => {
     try {
       const pdfData = preparePDFData();
 
       if (!pdfData) {
         toast.error('Failed to prepare report data.');
-        navigate(DASHBOARD_PATH, { replace: true });
+        navigate(dashboardPath, { replace: true });
         return;
       }
 
       openPreReportInNewTab(pdfData);
       toast.success('PDF preview opened in new tab.');
 
-      // replace: true removes this preview page from history entirely.
-      // Pressing back from the detail page will now land on dashboard,
-      // NOT loop back to this preview page.
       setTimeout(() => {
-        navigate(DASHBOARD_PATH, { replace: true });
+        navigate(dashboardPath, { replace: true }); // ← role-aware
       }, 500);
 
     } catch (error) {
       console.error('Preview error:', error);
       toast.error('Failed to open preview.');
-      navigate(DASHBOARD_PATH, { replace: true });
+      navigate(dashboardPath, { replace: true });
     }
   };
 
-  // ── Loading UI ─────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">

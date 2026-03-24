@@ -53,6 +53,7 @@ export type QAAccuracy = (typeof QAAccuracy)[keyof typeof QAAccuracy];
 export const YesNoUnknown = {
   YES: 'YES',
   NO: 'NO',
+  NOT_KNOWN: 'NOT_KNOWN',
 } as const;
 export type YesNoUnknown = (typeof YesNoUnknown)[keyof typeof YesNoUnknown];
 

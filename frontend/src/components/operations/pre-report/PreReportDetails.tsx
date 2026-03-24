@@ -25,6 +25,11 @@ export const PreReportDetails = () => {
   const isAdmin =
     user?.roleName === 'SUPER_ADMIN' || user?.roleName === 'ADMIN';
 
+  const canPreview =
+    user?.roleName === 'SUPER_ADMIN' ||
+    user?.roleName === 'ADMIN' ||
+    user?.roleName === 'ASSOCIATE';
+
   const preReportsPath =
     user?.roleName === 'SUPER_ADMIN' || user?.roleName === 'ADMIN'
       ? '/admin/pre-reports'
@@ -49,12 +54,12 @@ export const PreReportDetails = () => {
         preReport.leadType === 'TRUEBUDDY_LEAD' ? 'TRUE_BUDDY_LEAD' : 'CLIENT_LEAD';
 
       const pdfData: PreReportPDFData = {
-        reportId:   preReport.reportId,
+        reportId: preReport.reportId,
         clientName: preReport.clientName,
-        leadType:   pdfLeadType,
-        status:     preReport.reportStatus,
-        createdAt:  preReport.createdAt,
-        updatedAt:  preReport.updatedAt,
+        leadType: pdfLeadType,
+        status: preReport.reportStatus,
+        createdAt: preReport.createdAt,
+        updatedAt: preReport.updatedAt,
         products: preReport.productNames?.map((name: string) => ({
           name, category: 'N/A', status: 'ACTIVE',
         })),
@@ -77,7 +82,7 @@ export const PreReportDetails = () => {
   };
 
   const handlePreview = () => {
-    if (!isAdmin) return;
+    if (!canPreview) return;
     navigate(`/operations/pre-report/${reportId}/preview`);
   };
 
@@ -114,34 +119,34 @@ export const PreReportDetails = () => {
 
   // ── Status flags ────────────────────────────────────────────────────────────
   const isRequestedForChanges = preReport.reportStatus === 'REQUESTED_FOR_CHANGES';
-  const isDisapproved         = preReport.reportStatus === 'DISAPPROVED_BY_CLIENT';
+  const isDisapproved = preReport.reportStatus === 'DISAPPROVED_BY_CLIENT';
 
   const getStepFields = (stepNum: number, isClientLead: boolean): string[] => {
     if (isClientLead) {
       const clientLeadSteps: Record<number, string[]> = {
-        1:  ['dateInfoReceived', 'clientSpocName', 'clientSpocContact'],
-        2:  ['scopeDueDiligence','scopeIprRetailer','scopeIprSupplier','scopeIprManufacturer','scopeOnlinePurchase','scopeOfflinePurchase','scopeCustomIds'],
-        3:  ['entityName','suspectName','contactNumbers','addressLine1','addressLine2','city','state','pincode','onlinePresences','productDetails','photosProvided','videoProvided','invoiceAvailable','sourceNarrative'],
-        4:  ['verificationClientDiscussion','verificationClientDiscussionNotes','verificationOsint','verificationOsintNotes','verificationMarketplace','verificationMarketplaceNotes','verificationPretextCalling','verificationPretextCallingNotes','verificationProductReview','verificationProductReviewNotes'],
-        5:  ['obsIdentifiableTarget','obsTraceability','obsProductVisibility','obsCounterfeitingIndications','obsEvidentiary_gaps'],
-        6:  ['qaCompleteness','qaAccuracy','qaIndependentInvestigation','qaPriorConfrontation','qaContaminationRisk'],
-        7:  ['assessmentOverall','assessmentRationale'],
-        8:  ['recMarketSurvey','recCovertInvestigation','recTestPurchase','recEnforcementAction','recAdditionalInfo','recClosureHold'],
-        9:  ['remarks'],
+        1: ['dateInfoReceived', 'clientSpocName', 'clientSpocContact'],
+        2: ['scopeDueDiligence', 'scopeIprRetailer', 'scopeIprSupplier', 'scopeIprManufacturer', 'scopeOnlinePurchase', 'scopeOfflinePurchase', 'scopeCustomIds'],
+        3: ['entityName', 'suspectName', 'contactNumbers', 'addressLine1', 'addressLine2', 'city', 'state', 'pincode', 'onlinePresences', 'productDetails', 'photosProvided', 'videoProvided', 'invoiceAvailable', 'sourceNarrative'],
+        4: ['verificationClientDiscussion', 'verificationClientDiscussionNotes', 'verificationOsint', 'verificationOsintNotes', 'verificationMarketplace', 'verificationMarketplaceNotes', 'verificationPretextCalling', 'verificationPretextCallingNotes', 'verificationProductReview', 'verificationProductReviewNotes'],
+        5: ['obsIdentifiableTarget', 'obsTraceability', 'obsProductVisibility', 'obsCounterfeitingIndications', 'obsEvidentiary_gaps'],
+        6: ['qaCompleteness', 'qaAccuracy', 'qaIndependentInvestigation', 'qaPriorConfrontation', 'qaContaminationRisk'],
+        7: ['assessmentOverall', 'assessmentRationale'],
+        8: ['recMarketSurvey', 'recCovertInvestigation', 'recTestPurchase', 'recEnforcementAction', 'recAdditionalInfo', 'recClosureHold'],
+        9: ['remarks'],
         10: ['customDisclaimer'],
       };
       return clientLeadSteps[stepNum] || [];
     } else {
       const trueBuddySteps: Record<number, string[]> = {
-        1:  ['dateInternalLeadGeneration','productCategory','infringementType','broadGeography','clientSpocName','clientSpocDesignation','natureOfEntity'],
-        2:  ['scopeIprSupplier','scopeIprManufacturer','scopeIprStockist','scopeMarketVerification','scopeEtp','scopeEnforcement'],
-        3:  ['intelNature','suspectedActivity','productSegment','supplyChainStage','repeatIntelligence','multiBrandRisk'],
-        4:  ['verificationIntelCorroboration','verificationIntelCorroborationNotes','verificationOsint','verificationOsintNotes','verificationPatternMapping','verificationPatternMappingNotes','verificationJurisdiction','verificationJurisdictionNotes','verificationRiskAssessment','verificationRiskAssessmentNotes'],
-        5:  ['obsOperationScale','obsCounterfeitLikelihood','obsBrandExposure','obsEnforcementSensitivity','obsLeakageRisk'],
-        6:  ['riskSourceReliability','riskClientConflict','riskImmediateAction','riskControlledValidation','riskPrematureDisclosure'],
-        7:  ['assessmentOverall','assessmentRationale'],
-        8:  ['recCovertValidation','recEtp','recMarketReconnaissance','recEnforcementDeferred','recContinuedMonitoring','recClientSegregation'],
-        9:  ['confidentialityNote'],
+        1: ['dateInternalLeadGeneration', 'productCategory', 'infringementType', 'broadGeography', 'clientSpocName', 'clientSpocDesignation', 'natureOfEntity'],
+        2: ['scopeIprSupplier', 'scopeIprManufacturer', 'scopeIprStockist', 'scopeMarketVerification', 'scopeEtp', 'scopeEnforcement'],
+        3: ['intelNature', 'suspectedActivity', 'productSegment', 'supplyChainStage', 'repeatIntelligence', 'multiBrandRisk'],
+        4: ['verificationIntelCorroboration', 'verificationIntelCorroborationNotes', 'verificationOsint', 'verificationOsintNotes', 'verificationPatternMapping', 'verificationPatternMappingNotes', 'verificationJurisdiction', 'verificationJurisdictionNotes', 'verificationRiskAssessment', 'verificationRiskAssessmentNotes'],
+        5: ['obsOperationScale', 'obsCounterfeitLikelihood', 'obsBrandExposure', 'obsEnforcementSensitivity', 'obsLeakageRisk'],
+        6: ['riskSourceReliability', 'riskClientConflict', 'riskImmediateAction', 'riskControlledValidation', 'riskPrematureDisclosure'],
+        7: ['assessmentOverall', 'assessmentRationale'],
+        8: ['recCovertValidation', 'recEtp', 'recMarketReconnaissance', 'recEnforcementDeferred', 'recContinuedMonitoring', 'recClientSegregation'],
+        9: ['confidentialityNote'],
         10: ['remarks'],
         11: ['customDisclaimer'],
       };
@@ -303,25 +308,24 @@ export const PreReportDetails = () => {
 
             <button
               onClick={handlePreview}
-              disabled={!isAdmin}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                isAdmin
+              disabled={!canPreview}                   // ← was !isAdmin
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${canPreview                             // ← was isAdmin
                   ? 'border border-purple-600 text-purple-700 hover:bg-purple-50'
                   : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-              }`}
+                }`}
             >
               <Eye className="w-4 h-4" />
               Preview PDF
             </button>
 
+
             <button
               onClick={handleExportPDF}
               disabled={isExporting || !isAdmin}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                isAdmin && !isExporting
-                  ? 'border border-gray-300 text-gray-700 hover:bg-gray-50'
-                  : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isAdmin && !isExporting
+                ? 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                }`}
             >
               {isExporting ? (
                 <><Loader2 className="w-4 h-4 animate-spin" />Exporting...</>
@@ -333,11 +337,10 @@ export const PreReportDetails = () => {
             <button
               onClick={handleSendMail}
               disabled={!isAdmin}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                isAdmin
-                  ? 'border border-green-600 text-green-700 hover:bg-green-50'
-                  : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isAdmin
+                ? 'border border-green-600 text-green-700 hover:bg-green-50'
+                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                }`}
             >
               <Mail className="w-4 h-4" />
               Send Mail
@@ -462,18 +465,16 @@ export const PreReportDetails = () => {
             return (
               <div
                 key={stepNum}
-                className={`border rounded-lg transition-all ${
-                  isCompleted ? 'border-green-200 bg-green-50/30' : 'border-gray-200'
-                }`}
+                className={`border rounded-lg transition-all ${isCompleted ? 'border-green-200 bg-green-50/30' : 'border-gray-200'
+                  }`}
               >
                 <button
                   onClick={() => toggleStep(stepNum)}
                   className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors rounded-lg"
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full font-semibold ${
-                      isCompleted ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'
-                    }`}>
+                    <div className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full font-semibold ${isCompleted ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'
+                      }`}>
                       {stepNum}
                     </div>
                     <div className="text-left">
