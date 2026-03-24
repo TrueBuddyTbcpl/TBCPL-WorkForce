@@ -1,4 +1,3 @@
-// src/components/operations/pre-report/PreReportDetailsSidebar.tsx
 import React from 'react';
 import { CheckCircle2, Circle, Clock } from 'lucide-react';
 
@@ -23,20 +22,18 @@ export const PreReportDetailsSidebar: React.FC<PreReportDetailsSidebarProps> = (
   clientName,
   productCount,
   stepStatuses = [],
+  onStepClick,             // ← now consumed
 }) => {
   const totalSteps = leadType === 'CLIENT_LEAD' ? 10 : 11;
 
-  // Calculate progress based on COMPLETED steps
   const completedSteps = stepStatuses.filter(s => s.status === 'COMPLETED').length;
   const progress = Math.round((completedSteps / totalSteps) * 100);
 
-  // Helper to get step status
   const getStepStatus = (step: number): 'PENDING' | 'COMPLETED' => {
     const tracked = stepStatuses.find(s => s.stepNumber === step);
     return tracked?.status || 'PENDING';
   };
 
-  // Helper to get step name
   const getStepName = (step: number): string => {
     const tracked = stepStatuses.find(s => s.stepNumber === step);
     return tracked?.stepName || `Step ${step}`;
@@ -88,64 +85,77 @@ export const PreReportDetailsSidebar: React.FC<PreReportDetailsSidebarProps> = (
           </p>
         </div>
 
-        {/* Step Status */}
+        {/* Step Status — each step is now a clickable button */}
         <div className="pt-2 border-t">
           <span className="text-xs text-gray-500 uppercase mb-3 block">Steps</span>
-          <div className="space-y-2">
+          <div className="space-y-1">
             {Array.from({ length: totalSteps }, (_, i) => i + 1).map((step) => {
-              const status = getStepStatus(step);
-              const stepName = getStepName(step);
-              const isActive = step === currentStep;
+              const status    = getStepStatus(step);
+              const stepName  = getStepName(step);
+              const isActive    = step === currentStep;
               const isCompleted = status === 'COMPLETED';
 
               return (
-                <div
+                <button
                   key={step}
-                  className={`flex items-center gap-2 p-2 rounded transition-all duration-200 ${isActive ? 'bg-blue-50 scale-105' : ''
-                    }`}
+                  type="button"
+                  onClick={() => onStepClick?.(step)}   // ← navigate on click
+                  title={`Go to ${stepName}`}
+                  className={`
+                    w-full flex items-center gap-2 p-2 rounded text-left
+                    transition-all duration-200
+                    ${onStepClick ? 'cursor-pointer' : 'cursor-default'}
+                    ${isActive
+                      ? 'bg-blue-50 scale-105 ring-1 ring-blue-200'
+                      : isCompleted
+                        ? 'hover:bg-green-50'
+                        : 'hover:bg-gray-50'
+                    }
+                  `}
                 >
                   {/* Icon */}
                   {isActive ? (
-                    <Circle className={`flex-shrink-0 text-blue-500 fill-blue-500 ${isCompleted ? 'w-5 h-5' : 'w-4 h-4'
-                      }`} />
-                  ) : status === 'COMPLETED' ? (
+                    <Circle className={`flex-shrink-0 text-blue-500 fill-blue-500 ${isCompleted ? 'w-5 h-5' : 'w-4 h-4'}`} />
+                  ) : isCompleted ? (
                     <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
                   ) : (
                     <Clock className="w-4 h-4 text-gray-300 flex-shrink-0" />
                   )}
 
+                  {/* Label */}
                   <div className="flex-1 min-w-0">
                     <span
-                      className={`block truncate transition-all ${isActive
+                      className={`block truncate transition-all ${
+                        isActive
                           ? isCompleted
-                            ? 'text-sm font-bold text-blue-600'  // Active + Completed
-                            : 'text-sm font-semibold text-blue-600'  // Active only
-                          : status === 'COMPLETED'
-                            ? 'text-sm font-bold text-green-700'  // Completed but not active
-                            : 'text-xs text-gray-400'  // Pending
-                        }`}
+                            ? 'text-sm font-bold text-blue-600'
+                            : 'text-sm font-semibold text-blue-600'
+                          : isCompleted
+                            ? 'text-sm font-bold text-green-700'
+                            : 'text-xs text-gray-400'
+                      }`}
                       title={stepName}
                     >
                       {stepName}
                     </span>
                   </div>
 
-                  {/* Status indicators */}
-                  {status === 'COMPLETED' && !isActive && (
+                  {/* Completed checkmark */}
+                  {isCompleted && !isActive && (
                     <span className="text-sm font-bold text-green-600 flex-shrink-0">✓</span>
                   )}
 
+                  {/* Active dot */}
                   {isActive && (
                     <span className="text-xs px-1.5 py-0.5 bg-blue-500 text-white rounded font-medium flex-shrink-0">
                       •
                     </span>
                   )}
-                </div>
+                </button>
               );
             })}
           </div>
         </div>
-
       </div>
     </div>
   );

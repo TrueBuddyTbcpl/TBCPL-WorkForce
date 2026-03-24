@@ -182,7 +182,7 @@ export const Step4Verification = ({
             {/* Status */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Status <span className="text-red-500">*</span>
+                Status 
               </label>
               <select
                 {...register(item.statusField as any)}

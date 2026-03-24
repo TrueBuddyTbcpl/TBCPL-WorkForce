@@ -16,13 +16,7 @@ interface Step10DisclaimerProps {
   onSkip: () => void;
 }
 
-const DEFAULT_DISCLAIMER = `This pre-investigation report is prepared based on information available at the time of assessment. The findings and recommendations are preliminary in nature and subject to change based on additional intelligence or field investigation.
-
-TBCPL Workforce makes no warranties or guarantees regarding the accuracy, completeness, or reliability of the information contained herein. This report should be used for internal decision-making purposes only and should not be shared with third parties without proper authorization.
-
-All information contained in this report is confidential and proprietary to TBCPL Workforce and the client. Unauthorized disclosure, distribution, or use of this report is strictly prohibited.
-
-The recommendations provided are based on professional assessment and do not guarantee specific outcomes. Actual results may vary based on ground realities and execution factors.`;
+const DEFAULT_DISCLAIMER = `This preliminary assessment is prepared solely on the basis of information provided by the client. True Buddy assumes the information to be complete and accurate at this stage. In the event that the information is found to be incomplete, inaccurate, or misleading during subsequent investigation or field deployment, additional costs towards team mobilisation and preliminary investigation shall be applicable as per the approved proposal. This document does not constitute a final investigative report or legal opinion.`;
 
 export const Step10Disclaimer = ({
   prereportId,

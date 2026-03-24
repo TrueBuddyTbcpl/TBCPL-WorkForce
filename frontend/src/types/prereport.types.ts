@@ -27,6 +27,8 @@ export interface PreReport {
   createdAt: string;
   updatedAt: string;
   status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  changeComments?: string;    // ← ADD
+  rejectionReason?: string;
 }
 
 // Initialize Request
@@ -193,7 +195,7 @@ export interface ClientLeadData {
   customDisclaimer?: string;
   verificationCustomData?: { optionId: number; status: string; notes: string }[];
   observationsCustomData?: { optionId: number; text: string }[];
-  recCustomIds?:           number[];
+  recCustomIds?: number[];
 }
 
 // TrueBuddy Lead Data Types
@@ -353,9 +355,9 @@ export interface TrueBuddyLeadData {
   // Step 11: Disclaimer
   customDisclaimer?: string;
 
-  scopeCustomIds?:            number[];
-  verificationCustomData?:    { optionId: number; status: string; notes: string }[];
-  recCustomIds?:              number[];
+  scopeCustomIds?: number[];
+  verificationCustomData?: { optionId: number; status: string; notes: string }[];
+  recCustomIds?: number[];
   observationsCustomData?: { optionId: number; text: string }[];
   riskCustomData?: { optionId: number; value: string }[];
 }

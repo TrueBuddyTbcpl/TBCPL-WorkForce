@@ -35,9 +35,9 @@ export type AssessmentType = (typeof AssessmentType)[keyof typeof AssessmentType
 
 // Quality Assessment - Completeness
 export const QACompleteness = {
-  COMPLETE: 'COMPLETE',
-  INCOMPLETE: 'INCOMPLETE',
-  PARTIAL: 'PARTIAL',
+  COMPLETED: 'COMPLETED',
+  INCOMPLETED: 'INCOMPLETED',
+  PARTIALLY_COMPLETED: 'PARTIALLY_COMPLETED',
 } as const;
 export type QACompleteness = (typeof QACompleteness)[keyof typeof QACompleteness];
 
@@ -201,6 +201,64 @@ export const UserRole = {
   EMPLOYEE: 'EMPLOYEE',
 } as const;
 export type UserRole = (typeof UserRole)[keyof typeof UserRole];
+
+
+// ── Proposal Endpoints ──────────────────────────────────────────────────────
+export const PROPOSAL_ENDPOINTS = {
+  BASE:              '/admin/proposals',
+  BY_ID:             (id: number) => `/admin/proposals/${id}`,
+  BACKGROUND:        (id: number) => `/admin/proposals/${id}/background`,
+  SCOPE:             (id: number) => `/admin/proposals/${id}/scope`,
+  METHODOLOGY:       (id: number) => `/admin/proposals/${id}/methodology`,
+  FEE:               (id: number) => `/admin/proposals/${id}/fee`,
+  PAYMENT_TERMS:     (id: number) => `/admin/proposals/${id}/payment-terms`,
+  CONFIDENTIALITY:   (id: number) => `/admin/proposals/${id}/confidentiality`,
+  OBLIGATIONS:       (id: number) => `/admin/proposals/${id}/obligations`,
+  CONCLUSION:        (id: number) => `/admin/proposals/${id}/conclusion`,
+  STEPS:             (id: number) => `/admin/proposals/${id}/steps`,
+  STATUS:            (id: number) => `/admin/proposals/${id}/status`,
+  SIGNATURE:         (id: number) => `/admin/proposals/${id}/signature`,
+} as const;
+
+// ── Proposal Query Keys ─────────────────────────────────────────────────────
+export const PROPOSAL_QUERY_KEYS = {
+  ALL:    'proposals',
+  DETAIL: (id: number) => ['proposal', id],
+  STEPS:  (id: number) => ['proposal-steps', id],
+} as const;
+
+// ── Proposal Status Labels ──────────────────────────────────────────────────
+export const PROPOSAL_STATUS_LABELS: Record<string, string> = {
+  DRAFT:                  'Draft',
+  IN_PROGRESS:            'In Progress',
+  WAITING_FOR_APPROVAL:   'Waiting for Approval',
+  REQUEST_FOR_CHANGES:    'Changes Requested',
+  APPROVED:               'Approved',
+  DECLINED:               'Declined',
+};
+
+// ── Proposal Status Colors ──────────────────────────────────────────────────
+export const PROPOSAL_STATUS_COLORS: Record<string, string> = {
+  DRAFT:                'bg-gray-100 text-gray-800',
+  IN_PROGRESS:          'bg-blue-100 text-blue-800',
+  WAITING_FOR_APPROVAL: 'bg-yellow-100 text-yellow-800',
+  REQUEST_FOR_CHANGES:  'bg-orange-100 text-orange-800',
+  APPROVED:             'bg-green-100 text-green-800',
+  DECLINED:             'bg-red-100 text-red-800',
+};
+
+// ── Proposal Step Labels ────────────────────────────────────────────────────
+export const PROPOSAL_STEP_LABELS: Record<string, string> = {
+  MAIN:                'Basic Info',
+  BACKGROUND:          'Background',
+  SCOPE_OF_WORK:       'Scope of Work',
+  APPROACH_METHODOLOGY:'Methodology',
+  PROFESSIONAL_FEE:    'Professional Fee',
+  PAYMENT_TERMS:       'Payment Terms',
+  CONFIDENTIALITY:     'Confidentiality',
+  SPECIAL_OBLIGATIONS: 'Special Obligations',
+  CONCLUSION:          'Conclusion',
+};
 
 // API Endpoints - Auth Module
 export const AUTH_ENDPOINTS = {

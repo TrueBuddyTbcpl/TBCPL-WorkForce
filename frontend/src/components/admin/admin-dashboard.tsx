@@ -17,11 +17,13 @@ import AdminCaseList from './cases/AdminCaseList';
 import AdminProfileList from './AdminProfileList';
 import AdminLoaList from './loa/AdminLoaList';
 import AdminLoaCreate from './loa/AdminLoaCreate';
+import AdminProposalList from './proposal/AdminProposalList';
 
 
 
 
-type ViewMode = 'employees' | 'cases' | 'profiles' | 'prereports' | 'clients' | 'finalreports' | 'loa';
+
+type ViewMode = 'employees' | 'cases' | 'profiles' | 'prereports' | 'clients' | 'finalreports' | 'loa'| 'proposals';
 
 
 const getViewModeFromPath = (pathname: string): ViewMode => {
@@ -31,6 +33,7 @@ const getViewModeFromPath = (pathname: string): ViewMode => {
   if (pathname.startsWith('/admin/clients')) return 'clients';
   if (pathname.startsWith('/admin/finalreports')) return 'finalreports';
   if (pathname.startsWith('/admin/loa')) return 'loa';
+  if (pathname.startsWith('/admin/proposals')) return 'proposals';
   return 'employees';
 };
 
@@ -179,6 +182,8 @@ const AdminDashboard: React.FC = () => {
                 if (path.includes('/edit')) return <AdminLoaCreate />;
                 return <AdminLoaList />;
               })()
+            ) : viewMode === 'proposals' ? (
+              <AdminProposalList />
             ) : null}
 
           </div>

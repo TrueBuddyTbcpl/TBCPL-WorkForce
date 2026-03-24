@@ -40,3 +40,8 @@
   animation: modalZoom 0.2s ease-out forwards;
 }
 
+.avoid-break {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+

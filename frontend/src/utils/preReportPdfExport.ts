@@ -11,1447 +11,1041 @@ pdfMake.fonts = {
     normal: 'Roboto-Regular.ttf',
     bold: 'Roboto-Medium.ttf',
     italics: 'Roboto-Italic.ttf',
-    bolditalics: 'Roboto-MediumItalic.ttf'
-  }
+    bolditalics: 'Roboto-MediumItalic.ttf',
+  },
 };
 
-const BRAND_COLOR = '#1e40af';
-const SECONDARY_COLOR = '#64748b';
-const TEXT_COLOR = '#1f2937';
+// ── Corporate Design Tokens ───────────────────────────────────────────────────
+const C_NAVY      = '#0f2340';
+const C_NAVY_MID  = '#1a3a5c';
+const C_GOLD      = '#c8972b';
+const C_HDR_BG    = '#e8eef5';
+const C_ROW_ALT   = '#f4f7fb';
+const C_BORDER    = '#b8c8d8';
+const C_TEXT      = '#000000';
+const C_MUTED     = '#4a5568';
+const C_WHITE     = '#ffffff';
 
+// ── Uniform Table Layout ──────────────────────────────────────────────────────
+// FIX: dontBreakRows: true prevents any single row from splitting across pages
+const STANDARD_LAYOUT = {
+  hLineWidth: (i: number, node: any) => {
+    if (i === 0 || i === node.table.body.length) return 1.2;
+    if (i === 1) return 0.8;
+    return 0.4;
+  },
+  vLineWidth: (i: number, node: any) => {
+    if (i === 0 || i === node.table.widths.length) return 1.2;
+    return 0.4;
+  },
+  hLineColor: (i: number, node: any) =>
+    i === 0 || i === node.table.body.length ? C_NAVY_MID : C_BORDER,
+  vLineColor: (i: number, node: any) =>
+    i === 0 || i === node.table.widths.length ? C_NAVY_MID : C_BORDER,
+  paddingLeft:   () => 9,
+  paddingRight:  () => 9,
+  paddingTop:    () => 6,
+  paddingBottom: () => 6,
+  // ▼ KEY FIX: no single table row will ever be split across a page break
+  dontBreakRows: true,
+};
+
+// ── Global Styles ─────────────────────────────────────────────────────────────
+const STYLES: any = {
+  sectionHeader: { fontSize: 11, bold: true, marginTop: 14, marginBottom: 6 },
+  tableHeader:   { fontSize: 9,  bold: true, fillColor: C_HDR_BG, color: C_NAVY },
+  noteText:      { fontSize: 8.5, italics: true, color: C_MUTED, marginBottom: 8 },
+  bodyText:      { fontSize: 10, color: C_TEXT },
+};
+
+// ── Interface ─────────────────────────────────────────────────────────────────
 export interface PreReportPDFData {
-  reportId: string;
+  reportId:   string;
   clientName: string;
-  leadType: 'CLIENT_LEAD' | 'TRUE_BUDDY_LEAD';
-  status: string;
-  createdAt: string;
-  updatedAt: string;
-  products?: Array<{
-    name: string;
-    category: string;
-    status: string;
-  }>;
-  clientLeadData?: ClientLeadData;
+  leadType:   'CLIENT_LEAD' | 'TRUE_BUDDY_LEAD';
+  status:     string;
+  createdAt:  string;
+  updatedAt:  string;
+  products?: Array<{ name: string; category: string; status: string }>;
+  clientLeadData?:    ClientLeadData;
   trueBuddyLeadData?: TrueBuddyLeadData;
 }
 
-// ========== ENUM MAPPING HELPERS ==========
-
-// YesNo enum mapper
-const mapYesNo = (value: any): string => {
-  if (!value) return 'No';
-  const str = String(value).toUpperCase();
-  return str === 'YES' ? 'Yes' : 'No';
-};
-
-// VerificationStatus mapper
-const isVerificationDone = (value: any): boolean => {
-  if (!value) return false;
-  const str = String(value).toUpperCase();
-  return str === 'DONE';
-};
-
-// CompletenessLevel mapper
-const mapCompleteness = (value: any): string => {
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const toTitleCase = (value: string): string => {
   if (!value) return 'N/A';
-  const str = String(value).toUpperCase();
-  switch (str) {
-    case 'COMPLETE': return 'Complete';
-    case 'PARTIALLY_COMPLETE': return 'Partially Complete';
-    case 'INCOMPLETE': return 'Incomplete';
-    default: return value;
-  }
+  return value.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 };
 
-// AccuracyLevel mapper
-const mapAccuracy = (value: any): string => {
-  if (!value) return 'N/A';
-  const str = String(value).toUpperCase();
-  return str === 'ACCURATE' ? 'Accurate' : 'Inaccurate';
+// ── Enum Mappers ──────────────────────────────────────────────────────────────
+const mapYesNo = (v: any): string =>
+  !v ? 'N/A' : String(v).toUpperCase() === 'YES' ? 'Yes' : 'No';
+
+const isVerificationDone = (v: any): boolean =>
+  !!v && String(v).toUpperCase() === 'DONE';
+
+const mapCompleteness = (v: any): string => {
+  if (!v) return 'N/A';
+  const s = String(v).toUpperCase();
+  if (s === 'COMPLETE')           return 'Complete';
+  if (s === 'PARTIALLY_COMPLETE') return 'Partially Complete';
+  if (s === 'INCOMPLETE')         return 'Incomplete';
+  return toTitleCase(v);
 };
 
-// RiskLevel mapper
-const mapRiskLevel = (value: any): string => {
-  if (!value) return 'N/A';
-  const str = String(value).toUpperCase();
-  switch (str) {
-    case 'LOW': return 'Low';
-    case 'MEDIUM': return 'Medium';
-    case 'HIGH': return 'High';
-    default: return value;
-  }
+const mapAccuracy = (v: any): string => {
+  if (!v) return 'N/A';
+  const s = String(v).toUpperCase();
+  return s === 'ACCURATE' ? 'Accurate' : s === 'INACCURATE' ? 'Inaccurate' : toTitleCase(v);
 };
 
-// ClientLeadAssessment mapper
-const mapClientAssessment = (value: any): string => {
-  if (!value) return 'N/A';
-  const str = String(value).toUpperCase();
-  switch (str) {
-    case 'ACTIONABLE': return 'Actionable Lead';
-    case 'POTENTIALLY_ACTIONABLE': return 'Potentially Actionable (Information Gaps Exist)';
-    case 'NON_ACTIONABLE': return 'Non-Actionable at Present';
-    default: return value;
-  }
+const mapRiskLevel = (v: any): string => {
+  if (!v) return 'N/A';
+  const s = String(v).toUpperCase();
+  return s === 'LOW' ? 'Low' : s === 'MEDIUM' ? 'Medium' : s === 'HIGH' ? 'High' : toTitleCase(v);
 };
 
-// TrueBuddyLeadAssessment mapper
-const mapTrueBuddyAssessment = (value: any): string => {
-  if (!value) return 'N/A';
-  const str = String(value).toUpperCase();
-  switch (str) {
-    case 'ACTIONABLE': return 'Actionable (Subject to Client Alignment)';
-    case 'ACTIONABLE_AFTER_VALIDATION': return 'Actionable After Controlled Validation';
-    case 'HOLD': return 'Hold -- Monitoring Recommended';
-    default: return value;
-  }
+const mapClientAssessment = (v: any): string => {
+  if (!v) return 'N/A';
+  const s = String(v).toUpperCase();
+  if (s === 'ACTIONABLE')             return 'Actionable Lead';
+  if (s === 'POTENTIALLY_ACTIONABLE') return 'Potentially Actionable (Information Gaps Exist)';
+  if (s === 'NON_ACTIONABLE')         return 'Non-Actionable at Present';
+  return toTitleCase(v);
 };
 
-// ProductCategory mapper
-const mapProductCategory = (value: any): string => {
-  if (!value) return 'N/A';
-  const str = String(value).toUpperCase();
-  switch (str) {
-    case 'CROP_PROTECTION': return 'Crop Protection';
-    case 'SEEDS': return 'Seeds';
-    default: return value;
-  }
+const mapTrueBuddyAssessment = (v: any): string => {
+  if (!v) return 'N/A';
+  const s = String(v).toUpperCase();
+  if (s === 'ACTIONABLE')                  return 'Actionable (Subject to Client Alignment)';
+  if (s === 'ACTIONABLE_AFTER_VALIDATION') return 'Actionable After Controlled Validation';
+  if (s === 'HOLD')                        return 'Hold -- Monitoring Recommended';
+  return toTitleCase(v);
 };
 
-// InfringementType mapper
-const mapInfringementType = (value: any): string => {
-  if (!value) return 'N/A';
-  const str = String(value).toUpperCase();
-  switch (str) {
-    case 'COUNTERFEIT': return 'Counterfeit';
-    case 'LOOKALIKE': return 'Lookalike';
-    default: return value;
-  }
+const mapProductCategory = (v: any): string => {
+  if (!v) return 'N/A';
+  const s = String(v).toUpperCase();
+  return s === 'CROP_PROTECTION' ? 'Crop Protection' : s === 'SEEDS' ? 'Seeds' : toTitleCase(v);
 };
 
-// NatureOfEntity mapper
-const mapNatureOfEntity = (value: any): string => {
-  if (!value) return 'N/A';
-  const str = String(value).toUpperCase();
-  switch (str) {
-    case 'SUPPLIER': return 'Supplier';
-    case 'MANUFACTURER': return 'Manufacturer';
-    case 'PACKAGER': return 'Packager';
-    case 'STOCKIST': return 'Stockist';
-    default: return value;
-  }
+const mapInfringementType = (v: any): string => {
+  if (!v) return 'N/A';
+  const s = String(v).toUpperCase();
+  return s === 'COUNTERFEIT' ? 'Counterfeit' : s === 'LOOKALIKE' ? 'Lookalike' : toTitleCase(v);
 };
 
-// IntelligenceNature mapper
-const mapIntelNature = (value: any): string => {
-  if (!value) return 'N/A';
-  const str = String(value).toUpperCase();
-  switch (str) {
-    case 'MARKET': return 'Market';
-    case 'SUPPLY_CHAIN': return 'Supply Chain';
-    case 'MANUFACTURING': return 'Manufacturing';
-    default: return value;
-  }
+const mapNatureOfEntity = (v: any): string => {
+  if (!v) return 'N/A';
+  const m: Record<string, string> = {
+    SUPPLIER: 'Supplier', MANUFACTURER: 'Manufacturer',
+    PACKAGER: 'Packager', STOCKIST: 'Stockist',
+  };
+  return m[String(v).toUpperCase()] ?? toTitleCase(v);
 };
 
-// SuspectedActivity mapper
-const mapSuspectedActivity = (value: any): string => {
-  if (!value) return 'N/A';
-  const str = String(value).toUpperCase();
-  switch (str) {
-    case 'COUNTERFEITING': return 'Counterfeiting';
-    case 'LOOKALIKE': return 'Lookalike';
-    case 'SPURIOUS': return 'Spurious';
-    default: return value;
-  }
+const mapIntelNature = (v: any): string => {
+  if (!v) return 'N/A';
+  const m: Record<string, string> = {
+    MARKET: 'Market', SUPPLY_CHAIN: 'Supply Chain', MANUFACTURING: 'Manufacturing',
+  };
+  return m[String(v).toUpperCase()] ?? toTitleCase(v);
 };
 
-// SupplyChainStage mapper
-const mapSupplyChainStage = (value: any): string => {
-  if (!value) return 'N/A';
-  const str = String(value).toUpperCase();
-  switch (str) {
-    case 'UPSTREAM': return 'Upstream';
-    case 'MIDSTREAM': return 'Midstream';
-    default: return value;
-  }
+const mapSuspectedActivity = (v: any): string => {
+  if (!v) return 'N/A';
+  const m: Record<string, string> = {
+    COUNTERFEITING: 'Counterfeiting', LOOKALIKE: 'Lookalike', SPURIOUS: 'Spurious',
+  };
+  return m[String(v).toUpperCase()] ?? toTitleCase(v);
 };
 
-// OperationScale mapper
-const mapOperationScale = (value: any): string => {
-  if (!value) return 'N/A';
-  const str = String(value).toUpperCase();
-  switch (str) {
-    case 'SMALL': return 'Small';
-    case 'MEDIUM': return 'Medium';
-    case 'LARGE': return 'Large';
-    default: return value;
-  }
+const mapSupplyChainStage = (v: any): string => {
+  if (!v) return 'N/A';
+  const m: Record<string, string> = { UPSTREAM: 'Upstream', MIDSTREAM: 'Midstream' };
+  return m[String(v).toUpperCase()] ?? toTitleCase(v);
 };
 
-// BrandExposure mapper
-const mapBrandExposure = (value: any): string => {
-  if (!value) return 'N/A';
-  const str = String(value).toUpperCase();
-  switch (str) {
-    case 'SINGLE_BRAND': return 'Single Brand';
-    case 'MULTIPLE_BRANDS': return 'Multiple Brands';
-    default: return value;
-  }
+
+
+const mapSourceReliability = (v: any): string => {
+  if (!v) return 'N/A';
+  const m: Record<string, string> = { HIGH: 'High', MEDIUM: 'Medium' };
+  return m[String(v).toUpperCase()] ?? toTitleCase(v);
 };
 
-// SourceReliability mapper
-const mapSourceReliability = (value: any): string => {
-  if (!value) return 'N/A';
-  const str = String(value).toUpperCase();
-  switch (str) {
-    case 'HIGH': return 'High';
-    case 'MEDIUM': return 'Medium';
-    default: return value;
-  }
-};
 
-// LikelihoodLevel mapper
-const mapLikelihoodLevel = (value: any): string => {
-  return mapRiskLevel(value); // Same as RiskLevel
-};
 
-// Helper function to create table row
-const createTableRow = (label: string, value: string, noBorder = false) => {
+// ── Row Builders ──────────────────────────────────────────────────────────────
+const row = (label: string, value: string, index = 0) => [
+  {
+    text: label,
+    bold: true,
+    fontSize: 9,
+    color: C_NAVY,
+    fillColor: index % 2 === 0 ? C_WHITE : C_ROW_ALT,
+  },
+  {
+    text: value || 'N/A',
+    fontSize: 9,
+    color: C_TEXT,
+    fillColor: index % 2 === 0 ? C_WHITE : C_ROW_ALT,
+  },
+];
+
+const verRow = (activity: string, value: any, notes: string, index = 0) => {
+  const done = isVerificationDone(value);
   return [
     {
-      text: label,
+      text: activity,
+      fontSize: 9,
+      color: C_TEXT,
+      fillColor: index % 2 === 0 ? C_WHITE : C_ROW_ALT,
+    },
+    {
+      text: done ? 'DONE' : 'PENDING',
+      fontSize: 8.5,
       bold: true,
-      fontSize: 10,
-      border: noBorder ? [false, false, false, false] : [true, true, false, true],
-    },
-    {
-      text: value,
-      fontSize: 10,
-      border: noBorder ? [false, false, false, false] : [false, true, true, true],
-    },
-  ];
-};
-
-
-// Helper to create verification table row
-const createVerificationRow = (activity: string, value: any, notes: string) => {
-  const isDone = isVerificationDone(value);
-  return [
-    { text: activity, fontSize: 9 },
-    {
-      text: isDone ? 'Yes' : 'No',
-      fontSize: 10,
       alignment: 'center' as const,
-      bold: true,
-      color: isDone ? '#059669' : '#dc2626'
+      color: done ? C_NAVY : C_MUTED,
+      fillColor: done ? C_HDR_BG : C_WHITE,
     },
-    { text: notes, fontSize: 9 },
+    {
+      text: notes || '-',
+      fontSize: 9,
+      color: C_TEXT,
+      fillColor: index % 2 === 0 ? C_WHITE : C_ROW_ALT,
+    },
   ];
 };
 
-
-
-
-
-const generateClientLeadPDF = (data: PreReportPDFData) => {
-  const clientData = data.clientLeadData!;
-  const productNames = data.products?.map(p => p.name).join(', ') || 'N/A';
-
-  const docDefinition: any = {
-    pageSize: 'A4',
-    pageMargins: [50, 60, 50, 60],
-    defaultStyle: {
-      font: 'Roboto',
-      fontSize: 10,
-      color: TEXT_COLOR,
-      lineHeight: 1.3,
-    },
-    styles: {
-      title: {
-        fontSize: 16,
-        bold: true,
-        alignment: 'center',
-        marginBottom: 5,
-      },
-      subtitle: {
-        fontSize: 11,
-        italics: true,
-        alignment: 'center',
-        marginBottom: 20,
-      },
-      sectionHeader: {
-        fontSize: 12,
-        bold: true,
-        marginTop: 15,
-        marginBottom: 8,
-      },
-      tableHeader: {
-        fontSize: 9,
-        bold: true,
-        fillColor: '#f3f4f6',
-      },
-    },
-    header: (currentPage: number) => {
-      if (currentPage === 1) return null;
-      return {
-        text: 'PRELIMINARY LEAD ASSESSMENT REPORT',
-        fontSize: 9,
-        color: SECONDARY_COLOR,
-        alignment: 'center',
-        margin: [0, 20, 0, 0],
-      };
-    },
-    content: [
-      // ========== COVER PAGE ==========
-      {
-        text: 'TRUE BUDDY CONSULTING PVT. LTD.',
-        fontSize: 18,
-        bold: true,
-        color: BRAND_COLOR,
-        alignment: 'center',
-        marginTop: 60,
-      },
-      {
-        canvas: [
-          {
-            type: 'line',
-            x1: 150,
-            y1: 5,
-            x2: 345,
-            y2: 5,
-            lineWidth: 2,
-            lineColor: BRAND_COLOR,
-          },
-        ],
-        marginBottom: 40,
-      },
-      {
-        text: 'PRELIMINARY LEAD ASSESSMENT REPORT',
-        fontSize: 14,
-        bold: true,
-        alignment: 'center',
-        marginBottom: 50,
-      },
-
-      // Cover Page Info Box
-      {
-        table: {
-          widths: ['40%', '60%'],
-          body: [
-            createTableRow('Client Name', data.clientName),
-            createTableRow('Product(s) Involved', productNames),
-            createTableRow('Report ID', data.reportId),
-            createTableRow('Created Date', new Date(data.createdAt).toLocaleDateString('en-IN', {
-              day: '2-digit',
-              month: 'long',
-              year: 'numeric',
-            })),
-          ],
-        },
-        layout: {
-          hLineWidth: () => 1,
-          vLineWidth: () => 1,
-          hLineColor: () => '#e5e7eb',
-          vLineColor: () => '#e5e7eb',
-        },
-        marginBottom: 40,
-      },
-
-      {
-        text: 'CONFIDENTIAL DOCUMENT',
-        fontSize: 11,
-        bold: true,
-        color: '#dc2626',
-        alignment: 'center',
-        marginBottom: 5,
-      },
-      {
-        text: 'This report contains sensitive information and is intended solely for authorized personnel.',
-        fontSize: 9,
-        italics: true,
-        color: SECONDARY_COLOR,
-        alignment: 'center',
-        marginBottom: 40,
-      },
-
-      // Page Break
-      { text: '', pageBreak: 'after' },
-
-      // ========== MAIN CONTENT ==========
-      {
-        text: 'PRELIMINARY LEAD ASSESSMENT REPORT',
-        style: 'title',
-      },
-      {
-        text: '(Based on Client-Provided Information)',
-        style: 'subtitle',
-      },
-
-      // 1. Client & Case Details
-      {
-        text: '1. Client & Case Details',
-        style: 'sectionHeader',
-      },
-      {
-        table: {
-          widths: ['45%', '55%'],
-          body: [
-            [
-              { text: 'Field', style: 'tableHeader' },
-              { text: 'Details', style: 'tableHeader' },
-            ],
-            createTableRow('Name of Client', data.clientName, true),
-            createTableRow('Product(s) Involved', productNames, true),
-            createTableRow('Date Information Received', clientData.dateInfoReceived
-              ? new Date(clientData.dateInfoReceived).toLocaleDateString('en-IN')
-              : 'N/A', true),
-            createTableRow('Location (State / District / City)',
-              [clientData.state, clientData.city].filter(Boolean).join(', ') || 'N/A', true),
-            createTableRow('Client SPOC',
-              `${clientData.clientSpocName || 'N/A'}${clientData.clientSpocContact ? ' & ' + clientData.clientSpocContact : ''}`, true),
-          ],
-        },
-        layout: {
-          hLineWidth: (i: number) => (i === 0 || i === 1 ? 1 : 0.5),
-          vLineWidth: () => 1,
-          hLineColor: () => '#e5e7eb',
-          vLineColor: () => '#e5e7eb',
-        },
-        marginBottom: 15,
-      },
-
-      // 2. Mandate / Scope Requested
-      {
-        text: '2. Mandate / Scope Requested',
-        style: 'sectionHeader',
-      },
-      {
-        text: '(Tick applicable)',
-        fontSize: 9,
-        italics: true,
-        marginBottom: 5,
-      },
-      {
-        table: {
-          widths: ['75%', '25%'],
-          body: [
-            [
-              { text: 'Scope', style: 'tableHeader' },
-              { text: 'Selected', style: 'tableHeader', alignment: 'center' },
-            ],
-            [
-              'Due Diligence',
-              {
-                text: clientData.scopeDueDiligence ? 'Yes' : 'No',
-                alignment: 'center',
-                fontSize: 10,
-                bold: true,
-                color: clientData.scopeDueDiligence ? '#059669' : '#dc2626'
-              }
-            ],
-            [
-              'IPR Investigation -- Retailer / Wholesaler',
-              {
-                text: clientData.scopeIprRetailer ? 'Yes' : 'No',
-                alignment: 'center',
-                fontSize: 10,
-                bold: true,
-                color: clientData.scopeIprRetailer ? '#059669' : '#dc2626'
-              }
-            ],
-            [
-              'IPR Investigation -- Supplier',
-              {
-                text: clientData.scopeIprSupplier ? 'Yes' : 'No',
-                alignment: 'center',
-                fontSize: 10,
-                bold: true,
-                color: clientData.scopeIprSupplier ? '#059669' : '#dc2626'
-              }
-            ],
-            [
-              'IPR Investigation -- Manufacturer / Packager / Warehouse',
-              {
-                text: clientData.scopeIprManufacturer ? 'Yes' : 'No',
-                alignment: 'center',
-                fontSize: 10,
-                bold: true,
-                color: clientData.scopeIprManufacturer ? '#059669' : '#dc2626'
-              }
-            ],
-            [
-              'Online Sample Purchase',
-              {
-                text: clientData.scopeOnlinePurchase ? 'Yes' : 'No',
-                alignment: 'center',
-                fontSize: 10,
-                bold: true,
-                color: clientData.scopeOnlinePurchase ? '#059669' : '#dc2626'
-              }
-            ],
-            [
-              'Offline Sample Purchase',
-              {
-                text: clientData.scopeOfflinePurchase ? 'Yes' : 'No',
-                alignment: 'center',
-                fontSize: 10,
-                bold: true,
-                color: clientData.scopeOfflinePurchase ? '#059669' : '#dc2626'
-              }
-            ],
-            [
-              'Other (Specify)',
-              {
-                text: clientData.scopeCustomIds && clientData.scopeCustomIds.length > 0
-                  ? clientData.scopeCustomIds.join(', ')
-                  : 'N/A',
-                alignment: 'center',
-                fontSize: 9
-              }
-            ],
-          ],
-        },
-        layout: {
-          hLineWidth: (i: number) => (i === 0 || i === 1 ? 1 : 0.5),
-          vLineWidth: () => 1,
-          hLineColor: () => '#e5e7eb',
-          vLineColor: () => '#e5e7eb',
-        },
-        marginBottom: 15,
-      },
-
-
-      // 3. Information Received from Client
-      {
-        text: '3. Information Received from Client',
-        style: 'sectionHeader',
-      },
-      {
-        table: {
-          widths: ['50%', '50%'],
-          body: [
-            [
-              { text: 'Parameter', style: 'tableHeader' },
-              { text: 'Details', style: 'tableHeader' },
-            ],
-            createTableRow('Name of Entity', clientData.entityName || 'N/A', true),
-            createTableRow('Name of Suspect (if different)', clientData.suspectName || 'N/A', true),
-            createTableRow('Contact Number(s)', clientData.contactNumbers || 'N/A', true),
-            createTableRow('Address / Location',
-              [clientData.addressLine1, clientData.addressLine2, clientData.city, clientData.state, clientData.pincode]
-                .filter(Boolean)
-                .join(', ') || 'N/A', true),
-            createTableRow('Online Presence (IndiaMART / Facebook / Website / Others)',
-              Array.isArray(clientData.onlinePresences) && clientData.onlinePresences.length > 0
-                ? clientData.onlinePresences.map((p: any) => `${p.platformName}: ${p.link}`).join(', ')
-                : 'N/A', true),
-            createTableRow('Product Details', clientData.productDetails || 'N/A', true),
-            createTableRow('Product Photographs Provided', mapYesNo(clientData.photosProvided), true),
-            createTableRow('Video Evidence Provided', mapYesNo(clientData.videoProvided), true),
-            createTableRow('Invoice / Bill Available', mapYesNo(clientData.invoiceAvailable), true),
-            createTableRow('Source Narrative (as shared by client)', clientData.sourceNarrative || 'N/A', true),
-          ],
-        },
-        layout: {
-          hLineWidth: (i: number) => (i === 0 || i === 1 ? 1 : 0.5),
-          vLineWidth: () => 1,
-          hLineColor: () => '#e5e7eb',
-          vLineColor: () => '#e5e7eb',
-        },
-        marginBottom: 15,
-      },
-
-      // 4. Preliminary Verification Conducted by True Buddy
-      {
-        text: '4. Preliminary Verification Conducted by True Buddy',
-        style: 'sectionHeader',
-      },
-      {
-        text: '(Desk-based assessment only; no field deployment at this stage)',
-        fontSize: 9,
-        italics: true,
-        marginBottom: 5,
-      },
-      {
-        table: {
-          widths: ['45%', '15%', '40%'],
-          body: [
-            [
-              { text: 'Activity', style: 'tableHeader' },
-              { text: 'Done (✔/✖)', style: 'tableHeader', alignment: 'center' },
-              { text: 'Key Notes', style: 'tableHeader' },
-            ],
-            createVerificationRow(
-              'Case Discussion with Client Team',
-              clientData.verificationClientDiscussion, // ✅ Pass raw value
-              clientData.verificationClientDiscussionNotes || ''
-            ),
-            createVerificationRow(
-              'Internet / OSINT Search',
-              clientData.verificationOsint, // ✅ Pass raw value
-              clientData.verificationOsintNotes || ''
-            ),
-            createVerificationRow(
-              'Marketplace Verification (IndiaMART / Social Media)',
-              clientData.verificationMarketplace, // ✅ Pass raw value
-              clientData.verificationMarketplaceNotes || ''
-            ),
-            createVerificationRow(
-              'Pretext Calling (if applicable)',
-              clientData.verificationPretextCalling, // ✅ Pass raw value
-              clientData.verificationPretextCallingNotes || ''
-            ),
-            createVerificationRow(
-              'Preliminary Product Image Review',
-              clientData.verificationProductReview, // ✅ Pass raw value
-              clientData.verificationProductReviewNotes || ''
-            ),
-
-          ],
-        },
-        layout: {
-          hLineWidth: (i: number) => (i === 0 || i === 1 ? 1 : 0.5),
-          vLineWidth: () => 1,
-          hLineColor: () => '#e5e7eb',
-          vLineColor: () => '#e5e7eb',
-        },
-        marginBottom: 15,
-      },
-
-      // 5. Key Observations
-      {
-        text: '5. Key Observations',
-        style: 'sectionHeader',
-      },
-      {
-        table: {
-          widths: ['50%', '50%'],
-          body: [
-            [
-              { text: 'Parameter', style: 'tableHeader' },
-              { text: 'Observation', style: 'tableHeader' },
-            ],
-            createTableRow('Availability of Identifiable Target', clientData.obsIdentifiableTarget || 'N/A', true),
-            createTableRow('Traceability of Entity / Contact', clientData.obsTraceability || 'N/A', true),
-            createTableRow('Product Visibility / Market Presence', clientData.obsProductVisibility || 'N/A', true),
-            createTableRow('Indications of Counterfeiting / Lookalike', clientData.obsCounterfeitingIndications || 'N/A', true),
-            createTableRow('Evidentiary Gaps Identified', clientData.obsEvidentiary_gaps || 'N/A', true),
-          ],
-        },
-        layout: {
-          hLineWidth: (i: number) => (i === 0 || i === 1 ? 1 : 0.5),
-          vLineWidth: () => 1,
-          hLineColor: () => '#e5e7eb',
-          vLineColor: () => '#e5e7eb',
-        },
-        marginBottom: 15,
-      },
-
-      // 6. Information Quality Assessment
-      {
-        text: '6. Information Quality Assessment',
-        style: 'sectionHeader',
-      },
-      {
-        table: {
-          widths: ['55%', '45%'],
-          body: [
-            [
-              { text: 'Parameter', style: 'tableHeader' },
-              { text: 'Assessment', style: 'tableHeader' },
-            ],
-            createTableRow('Completeness of Initial Information', mapCompleteness(clientData.qaCompleteness), true),
-            createTableRow('Accuracy of Case Description (prima facie)', mapAccuracy(clientData.qaAccuracy), true),
-            createTableRow('Any Independent Client Investigation Conducted', mapYesNo(clientData.qaIndependentInvestigation), true),
-            createTableRow('Any Prior Confrontation with Seller / Suspect', mapYesNo(clientData.qaPriorConfrontation), true),
-            createTableRow('Risk of Information Contamination', mapRiskLevel(clientData.qaContaminationRisk), true),
-          ],
-        },
-        layout: {
-          hLineWidth: (i: number) => (i === 0 || i === 1 ? 1 : 0.5),
-          vLineWidth: () => 1,
-          hLineColor: () => '#e5e7eb',
-          vLineColor: () => '#e5e7eb',
-        },
-        marginBottom: 15,
-      },
-
-      // 7. True Buddy's Preliminary Assessment
-      {
-        text: "7. True Buddy's Preliminary Assessment",
-        style: 'sectionHeader',
-      },
-      {
-        text: 'Overall Assessment of Lead:',
-        bold: true,
-        fontSize: 10,
-        marginBottom: 5,
-      },
-      {
-        text: mapClientAssessment(clientData.assessmentOverall),
-        fontSize: 10,
-        bold: true,
-        marginBottom: 10,
-      },
-      {
-        text: 'Rationale:',
-        bold: true,
-        fontSize: 10,
-        marginBottom: 5,
-      },
-      {
-        text: clientData.assessmentRationale || '(Brief justification for the above assessment)',
-        fontSize: 10,
-        italics: !clientData.assessmentRationale,
-        marginBottom: 15,
-      },
-
-      // 8. Recommended Way Forward
-      {
-        text: '8. Recommended Way Forward',
-        style: 'sectionHeader',
-      },
-      {
-        text: '(Based on current information)',
-        fontSize: 9,
-        italics: true,
-        marginBottom: 5,
-      },
-      {
-        table: {
-          widths: ['75%', '25%'],
-          body: [
-            [
-              { text: 'Recommendation', style: 'tableHeader' },
-              { text: 'Selected', style: 'tableHeader', alignment: 'center' },
-            ],
-            [
-              'Market Survey / Reconnaissance',
-              {
-                text: clientData.recMarketSurvey ? 'Yes' : 'No',
-                alignment: 'center',
-                fontSize: 10,
-                bold: true,
-                color: clientData.recMarketSurvey ? '#059669' : '#dc2626'
-              }
-            ],
-            [
-              'Covert Investigation',
-              {
-                text: clientData.recCovertInvestigation ? 'Yes' : 'No',
-                alignment: 'center',
-                fontSize: 10,
-                bold: true,
-                color: clientData.recCovertInvestigation ? '#059669' : '#dc2626'
-              }
-            ],
-            [
-              'Evidential Test Purchase',
-              {
-                text: clientData.recTestPurchase ? 'Yes' : 'No',
-                alignment: 'center',
-                fontSize: 10,
-                bold: true,
-                color: clientData.recTestPurchase ? '#059669' : '#dc2626'
-              }
-            ],
-            [
-              'Direct Enforcement Action',
-              {
-                text: clientData.recEnforcementAction ? 'Yes' : 'No',
-                alignment: 'center',
-                fontSize: 10,
-                bold: true,
-                color: clientData.recEnforcementAction ? '#059669' : '#dc2626'
-              }
-            ],
-            [
-              'Additional Information Required from Client',
-              {
-                text: clientData.recAdditionalInfo ? 'Yes' : 'No',
-                alignment: 'center',
-                fontSize: 10,
-                bold: true,
-                color: clientData.recAdditionalInfo ? '#059669' : '#dc2626'
-              }
-            ],
-            [
-              'Closure / Hold',
-              {
-                text: clientData.recClosureHold ? 'Yes' : 'No',
-                alignment: 'center',
-                fontSize: 10,
-                bold: true,
-                color: clientData.recClosureHold ? '#059669' : '#dc2626'
-              }
-            ],
-          ],
-        },
-        layout: {
-          hLineWidth: (i: number) => (i === 0 || i === 1 ? 1 : 0.5),
-          vLineWidth: () => 1,
-          hLineColor: () => '#e5e7eb',
-          vLineColor: () => '#e5e7eb',
-        },
-        marginBottom: 15,
-      },
-
-
-      // 9. Remarks
-      {
-        text: '9. Remarks',
-        style: 'sectionHeader',
-      },
-      {
-        text: clientData.remarks || '(Any additional comments, assumptions, or risk flags)',
-        fontSize: 10,
-        italics: !clientData.remarks,
-        marginBottom: 15,
-      },
-
-      // 10. Disclaimer
-      {
-        text: '10. Disclaimer',
-        style: 'sectionHeader',
-      },
-      {
-        text: clientData.customDisclaimer ||
-          'This preliminary assessment is prepared solely on the basis of information provided by the client. True Buddy assumes the information to be complete and accurate at this stage. In the event that the information is found to be incomplete, inaccurate, or misleading during subsequent investigation or field deployment, additional costs towards team mobilisation and preliminary investigation shall be applicable as per the approved proposal. This document does not constitute a final investigative report or legal opinion.',
-        fontSize: 9,
-        alignment: 'justify',
-        marginBottom: 20,
-      },
-    ],
-    footer: (currentPage: number, pageCount: number) => ({
-      text: `Page ${currentPage} of ${pageCount}`,
+// ── Checked-Only Section Builders ─────────────────────────────────────────────
+const buildCheckedList = (
+  items: { label: string; checked: boolean | null | undefined }[]
+) => {
+  const selected = items.filter((i) => !!i.checked);
+  if (!selected.length) {
+    return {
+      text: 'None selected.',
       fontSize: 9,
-      color: SECONDARY_COLOR,
-      alignment: 'center',
-      margin: [0, 10, 0, 0],
-    }),
+      italics: true,
+      color: C_MUTED,
+      marginBottom: 10,
+    };
+  }
+  return {
+    table: {
+      widths: ['6%', '94%'],
+      body: selected.map((i, idx) => [
+        {
+          text: '>>',
+          fontSize: 9,
+          bold: true,
+          alignment: 'center' as const,
+          color: C_NAVY,
+          fillColor: idx % 2 === 0 ? C_WHITE : C_ROW_ALT,
+        },
+        {
+          text: i.label,
+          fontSize: 9,
+          color: C_TEXT,
+          fillColor: idx % 2 === 0 ? C_WHITE : C_ROW_ALT,
+        },
+      ]),
+    },
+    layout: STANDARD_LAYOUT,
+    marginBottom: 12,
   };
-
-  return docDefinition;
 };
 
-const generateTrueBuddyLeadPDF = (data: PreReportPDFData) => {
-  const tbData = data.trueBuddyLeadData!;
-  const productNames = data.products?.map(p => p.name).join(', ') || 'N/A';
-
-  const docDefinition: any = {
-    pageSize: 'A4',
-    pageMargins: [50, 60, 50, 60],
-    defaultStyle: {
-      font: 'Roboto',
-      fontSize: 10,
-      color: TEXT_COLOR,
-      lineHeight: 1.3,
-    },
-    styles: {
-      title: {
-        fontSize: 16,
-        bold: true,
-        alignment: 'center',
-        marginBottom: 5,
-      },
-      subtitle: {
-        fontSize: 11,
-        italics: true,
-        alignment: 'center',
-        marginBottom: 10,
-      },
-      confidential: {
-        fontSize: 11,
-        bold: true,
-        alignment: 'center',
-        marginBottom: 20,
-      },
-      sectionHeader: {
-        fontSize: 12,
-        bold: true,
-        marginTop: 15,
-        marginBottom: 8,
-      },
-      tableHeader: {
-        fontSize: 9,
-        bold: true,
-        fillColor: '#f3f4f6',
-      },
-      note: {
-        fontSize: 9,
-        italics: true,
-        marginBottom: 15,
-      },
-    },
-    header: (currentPage: number) => {
-      if (currentPage === 1) return null;
-      return {
-        text: 'PRELIMINARY LEAD ASSESSMENT REPORT',
-        fontSize: 9,
-        color: SECONDARY_COLOR,
-        alignment: 'center',
-        margin: [0, 20, 0, 0],
-      };
-    },
-    content: [
-      // ========== COVER PAGE ==========
-      {
-        text: 'TRUE BUDDY CONSULTING PVT. LTD.',
-        fontSize: 18,
-        bold: true,
-        color: BRAND_COLOR,
-        alignment: 'center',
-        marginTop: 60,
-      },
-      {
-        canvas: [
-          {
-            type: 'line',
-            x1: 150,
-            y1: 5,
-            x2: 345,
-            y2: 5,
-            lineWidth: 2,
-            lineColor: BRAND_COLOR,
-          },
+const buildVerificationTable = (
+  rows: { activity: string; value: any; notes: string }[]
+) => {
+  const done = rows.filter((r) => isVerificationDone(r.value));
+  if (!done.length) {
+    return {
+      text: 'No verifications marked as done.',
+      fontSize: 9,
+      italics: true,
+      color: C_MUTED,
+      marginBottom: 10,
+    };
+  }
+  return {
+    table: {
+      widths: ['46%', '14%', '40%'],
+      body: [
+        [
+          { text: 'Activity',   ...STYLES.tableHeader },
+          { text: 'Status',     ...STYLES.tableHeader, alignment: 'center' },
+          { text: 'Key Notes',  ...STYLES.tableHeader },
         ],
-        marginBottom: 40,
-      },
-      {
-        text: 'PRELIMINARY LEAD ASSESSMENT REPORT',
-        fontSize: 14,
-        bold: true,
-        alignment: 'center',
-        marginBottom: 50,
-      },
+        ...done.map((r, i) => verRow(r.activity, r.value, r.notes, i)),
+      ],
+    },
+    layout: STANDARD_LAYOUT,
+    marginBottom: 12,
+  };
+};
 
-      // Cover Page Info Box
-      {
-        table: {
-          widths: ['40%', '60%'],
-          body: [
-            createTableRow('Client Name', data.clientName),
-            createTableRow('Product(s) Involved', productNames),
-            createTableRow('Report ID', data.reportId),
-            createTableRow('Created Date', new Date(data.createdAt).toLocaleDateString('en-IN', {
-              day: '2-digit',
-              month: 'long',
-              year: 'numeric',
-            })),
-          ],
+const buildObservationTable = (rows: { label: string; value: any }[]) => {
+  const yes = rows.filter((r) => String(r.value || '').toUpperCase() === 'YES');
+  if (!yes.length) {
+    return {
+      text: 'No observations marked as Yes.',
+      fontSize: 9,
+      italics: true,
+      color: C_MUTED,
+      marginBottom: 10,
+    };
+  }
+  return {
+    table: {
+      widths: ['6%', '94%'],
+      body: yes.map((r, idx) => [
+        {
+          text: '>>',
+          fontSize: 9,
+          bold: true,
+          alignment: 'center' as const,
+          color: C_NAVY,
+          fillColor: idx % 2 === 0 ? C_WHITE : C_ROW_ALT,
         },
-        layout: {
-          hLineWidth: () => 1,
-          vLineWidth: () => 1,
-          hLineColor: () => '#e5e7eb',
-          vLineColor: () => '#e5e7eb',
+        {
+          text: r.label,
+          fontSize: 9,
+          color: C_TEXT,
+          fillColor: idx % 2 === 0 ? C_WHITE : C_ROW_ALT,
         },
-        marginBottom: 40,
-      },
+      ]),
+    },
+    layout: STANDARD_LAYOUT,
+    marginBottom: 12,
+  };
+};
 
-      {
-        text: 'CONFIDENTIAL DOCUMENT',
-        fontSize: 11,
-        bold: true,
-        color: '#dc2626',
-        alignment: 'center',
-        marginBottom: 5,
-      },
-      {
-        text: 'This report contains sensitive information and is intended solely for authorized personnel.',
-        fontSize: 9,
-        italics: true,
-        color: SECONDARY_COLOR,
-        alignment: 'center',
-        marginBottom: 40,
-      },
-
-      // Page Break
-      { text: '', pageBreak: 'after' },
-
-      // ========== MAIN CONTENT ==========
-      {
-        text: 'PRELIMINARY LEAD ASSESSMENT REPORT',
-        style: 'title',
-      },
-      {
-        text: '(Lead Generated Through True Buddy Intelligence Network)',
-        style: 'subtitle',
-      },
-      {
-        text: '[Confidential -- Client-Sanitised Version]',
-        style: 'confidential',
-      },
-
-      // 1. Client & Case Reference
-      {
-        text: '1. Client & Case Reference',
-        style: 'sectionHeader',
-      },
-      {
-        table: {
-          widths: ['45%', '55%'],
-          body: [
-            [
-              { text: 'Field', style: 'tableHeader' },
-              { text: 'Details', style: 'tableHeader' },
-            ],
-            createTableRow('Client Name', data.clientName, true),
-            createTableRow('Product Category', mapProductCategory(tbData.productCategory), true),
-            createTableRow('Type of Infringement', mapInfringementType(tbData.infringementType), true),
-            createTableRow('Date of Internal Lead Generation',
-              tbData.dateInternalLeadGeneration
-                ? new Date(tbData.dateInternalLeadGeneration).toLocaleDateString('en-IN')
-                : 'N/A', true),
-            createTableRow('Broad Geography', tbData.broadGeography || 'N/A', true),
-            createTableRow('Client SPOC',
-              `${tbData.clientSpocName || 'N/A'}${tbData.clientSpocDesignation ? ' & ' + tbData.clientSpocDesignation : ''}`, true),
-            createTableRow('Nature of Entity', mapNatureOfEntity(tbData.natureOfEntity), true),
-          ],
-        },
-        layout: {
-          hLineWidth: (i: number) => (i === 0 || i === 1 ? 1 : 0.5),
-          vLineWidth: () => 1,
-          hLineColor: () => '#e5e7eb',
-          vLineColor: () => '#e5e7eb',
-        },
-        marginBottom: 5,
-      },
-      {
-        text: "Note: The lead has been generated through True Buddy's independent intelligence channels. Specific source identifiers and proprietary intelligence inputs are intentionally withheld.",
-        style: 'note',
-      },
-
-      // 2. Mandate / Scope Proposed
-      {
-        text: '2. Mandate / Scope Proposed',
-        style: 'sectionHeader',
-      },
-      {
-        text: '(Indicative -- subject to client approval)',
-        fontSize: 9,
-        italics: true,
-        marginBottom: 5,
-      },
-      {
-        table: {
-          widths: ['75%', '25%'],
-          body: [
-            [
-              { text: 'Scope', style: 'tableHeader' },
-              { text: 'Selected', style: 'tableHeader', alignment: 'center' },
-            ],
-            [
-              'IPR Investigation -- Supplier Level',
-              {
-                text: tbData.scopeIprSupplier ? 'Yes' : 'No',
-                alignment: 'center',
-                fontSize: 10,
-                bold: true,
-                color: tbData.scopeIprSupplier ? '#059669' : '#dc2626'
-              }
-            ],
-            [
-              'IPR Investigation -- Manufacturer / Packager',
-              {
-                text: tbData.scopeIprManufacturer ? 'Yes' : 'No',
-                alignment: 'center',
-                fontSize: 10,
-                bold: true,
-                color: tbData.scopeIprManufacturer ? '#059669' : '#dc2626'
-              }
-            ],
-            [
-              'IPR Investigation -- Stockist / Warehouse',
-              {
-                text: tbData.scopeIprStockist ? 'Yes' : 'No',
-                alignment: 'center',
-                fontSize: 10,
-                bold: true,
-                color: tbData.scopeIprStockist ? '#059669' : '#dc2626'
-              }
-            ],
-            [
-              'Covert Market Verification',
-              {
-                text: tbData.scopeMarketVerification ? 'Yes' : 'No',
-                alignment: 'center',
-                fontSize: 10,
-                bold: true,
-                color: tbData.scopeMarketVerification ? '#059669' : '#dc2626'
-              }
-            ],
-            [
-              'Evidential Test Purchase (ETP)',
-              {
-                text: tbData.scopeEtp ? 'Yes' : 'No',
-                alignment: 'center',
-                fontSize: 10,
-                bold: true,
-                color: tbData.scopeEtp ? '#059669' : '#dc2626'
-              }
-            ],
-            [
-              'Enforcement Facilitation (If Applicable)',
-              {
-                text: tbData.scopeEnforcement ? 'Yes' : 'No',
-                alignment: 'center',
-                fontSize: 10,
-                bold: true,
-                color: tbData.scopeEnforcement ? '#059669' : '#dc2626'
-              }
-            ],
-          ],
-        },
-        layout: {
-          hLineWidth: (i: number) => (i === 0 || i === 1 ? 1 : 0.5),
-          vLineWidth: () => 1,
-          hLineColor: () => '#e5e7eb',
-          vLineColor: () => '#e5e7eb',
-        },
-        marginBottom: 15,
-      },
-
-
-      // 3. High-Level Lead Description (Sanitised)
-      {
-        text: '3. High-Level Lead Description (Sanitised)',
-        style: 'sectionHeader',
-      },
-      {
-        table: {
-          widths: ['45%', '55%'],
-          body: [
-            [
-              { text: 'Parameter', style: 'tableHeader' },
-              { text: 'Description', style: 'tableHeader' },
-            ],
-            createTableRow('Nature of Intelligence', mapIntelNature(tbData.intelNature), true),
-            createTableRow('Type of Suspected Activity', mapSuspectedActivity(tbData.suspectedActivity), true),
-            createTableRow('Product Segment', mapProductCategory(tbData.productSegment), true),
-            createTableRow('Stage of Supply Chain', mapSupplyChainStage(tbData.supplyChainStage), true),
-            createTableRow('Repeat Intelligence Indicator', mapYesNo(tbData.repeatIntelligence), true),
-            createTableRow('Multi-Brand Exposure Risk', mapYesNo(tbData.multiBrandRisk), true),
-          ],
-        },
-        layout: {
-          hLineWidth: (i: number) => (i === 0 || i === 1 ? 1 : 0.5),
-          vLineWidth: () => 1,
-          hLineColor: () => '#e5e7eb',
-          vLineColor: () => '#e5e7eb',
-        },
-        marginBottom: 5,
-      },
-      {
-        text: 'Specific entity names, contact details, and exact locations are withheld at this stage to maintain confidentiality and prevent contamination across clients.',
-        style: 'note',
-      },
-
-      // 4. Preliminary Verification Conducted by True Buddy
-      {
-        text: '4. Preliminary Verification Conducted by True Buddy',
-        style: 'sectionHeader',
-      },
-      {
-        text: '(Non-intrusive, desk and intelligence-based assessment only)',
-        fontSize: 9,
-        italics: true,
-        marginBottom: 5,
-      },
-      {
-        table: {
-          widths: ['45%', '15%', '40%'],
-          body: [
-            [
-              { text: 'Activity', style: 'tableHeader' },
-              { text: 'Status', style: 'tableHeader', alignment: 'center' },
-              { text: 'Notes', style: 'tableHeader' },
-            ],
-            createVerificationRow(
-              'Internal Intelligence Corroboration',
-              tbData.verificationIntelCorroboration, // ✅ Pass raw value
-              tbData.verificationIntelCorroborationNotes || ''
-            ),
-            createVerificationRow(
-              'OSINT / Market Footprint Review',
-              tbData.verificationOsint, // ✅ Pass raw value
-              tbData.verificationOsintNotes || ''
-            ),
-            createVerificationRow(
-              'Pattern Mapping (Similar Past Cases)',
-              tbData.verificationPatternMapping, // ✅ Pass raw value
-              tbData.verificationPatternMappingNotes || ''
-            ),
-            createVerificationRow(
-              'Jurisdiction Feasibility Review',
-              tbData.verificationJurisdiction, // ✅ Pass raw value
-              tbData.verificationJurisdictionNotes || ''
-            ),
-            createVerificationRow(
-              'Risk & Sensitivity Assessment',
-              tbData.verificationRiskAssessment, // ✅ Pass raw value
-              tbData.verificationRiskAssessmentNotes || ''
-            ),
-
-          ],
-        },
-        layout: {
-          hLineWidth: (i: number) => (i === 0 || i === 1 ? 1 : 0.5),
-          vLineWidth: () => 1,
-          hLineColor: () => '#e5e7eb',
-          vLineColor: () => '#e5e7eb',
-        },
-        marginBottom: 15,
-      },
-
-      // 5. Key Observations (Client-Safe)
-      {
-        text: '5. Key Observations (Client-Safe)',
-        style: 'sectionHeader',
-      },
-      {
-        table: {
-          widths: ['50%', '50%'],
-          body: [
-            [
-              { text: 'Parameter', style: 'tableHeader' },
-              { text: 'Observation', style: 'tableHeader' },
-            ],
-            createTableRow('Scale of Suspected Operations', mapOperationScale(tbData.obsOperationScale), true),
-            createTableRow('Likelihood of Counterfeit Activity', mapLikelihoodLevel(tbData.obsCounterfeitLikelihood), true),
-            createTableRow('Potential Brand Exposure', mapBrandExposure(tbData.obsBrandExposure), true),
-            createTableRow('Enforcement Sensitivity (Political / Local)', mapRiskLevel(tbData.obsEnforcementSensitivity), true),
-            createTableRow('Risk of Information Leakage', mapRiskLevel(tbData.obsLeakageRisk), true),
-          ],
-        },
-        layout: {
-          hLineWidth: (i: number) => (i === 0 || i === 1 ? 1 : 0.5),
-          vLineWidth: () => 1,
-          hLineColor: () => '#e5e7eb',
-          vLineColor: () => '#e5e7eb',
-        },
-        marginBottom: 15,
-      },
-
-      // 6. Information Integrity & Risk Assessment
-      {
-        text: '6. Information Integrity & Risk Assessment',
-        style: 'sectionHeader',
-      },
-      {
-        table: {
-          widths: ['55%', '45%'],
-          body: [
-            [
-              { text: 'Parameter', style: 'tableHeader' },
-              { text: 'Assessment', style: 'tableHeader' },
-            ],
-            createTableRow('Source Reliability (Internal Assessment)', mapSourceReliability(tbData.riskSourceReliability), true),
-            createTableRow('Risk of Cross-Client Conflict', mapRiskLevel(tbData.riskClientConflict), true),
-            createTableRow('Suitability for Immediate Action', mapYesNo(tbData.riskImmediateAction), true),
-            createTableRow('Requirement for Controlled Validation', mapYesNo(tbData.riskControlledValidation), true),
-            createTableRow('Risk of Premature Disclosure', mapRiskLevel(tbData.riskPrematureDisclosure), true),
-          ],
-        },
-        layout: {
-          hLineWidth: (i: number) => (i === 0 || i === 1 ? 1 : 0.5),
-          vLineWidth: () => 1,
-          hLineColor: () => '#e5e7eb',
-          vLineColor: () => '#e5e7eb',
-        },
-        marginBottom: 15,
-      },
-
-      // 7. True Buddy's Preliminary Assessment
-      {
-        text: "7. True Buddy's Preliminary Assessment",
-        style: 'sectionHeader',
-      },
-      {
-        text: 'Overall Assessment of Lead:',
-        bold: true,
-        fontSize: 10,
-        marginBottom: 5,
-      },
-      {
-        text: mapTrueBuddyAssessment(tbData.assessmentOverall),
-        fontSize: 10,
-        bold: true,
-        marginBottom: 10,
-      },
-      {
-        text: 'Assessment Rationale:',
-        bold: true,
-        fontSize: 10,
-        marginBottom: 5,
-      },
-      {
-        text: tbData.assessmentRationale || '(High-level justification without disclosing proprietary intelligence)',
-        fontSize: 10,
-        italics: !tbData.assessmentRationale,
-        marginBottom: 15,
-      },
-
-      // 8. Recommended Way Forward
-      {
-        text: '8. Recommended Way Forward',
-        style: 'sectionHeader',
-      },
-      {
-        text: '(Client-specific execution will be ring-fenced)',
-        fontSize: 9,
-        italics: true,
-        marginBottom: 5,
-      },
-{
+const buildDataTable = (
+  widths: string[],
+  headers: string[],
+  bodyRows: any[][]
+) => ({
   table: {
-    widths: ['75%', '25%'],
+    widths,
     body: [
-      [
-        { text: 'Recommendation', style: 'tableHeader' },
-        { text: 'Selected', style: 'tableHeader', alignment: 'center' },
-      ],
-      [
-        'Covert Intelligence Validation',
-        { 
-          text: tbData.recCovertValidation ? 'Yes' : 'No',
-          alignment: 'center',
-          fontSize: 10,
-          bold: true,
-          color: tbData.recCovertValidation ? '#059669' : '#dc2626'
-        }
-      ],
-      [
-        'Evidential Test Purchase (ETP)',
-        { 
-          text: tbData.recEtp ? 'Yes' : 'No',
-          alignment: 'center',
-          fontSize: 10,
-          bold: true,
-          color: tbData.recEtp ? '#059669' : '#dc2626'
-        }
-      ],
-      [
-        'Controlled Market Reconnaissance',
-        { 
-          text: tbData.recMarketReconnaissance ? 'Yes' : 'No',
-          alignment: 'center',
-          fontSize: 10,
-          bold: true,
-          color: tbData.recMarketReconnaissance ? '#059669' : '#dc2626'
-        }
-      ],
-      [
-        'Enforcement Planning (Deferred)',
-        { 
-          text: tbData.recEnforcementDeferred ? 'Yes' : 'No',
-          alignment: 'center',
-          fontSize: 10,
-          bold: true,
-          color: tbData.recEnforcementDeferred ? '#059669' : '#dc2626'
-        }
-      ],
-      [
-        'Continued Monitoring',
-        { 
-          text: tbData.recContinuedMonitoring ? 'Yes' : 'No',
-          alignment: 'center',
-          fontSize: 10,
-          bold: true,
-          color: tbData.recContinuedMonitoring ? '#059669' : '#dc2626'
-        }
-      ],
-      [
-        'Client-Specific Segregation Required',
-        { 
-          text: tbData.recClientSegregation ? 'Yes' : 'No',
-          alignment: 'center',
-          fontSize: 10,
-          bold: true,
-          color: tbData.recClientSegregation ? '#059669' : '#dc2626'
-        }
-      ],
+      headers.map((h) => ({ text: h, ...STYLES.tableHeader })),
+      ...bodyRows,
     ],
   },
-  layout: {
-    hLineWidth: (i: number) => (i === 0 || i === 1 ? 1 : 0.5),
-    vLineWidth: () => 1,
-    hLineColor: () => '#e5e7eb',
-    vLineColor: () => '#e5e7eb',
+  layout: STANDARD_LAYOUT,
+  marginBottom: 12,
+});
+
+// ── FIX: sectionBlock wraps header + content in unbreakable stack ─────────────
+// If the entire block fits on remaining page space → stays together.
+// If it does NOT fit → the whole block (header + table) moves to next page.
+// For very large tables (> 1 full page), dontBreakRows in STANDARD_LAYOUT
+// ensures at minimum no single row is ever split mid-row.
+const sectionBlock = (
+  n: number,
+  title: string,
+  noteText: string | null,
+  ...contentItems: any[]
+): any => ({
+  stack: [
+    sec(n, title),
+    ...(noteText
+      ? [{ text: noteText, ...STYLES.noteText }]
+      : []),
+    ...contentItems,
+  ],
+  // Keeps header + table together — moves to next page as a unit if needed
+  unbreakable: true,
+});
+
+// ── Corporate Cover Page ──────────────────────────────────────────────────────
+const buildCoverPage = (
+  data: PreReportPDFData,
+  productNames: string,
+  subtitle: string
+): any[] => [
+  {
+    table: {
+      widths: ['*'],
+      body: [
+        [{
+          text: 'TRUE BUDDY CONSULTING PVT. LTD.',
+          fontSize: 20,
+          bold: true,
+          color: C_WHITE,
+          alignment: 'center',
+          fillColor: C_NAVY,
+          margin: [0, 28, 0, 6],
+        }],
+        [{
+          text: 'Due Diligence  |  IPR Investigation  |  Fraud Investigation | Market Surveys',
+          fontSize: 9.5,
+          italics: true,
+          color: '#a8c4dc',
+          alignment: 'center',
+          fillColor: C_NAVY,
+          margin: [0, 0, 0, 22],
+        }],
+      ],
+    },
+    layout: 'noBorders',
+    marginBottom: 0,
   },
-  marginBottom: 15,
-},
 
+  {
+    canvas: [{ type: 'rect', x: 0, y: 0, w: 495, h: 4, color: C_GOLD }],
+    marginBottom: 50,
+  },
 
-      // 9. Confidentiality & Ring-Fencing Note
-      {
-        text: '9. Confidentiality & Ring-Fencing Note',
-        style: 'sectionHeader',
-      },
-      {
-        text: tbData.confidentialityNote ||
-          "This lead has been generated through True Buddy's proprietary intelligence mechanisms and may be relevant to more than one brand or client. Accordingly, all investigations, validations, and actions---if approved---will be strictly ring-fenced for the concerned client. No cross-sharing of intelligence, sources, or findings will occur across clients.",
-        fontSize: 10,
-        alignment: 'justify',
-        marginBottom: 15,
-      },
-
-      // 10. Remarks
-      {
-        text: '10. Remarks',
-        style: 'sectionHeader',
-      },
-      {
-        text: tbData.remarks || '(Operational sensitivities, timing considerations, or risk flags)',
-        fontSize: 10,
-        italics: !tbData.remarks,
-        marginBottom: 15,
-      },
-
-      // 11. Disclaimer
-      {
-        text: '11. Disclaimer',
-        style: 'sectionHeader',
-      },
-      {
-        text: tbData.customDisclaimer ||
-          'This preliminary assessment is based on internally generated intelligence and limited non-intrusive verification. Specific source details, identities, and methods have been deliberately withheld to preserve confidentiality and prevent information contamination. This document does not constitute a final investigative report or confirmation of infringement. Any further action will be undertaken only upon written client approval and under a client-specific scope of work. Additional costs for validation, mobilisation, or enforcement shall be applicable as per the agreed proposal.',
-        fontSize: 9,
-        alignment: 'justify',
-        marginBottom: 20,
-      },
+  {
+    text: 'PRELIMINARY LEAD ASSESSMENT REPORT',
+    fontSize: 16,
+    bold: true,
+    color: C_NAVY,
+    alignment: 'center',
+    marginBottom: 6,
+  },
+  {
+    canvas: [
+      { type: 'line', x1: 120, y1: 0, x2: 375, y2: 0, lineWidth: 1, lineColor: C_GOLD },
     ],
-    footer: (currentPage: number, pageCount: number) => ({
-      text: `Page ${currentPage} of ${pageCount}`,
-      fontSize: 9,
-      color: SECONDARY_COLOR,
-      alignment: 'center',
-      margin: [0, 10, 0, 0],
-    }),
+    marginBottom: 10,
+  },
+  {
+    text: subtitle,
+    fontSize: 10,
+    italics: true,
+    color: C_MUTED,
+    alignment: 'center',
+    marginBottom: 50,
+  },
+
+  {
+    table: {
+      widths: ['34%', '66%'],
+      body: [
+        [
+          { text: 'CLIENT',         bold: true, fontSize: 8.5, color: C_WHITE, fillColor: C_NAVY,     margin: [10, 8, 8, 8] },
+          { text: data.clientName,  fontSize: 10, bold: true,  color: C_NAVY,  fillColor: C_WHITE,    margin: [10, 8, 8, 8] },
+        ],
+        [
+          { text: 'PRODUCT(S)',     bold: true, fontSize: 8.5, color: C_WHITE, fillColor: C_NAVY_MID, margin: [10, 8, 8, 8] },
+          { text: productNames,     fontSize: 9, color: C_TEXT,                fillColor: C_ROW_ALT,  margin: [10, 8, 8, 8] },
+        ],
+        [
+          { text: 'REPORT ID',      bold: true, fontSize: 8.5, color: C_WHITE, fillColor: C_NAVY,     margin: [10, 8, 8, 8] },
+          { text: data.reportId,    fontSize: 9, color: C_TEXT,                fillColor: C_WHITE,    margin: [10, 8, 8, 8] },
+        ],
+        [
+          { text: 'LEAD TYPE',      bold: true, fontSize: 8.5, color: C_WHITE, fillColor: C_NAVY_MID, margin: [10, 8, 8, 8] },
+          {
+            text: data.leadType === 'CLIENT_LEAD' ? 'Client Lead' : 'True Buddy Lead',
+            fontSize: 9, color: C_TEXT, fillColor: C_ROW_ALT, margin: [10, 8, 8, 8],
+          },
+        ],
+        [
+          { text: 'STATUS',         bold: true, fontSize: 8.5, color: C_WHITE, fillColor: C_NAVY,     margin: [10, 8, 8, 8] },
+          { text: toTitleCase(data.status), fontSize: 9, color: C_TEXT,         fillColor: C_WHITE,   margin: [10, 8, 8, 8] },
+        ],
+        [
+          { text: 'DATE GENERATED', bold: true, fontSize: 8.5, color: C_WHITE, fillColor: C_NAVY_MID, margin: [10, 8, 8, 8] },
+          {
+            text: new Date(data.createdAt).toLocaleDateString('en-IN', {
+              day: '2-digit', month: 'long', year: 'numeric',
+            }),
+            fontSize: 9, color: C_TEXT, fillColor: C_ROW_ALT, margin: [10, 8, 8, 8],
+          },
+        ],
+      ],
+    },
+    layout: {
+      hLineWidth: (i: number, node: any) =>
+        i === 0 || i === node.table.body.length ? 1.5 : 0.5,
+      vLineWidth: (i: number, node: any) =>
+        i === 0 || i === node.table.widths.length ? 1.5 : 0.5,
+      hLineColor: (i: number, node: any) =>
+        i === 0 || i === node.table.body.length ? C_NAVY : C_BORDER,
+      vLineColor: (i: number, node: any) =>
+        i === 0 || i === node.table.widths.length ? C_NAVY : C_BORDER,
+    },
+    marginBottom: 50,
+  },
+
+  {
+    table: {
+      widths: ['*'],
+      body: [[{
+        stack: [
+          {
+            text: 'CONFIDENTIAL DOCUMENT',
+            fontSize: 11,
+            bold: true,
+            color: C_NAVY,
+            alignment: 'center',
+            marginBottom: 5,
+          },
+          {
+            text: 'This report contains sensitive information intended solely for authorised personnel.\nUnauthorised disclosure, reproduction, or distribution is strictly prohibited.',
+            fontSize: 8.5,
+            italics: true,
+            color: C_MUTED,
+            alignment: 'center',
+          },
+        ],
+        fillColor: '#eef3f8',
+        margin: [16, 14, 16, 14],
+      }]],
+    },
+    layout: {
+      hLineWidth: () => 1,
+      vLineWidth: (i: number) => (i === 0 ? 3 : 1),
+      hLineColor: () => C_BORDER,
+      vLineColor: (i: number) => (i === 0 ? C_GOLD : C_BORDER),
+    },
+  },
+
+  { text: '', pageBreak: 'after' },
+];
+
+// ── Section Header ────────────────────────────────────────────────────────────
+const sec = (n: number, title: string) => ({
+  stack: [
+    {
+      table: {
+        widths: ['*'],
+        body: [[{
+          columns: [
+            {
+              table: {
+                widths: [22],
+                body: [[{
+                  text: String(n),
+                  fontSize: 10,
+                  bold: true,
+                  color: C_WHITE,
+                  fillColor: C_GOLD,
+                  alignment: 'center',
+                  margin: [0, 3, 0, 3],
+                }]],
+              },
+              layout: 'noBorders',
+              width: 28,
+            },
+            {
+              text: title,
+              fontSize: 11,
+              bold: true,
+              color: C_WHITE,
+              margin: [8, 4, 0, 4],
+            },
+          ],
+          fillColor: C_NAVY,
+          margin: [4, 2, 4, 2],
+        }]],
+      },
+      layout: 'noBorders',
+    },
+  ],
+  // No extra marginTop here — sectionBlock handles spacing
+  marginBottom: 7,
+});
+
+// ── Assessment Block ──────────────────────────────────────────────────────────
+const assessmentBlock = (
+  label: string,
+  mappedValue: string,
+  rationale: string | undefined,
+  rationaleLabel: string
+) => ({
+  // Entire assessment (label + rationale) is unbreakable as one unit
+  stack: [
+    {
+      table: {
+        widths: ['*'],
+        body: [[{
+          text: [
+            { text: `${label}:   `, bold: true, fontSize: 10, color: C_NAVY },
+            { text: mappedValue,   bold: true, fontSize: 10, color: C_TEXT },
+          ],
+          fillColor: C_HDR_BG,
+          margin: [10, 9, 10, 9],
+        }]],
+      },
+      layout: {
+        hLineWidth: (i: number, node: any) =>
+          i === 0 || i === node.table.body.length ? 1 : 0,
+        vLineWidth: (i: number) => (i === 0 ? 4 : i === 1 ? 1 : 0),
+        hLineColor: () => C_BORDER,
+        vLineColor: (i: number) => (i === 0 ? C_GOLD : C_BORDER),
+      },
+      marginBottom: 12,
+    },
+    {
+      text: `${rationaleLabel}:`,
+      bold: true,
+      fontSize: 9.5,
+      color: C_NAVY,
+      marginBottom: 4,
+    },
+    {
+      text: rationale || '(Brief justification for the above assessment)',
+      fontSize: 9.5,
+      italics: !rationale,
+      color: C_TEXT,
+      marginBottom: 15,
+    },
+  ],
+  unbreakable: true,
+});
+
+// ── Content Title (after cover break) ────────────────────────────────────────
+const contentTitle = (line1: string, line2: string, line3?: string): any[] => [
+  { text: line1, fontSize: 14, bold: true, alignment: 'center', color: C_NAVY, marginBottom: 4 },
+  {
+    canvas: [
+      { type: 'line', x1: 100, y1: 0, x2: 395, y2: 0, lineWidth: 1, lineColor: C_GOLD },
+    ],
+    marginBottom: 6,
+  },
+  { text: line2, fontSize: 9.5, italics: true, alignment: 'center', color: C_MUTED, marginBottom: line3 ? 3 : 20 },
+  ...(line3
+    ? [{ text: line3, fontSize: 9.5, bold: true, alignment: 'center', color: C_NAVY, marginBottom: 20 }]
+    : []),
+];
+
+
+
+// Helper to build a numbered disclaimer sec correctly
+const buildNumberedDisclaimer = (n: number, text: string) => ({
+  stack: [
+    sec(n, 'Disclaimer'),
+    {
+      table: {
+        widths: ['*'],
+        body: [[{
+          text,
+          fontSize: 8.5,
+          alignment: 'justify',
+          color: C_MUTED,
+          italics: true,
+          margin: [10, 9, 10, 9],
+          fillColor: '#f8f9fb',
+        }]],
+      },
+      layout: {
+        hLineWidth: () => 0.5,
+        vLineWidth: (i: number) => (i === 0 ? 3 : 0.5),
+        hLineColor: () => C_BORDER,
+        vLineColor: (i: number) => (i === 0 ? C_NAVY_MID : C_BORDER),
+      },
+      marginBottom: 20,
+    },
+  ],
+  unbreakable: true,
+  marginTop: 18,
+});
+
+// ==========================================================================
+//  CLIENT LEAD PDF
+// ==========================================================================
+
+const generateClientLeadPDF = (data: PreReportPDFData): any => {
+  const cl = data.clientLeadData!;
+  const productNames = data.products?.map((p) => p.name).join(', ') || 'N/A';
+
+  return {
+    pageSize: 'A4',
+    pageMargins: [50, 48, 50, 48],
+    defaultStyle: { font: 'Roboto', fontSize: 10, color: C_TEXT, lineHeight: 1.4 },
+    styles: STYLES,
+
+    content: [
+      // ── Cover ──────────────────────────────────────────────────────────────
+      ...buildCoverPage(data, productNames, '(Based on Client-Provided Information)'),
+
+      // ── Content title ──────────────────────────────────────────────────────
+      ...contentTitle(
+        'PRELIMINARY LEAD ASSESSMENT REPORT',
+        '(Based on Client-Provided Information)'
+      ),
+
+      // ── 1. Client & Case Details ───────────────────────────────────────────
+      // sectionBlock: if header + table don't fit on remaining page → entire block
+      // moves to next page as a unit. dontBreakRows ensures no row splits mid-row.
+      sectionBlock(
+        1, 'Client & Case Details', null,
+        buildDataTable(
+          ['44%', '56%'],
+          ['Field', 'Details'],
+          [
+            row('Name of Client',                      data.clientName,                                                                                                 0),
+            row('Product(s) Involved',                 productNames,                                                                                                    1),
+            row('Date Information Received',           cl.dateInfoReceived ? new Date(cl.dateInfoReceived).toLocaleDateString('en-IN') : 'N/A',                        2),
+            row('Location (State / District / City)',  [cl.state, cl.city].filter(Boolean).join(', ') || 'N/A',                                                        3),
+            row('Client SPOC',                         `${cl.clientSpocName || 'N/A'}${cl.clientSpocContact ? '  |  ' + cl.clientSpocContact : ''}`,                   4),
+          ]
+        )
+      ),
+
+      // ── 2. Mandate / Scope Requested ──────────────────────────────────────
+      sectionBlock(
+        2, 'Mandate / Scope Requested',
+        'Only selected scope items are listed below.',
+        buildCheckedList([
+          { label: 'Due Diligence',                                            checked: cl.scopeDueDiligence },
+          { label: 'IPR Investigation -- Retailer / Wholesaler',               checked: cl.scopeIprRetailer },
+          { label: 'IPR Investigation -- Supplier',                            checked: cl.scopeIprSupplier },
+          { label: 'IPR Investigation -- Manufacturer / Packager / Warehouse', checked: cl.scopeIprManufacturer },
+          { label: 'Online Sample Purchase',                                   checked: cl.scopeOnlinePurchase },
+          { label: 'Offline Sample Purchase',                                  checked: cl.scopeOfflinePurchase },
+        ]),
+        ...(cl.scopeCustomIds?.length
+          ? [{ text: `Additional Scope: ${cl.scopeCustomIds.join(', ')}`, fontSize: 9, color: C_TEXT, marginBottom: 10 }]
+          : [])
+      ),
+
+      // ── 3. Information Received from Client ────────────────────────────────
+      sectionBlock(
+        3, 'Information Received from Client', null,
+        buildDataTable(
+          ['50%', '50%'],
+          ['Parameter', 'Details'],
+          [
+            row('Name of Entity',                          cl.entityName || 'N/A',                                                                                                                                      0),
+            row('Name of Suspect (if different)',          cl.suspectName || 'N/A',                                                                                                                                     1),
+            row('Contact Number(s)',                       cl.contactNumbers || 'N/A',                                                                                                                                  2),
+            row('Address / Location',                     [cl.addressLine1, cl.addressLine2, cl.city, cl.state, cl.pincode].filter(Boolean).join(', ') || 'N/A',                                                       3),
+            row('Online Presence',                        Array.isArray(cl.onlinePresences) && cl.onlinePresences.length ? cl.onlinePresences.map((p: any) => `${p.platformName}: ${p.link}`).join(' | ') : 'N/A',     4),
+            row('Product Details',                        cl.productDetails || 'N/A',                                                                                                                                   5),
+            row('Product Photographs Provided',           mapYesNo(cl.photosProvided),                                                                                                                                  6),
+            row('Video Evidence Provided',                mapYesNo(cl.videoProvided),                                                                                                                                   7),
+            row('Invoice / Bill Available',               mapYesNo(cl.invoiceAvailable),                                                                                                                                8),
+            row('Source Narrative (as shared by client)', cl.sourceNarrative || 'N/A',                                                                                                                                  9),
+          ]
+        )
+      ),
+
+      // ── 4. Preliminary Verification ────────────────────────────────────────
+      sectionBlock(
+        4, 'Preliminary Verification Conducted by True Buddy',
+        'Desk-based assessment only; no field deployment at this stage. Only completed activities are listed.',
+        buildVerificationTable([
+          { activity: 'Case Discussion with Client Team',                    value: cl.verificationClientDiscussion,  notes: cl.verificationClientDiscussionNotes || '' },
+          { activity: 'Internet / OSINT Search',                             value: cl.verificationOsint,             notes: cl.verificationOsintNotes || '' },
+          { activity: 'Marketplace Verification (IndiaMART / Social Media)', value: cl.verificationMarketplace,       notes: cl.verificationMarketplaceNotes || '' },
+          { activity: 'Pretext Calling (if applicable)',                     value: cl.verificationPretextCalling,    notes: cl.verificationPretextCallingNotes || '' },
+          { activity: 'Preliminary Product Image Review',                    value: cl.verificationProductReview,     notes: cl.verificationProductReviewNotes || '' },
+        ])
+      ),
+
+      // ── 5. Key Observations ────────────────────────────────────────────────
+      sectionBlock(
+        5, 'Key Observations',
+        'Only observations confirmed as applicable are listed below.',
+        buildObservationTable([
+          { label: 'Availability of Identifiable Target',       value: cl.obsIdentifiableTarget },
+          { label: 'Traceability of Entity / Contact',          value: cl.obsTraceability },
+          { label: 'Product Visibility / Market Presence',      value: cl.obsProductVisibility },
+          { label: 'Indications of Counterfeiting / Lookalike', value: cl.obsCounterfeitingIndications },
+          { label: 'Evidentiary Gaps Identified',               value: cl.obsEvidentiary_gaps },
+          ...(cl.observationsCustomData || []).map((o: any) => ({
+            label: o.optionName || `Custom #${o.optionId}`,
+            value: o.text,
+          })),
+        ])
+      ),
+
+      // ── 6. Information Quality Assessment ─────────────────────────────────
+      sectionBlock(
+        6, 'Information Quality Assessment', null,
+        buildDataTable(
+          ['56%', '44%'],
+          ['Parameter', 'Assessment'],
+          [
+            row('Completeness of Initial Information',                mapCompleteness(cl.qaCompleteness),        0),
+            row('Accuracy of Case Description (prima facie)',         mapAccuracy(cl.qaAccuracy),                1),
+            row('Any Independent Client Investigation Conducted',     mapYesNo(cl.qaIndependentInvestigation),   2),
+            row('Any Prior Confrontation with Seller / Suspect',      mapYesNo(cl.qaPriorConfrontation),         3),
+            row('Risk of Information Contamination',                  mapRiskLevel(cl.qaContaminationRisk),      4),
+          ]
+        )
+      ),
+
+      // ── 7. Preliminary Assessment ──────────────────────────────────────────
+      // sectionBlock wraps sec header + assessmentBlock together
+      {
+        stack: [
+          sec(7, "True Buddy's Preliminary Assessment"),
+          assessmentBlock(
+            'Overall Assessment of Lead',
+            mapClientAssessment(cl.assessmentOverall),
+            cl.assessmentRationale,
+            'Rationale'
+          ),
+        ],
+        unbreakable: true,
+        marginTop: 18,
+      },
+
+      // ── 8. Recommended Way Forward ─────────────────────────────────────────
+      sectionBlock(
+        8, 'Recommended Way Forward',
+        'Based on current information. Only selected recommendations are listed.',
+        buildCheckedList([
+          { label: 'Market Survey / Reconnaissance',               checked: cl.recMarketSurvey },
+          { label: 'Covert Investigation',                         checked: cl.recCovertInvestigation },
+          { label: 'Evidential Test Purchase',                     checked: cl.recTestPurchase },
+          { label: 'Direct Enforcement Action',                    checked: cl.recEnforcementAction },
+          { label: 'Additional Information Required from Client',  checked: cl.recAdditionalInfo },
+          { label: 'Closure / Hold',                               checked: cl.recClosureHold },
+        ]),
+        ...(cl.recCustomIds?.length
+          ? [{ text: `Additional Recommendations: ${cl.recCustomIds.join(', ')}`, fontSize: 9, color: C_TEXT, marginBottom: 10 }]
+          : [])
+      ),
+
+      // ── 9. Remarks ─────────────────────────────────────────────────────────
+      {
+        stack: [
+          sec(9, 'Remarks'),
+          {
+            text: cl.remarks || '(No additional remarks provided.)',
+            fontSize: 9.5,
+            italics: !cl.remarks,
+            color: C_TEXT,
+            marginBottom: 15,
+          },
+        ],
+        unbreakable: true,
+        marginTop: 18,
+      },
+
+      // ── 10. Disclaimer ─────────────────────────────────────────────────────
+      buildNumberedDisclaimer(
+        10,
+        cl.customDisclaimer ||
+          'This preliminary assessment is prepared solely on the basis of information provided by the client. True Buddy assumes the information to be complete and accurate at this stage. In the event that the information is found to be incomplete, inaccurate, or misleading during subsequent investigation or field deployment, additional costs towards team mobilisation and preliminary investigation shall be applicable as per the approved proposal. This document does not constitute a final investigative report or legal opinion.'
+      ),
+    ],
   };
-
-  return docDefinition;
 };
 
-// ✅ ADD THIS NEW FUNCTION - Export the doc definition for preview
-export const getPreReportDocDefinition = (data: PreReportPDFData) => {
-  const isClientLead = data.leadType === 'CLIENT_LEAD';
-  return isClientLead
+// ==========================================================================
+//  TRUE BUDDY LEAD PDF
+// ==========================================================================
+
+const generateTrueBuddyLeadPDF = (data: PreReportPDFData): any => {
+  const tb = data.trueBuddyLeadData!;
+  const productNames = data.products?.map((p) => p.name).join(', ') || 'N/A';
+
+  return {
+    pageSize: 'A4',
+    pageMargins: [50, 48, 50, 48],
+    defaultStyle: { font: 'Roboto', fontSize: 10, color: C_TEXT, lineHeight: 1.4 },
+    styles: STYLES,
+
+    content: [
+      // ── Cover ──────────────────────────────────────────────────────────────
+      ...buildCoverPage(data, productNames, '(Lead Generated Through True Buddy Intelligence Network)'),
+
+      // ── Content title ──────────────────────────────────────────────────────
+      ...contentTitle(
+        'PRELIMINARY LEAD ASSESSMENT REPORT',
+        '(Lead Generated Through True Buddy Intelligence Network)',
+        '[Confidential -- Client-Sanitised Version]'
+      ),
+
+      // ── 1. Client & Case Reference ─────────────────────────────────────────
+      sectionBlock(
+        1, 'Client & Case Reference', null,
+        buildDataTable(
+          ['44%', '56%'],
+          ['Field', 'Details'],
+          [
+            row('Client Name',                          data.clientName,                                                                                                                         0),
+            row('Product Category',                     mapProductCategory(tb.productCategory),                                                                                                  1),
+            row('Type of Infringement',                 mapInfringementType(tb.infringementType),                                                                                                2),
+            row('Date of Internal Lead Generation',     tb.dateInternalLeadGeneration ? new Date(tb.dateInternalLeadGeneration).toLocaleDateString('en-IN') : 'N/A',                             3),
+            row('Broad Geography',                      tb.broadGeography || 'N/A',                                                                                                             4),
+            row('Client SPOC',                          `${tb.clientSpocName || 'N/A'}${tb.clientSpocDesignation ? '  |  ' + tb.clientSpocDesignation : ''}`,                                    5),
+            row('Nature of Entity',                     mapNatureOfEntity(tb.natureOfEntity),                                                                                                    6),
+          ]
+        ),
+        {
+          text: "Note: This lead was generated through True Buddy's independent intelligence channels. Specific source identifiers and proprietary intelligence inputs are intentionally withheld.",
+          ...STYLES.noteText,
+        }
+      ),
+
+      // ── 2. Mandate / Scope Proposed ────────────────────────────────────────
+      sectionBlock(
+        2, 'Mandate / Scope Proposed',
+        'Indicative -- subject to client approval. Only selected items are listed.',
+        buildCheckedList([
+          { label: 'IPR Investigation -- Supplier Level',          checked: tb.scopeIprSupplier },
+          { label: 'IPR Investigation -- Manufacturer / Packager', checked: tb.scopeIprManufacturer },
+          { label: 'IPR Investigation -- Stockist / Warehouse',    checked: tb.scopeIprStockist },
+          { label: 'Covert Market Verification',                   checked: tb.scopeMarketVerification },
+          { label: 'Evidential Test Purchase (ETP)',               checked: tb.scopeEtp },
+          { label: 'Enforcement Facilitation (If Applicable)',     checked: tb.scopeEnforcement },
+        ])
+      ),
+
+      // ── 3. High-Level Lead Description ─────────────────────────────────────
+      sectionBlock(
+        3, 'High-Level Lead Description (Sanitised)', null,
+        buildDataTable(
+          ['46%', '54%'],
+          ['Parameter', 'Description'],
+          [
+            row('Nature of Intelligence',        mapIntelNature(tb.intelNature),             0),
+            row('Type of Suspected Activity',    mapSuspectedActivity(tb.suspectedActivity), 1),
+            row('Product Segment',               mapProductCategory(tb.productSegment),      2),
+            row('Stage of Supply Chain',         mapSupplyChainStage(tb.supplyChainStage),   3),
+            row('Repeat Intelligence Indicator', mapYesNo(tb.repeatIntelligence),            4),
+            row('Multi-Brand Exposure Risk',     mapYesNo(tb.multiBrandRisk),                5),
+          ]
+        ),
+        {
+          text: 'Specific entity names, contact details, and exact locations are withheld at this stage to maintain confidentiality and prevent contamination across clients.',
+          ...STYLES.noteText,
+        }
+      ),
+
+      // ── 4. Preliminary Verification ────────────────────────────────────────
+      sectionBlock(
+        4, 'Preliminary Verification Conducted by True Buddy',
+        'Non-intrusive, desk and intelligence-based assessment only. Only completed activities are listed.',
+        buildVerificationTable([
+          { activity: 'Internal Intelligence Corroboration',  value: tb.verificationIntelCorroboration,  notes: tb.verificationIntelCorroborationNotes || '' },
+          { activity: 'OSINT / Market Footprint Review',      value: tb.verificationOsint,               notes: tb.verificationOsintNotes || '' },
+          { activity: 'Pattern Mapping (Similar Past Cases)', value: tb.verificationPatternMapping,      notes: tb.verificationPatternMappingNotes || '' },
+          { activity: 'Jurisdiction Feasibility Review',      value: tb.verificationJurisdiction,        notes: tb.verificationJurisdictionNotes || '' },
+          { activity: 'Risk & Sensitivity Assessment',        value: tb.verificationRiskAssessment,      notes: tb.verificationRiskAssessmentNotes || '' },
+        ])
+      ),
+
+      // ── 5. Key Observations ────────────────────────────────────────────────
+      sectionBlock(
+        5, 'Key Observations (Client-Safe)',
+        'Only observations confirmed as applicable are listed below.',
+        buildObservationTable([
+          { label: 'Scale of Suspected Operations',               value: tb.obsOperationScale },
+          { label: 'Likelihood of Counterfeit Activity',          value: tb.obsCounterfeitLikelihood },
+          { label: 'Potential Brand Exposure',                    value: tb.obsBrandExposure },
+          { label: 'Enforcement Sensitivity (Political / Local)', value: tb.obsEnforcementSensitivity },
+          { label: 'Risk of Information Leakage',                 value: tb.obsLeakageRisk },
+          ...(tb.observationsCustomData || []).map((o: any) => ({
+            label: o.optionName || `Custom #${o.optionId}`,
+            value: o.text,
+          })),
+        ])
+      ),
+
+      // ── 6. Information Integrity & Risk Assessment ──────────────────────────
+      sectionBlock(
+        6, 'Information Integrity & Risk Assessment', null,
+        buildDataTable(
+          ['56%', '44%'],
+          ['Parameter', 'Assessment'],
+          [
+            row('Source Reliability (Internal Assessment)',  mapSourceReliability(tb.riskSourceReliability), 0),
+            row('Risk of Cross-Client Conflict',             mapRiskLevel(tb.riskClientConflict),            1),
+            row('Suitability for Immediate Action',          mapYesNo(tb.riskImmediateAction),               2),
+            row('Requirement for Controlled Validation',     mapYesNo(tb.riskControlledValidation),          3),
+            row('Risk of Premature Disclosure',              mapRiskLevel(tb.riskPrematureDisclosure),       4),
+          ]
+        )
+      ),
+
+      // ── 7. Preliminary Assessment ──────────────────────────────────────────
+      {
+        stack: [
+          sec(7, "True Buddy's Preliminary Assessment"),
+          assessmentBlock(
+            'Overall Assessment of Lead',
+            mapTrueBuddyAssessment(tb.assessmentOverall),
+            tb.assessmentRationale,
+            'Assessment Rationale'
+          ),
+        ],
+        unbreakable: true,
+        marginTop: 18,
+      },
+
+      // ── 8. Recommended Way Forward ─────────────────────────────────────────
+      sectionBlock(
+        8, 'Recommended Way Forward',
+        'Client-specific execution will be ring-fenced. Only selected recommendations are listed.',
+        buildCheckedList([
+          { label: 'Covert Intelligence Validation',         checked: tb.recCovertValidation },
+          { label: 'Evidential Test Purchase (ETP)',         checked: tb.recEtp },
+          { label: 'Controlled Market Reconnaissance',       checked: tb.recMarketReconnaissance },
+          { label: 'Enforcement Planning (Deferred)',        checked: tb.recEnforcementDeferred },
+          { label: 'Continued Monitoring',                   checked: tb.recContinuedMonitoring },
+          { label: 'Client-Specific Segregation Required',  checked: tb.recClientSegregation },
+        ])
+      ),
+
+      // ── 9. Confidentiality & Ring-Fencing Note ─────────────────────────────
+      {
+        stack: [
+          sec(9, 'Confidentiality & Ring-Fencing Note'),
+          {
+            text: tb.confidentialityNote ||
+              "This lead has been generated through True Buddy's proprietary intelligence mechanisms and may be relevant to more than one brand or client. All investigations, validations, and actions -- if approved -- will be strictly ring-fenced for the concerned client. No cross-sharing of intelligence, sources, or findings will occur across clients.",
+            fontSize: 9.5,
+            alignment: 'justify',
+            color: C_TEXT,
+            marginBottom: 15,
+          },
+        ],
+        unbreakable: true,
+        marginTop: 18,
+      },
+
+      // ── 10. Remarks ────────────────────────────────────────────────────────
+      {
+        stack: [
+          sec(10, 'Remarks'),
+          {
+            text: tb.remarks || '(No additional remarks provided.)',
+            fontSize: 9.5,
+            italics: !tb.remarks,
+            color: C_TEXT,
+            marginBottom: 15,
+          },
+        ],
+        unbreakable: true,
+        marginTop: 18,
+      },
+
+      // ── 11. Disclaimer ─────────────────────────────────────────────────────
+      buildNumberedDisclaimer(
+        11,
+        tb.customDisclaimer ||
+          'This preliminary assessment is based on internally generated intelligence and limited non-intrusive verification. Specific source details, identities, and methods have been deliberately withheld to preserve confidentiality and prevent information contamination. This document does not constitute a final investigative report or confirmation of infringement. Any further action will be undertaken only upon written client approval and under a client-specific scope of work.'
+      ),
+    ],
+  };
+};
+
+// ==========================================================================
+//  PUBLIC EXPORTS
+// ==========================================================================
+
+export const getPreReportDocDefinition = (data: PreReportPDFData) =>
+  data.leadType === 'CLIENT_LEAD'
     ? generateClientLeadPDF(data)
     : generateTrueBuddyLeadPDF(data);
-};
 
-// ✅ NEW - Open PDF in new browser tab (for preview)
 export const openPreReportInNewTab = (data: PreReportPDFData) => {
   try {
-    const isClientLead = data.leadType === 'CLIENT_LEAD';
-    const docDefinition = isClientLead
-      ? generateClientLeadPDF(data)
-      : generateTrueBuddyLeadPDF(data);
-
-    // Open PDF in new browser tab
-    pdfMake.createPdf(docDefinition).open();
-    
+    pdfMake.createPdf(getPreReportDocDefinition(data)).open();
     return { success: true };
   } catch (error) {
     console.error('PDF Preview Error:', error);
@@ -1461,14 +1055,8 @@ export const openPreReportInNewTab = (data: PreReportPDFData) => {
 
 export const exportPreReportToPDF = async (data: PreReportPDFData) => {
   try {
-    const isClientLead = data.leadType === 'CLIENT_LEAD';
-    const docDefinition = isClientLead
-      ? generateClientLeadPDF(data)
-      : generateTrueBuddyLeadPDF(data);
-
-    const fileName = `PreReport_${data.reportId}_${new Date().getTime()}.pdf`;
-    pdfMake.createPdf(docDefinition).download(fileName);
-
+    const fileName = `PreReport_${data.reportId}_${Date.now()}.pdf`;
+    pdfMake.createPdf(getPreReportDocDefinition(data)).download(fileName);
     return { success: true };
   } catch (error) {
     console.error('PDF Export Error:', error);

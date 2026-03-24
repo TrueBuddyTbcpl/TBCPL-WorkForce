@@ -58,7 +58,7 @@ export const Step7Assessment = ({
       {/* Overall Assessment */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-3">
-          Overall Assessment <span className="text-red-500">*</span>
+          Overall Assessment
         </label>
         <div className="space-y-2">
           {Object.values(AssessmentType).map((type) => (

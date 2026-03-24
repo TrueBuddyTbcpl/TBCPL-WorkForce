@@ -76,7 +76,7 @@ export const Step3TargetDetails = ({
       {/* Entity Name */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Entity Name <span className="text-red-500">*</span>
+          Entity Name
         </label>
         <input
           type="text"
@@ -92,7 +92,7 @@ export const Step3TargetDetails = ({
       {/* Suspect Name */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Suspect Name (if different)<span className="text-red-500">*</span>
+          Suspect Name (if different)
         </label>
         <input
           type="text"
@@ -108,7 +108,7 @@ export const Step3TargetDetails = ({
       {/* Contact Numbers */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Contact Numbers <span className="text-red-500">*</span>
+          Contact Numbers 
         </label>
         <input
           type="text"
@@ -124,7 +124,7 @@ export const Step3TargetDetails = ({
       {/* Address Line 1 */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Address Line 1 <span className="text-red-500">*</span>
+          Address Line 1 
         </label>
         <input
           type="text"
@@ -154,7 +154,7 @@ export const Step3TargetDetails = ({
       <div className="grid grid-cols-3 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            City <span className="text-red-500">*</span>
+            City 
           </label>
           <input
             type="text"
@@ -169,7 +169,7 @@ export const Step3TargetDetails = ({
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            State <span className="text-red-500">*</span>
+            State 
           </label>
           <input
             type="text"
@@ -184,7 +184,7 @@ export const Step3TargetDetails = ({
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Pincode <span className="text-red-500">*</span>
+            Pincode 
           </label>
           <input
             type="text"
@@ -244,7 +244,7 @@ export const Step3TargetDetails = ({
       {/* Product Details */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Product Details <span className="text-red-500">*</span>
+          Product Details 
         </label>
         <textarea
           {...register('productDetails')}
@@ -261,7 +261,7 @@ export const Step3TargetDetails = ({
       <div className="grid grid-cols-3 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Photos Provided <span className="text-red-500">*</span>
+            Photos Provided
           </label>
           <select
             {...register('photosProvided')}
@@ -277,7 +277,7 @@ export const Step3TargetDetails = ({
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Video Provided <span className="text-red-500">*</span>
+            Video Provided
           </label>
           <select
             {...register('videoProvided')}
@@ -293,7 +293,7 @@ export const Step3TargetDetails = ({
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Invoice Available <span className="text-red-500">*</span>
+            Invoice Available 
           </label>
           <select
             {...register('invoiceAvailable')}
@@ -311,7 +311,7 @@ export const Step3TargetDetails = ({
       {/* Source Narrative */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Source Narrative <span className="text-red-500">*</span>
+          Source Narrative 
         </label>
         <textarea
           {...register('sourceNarrative')}

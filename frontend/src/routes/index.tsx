@@ -16,13 +16,15 @@ import ResetPasswordPage from '../pages/ResetPasswordPage';
 import { EmployeePreReportList } from '../components/operations/dashboard/EmployeePreReportList';
 import { CreatePreReport } from '../components/operations/pre-report/CreatePreReport';
 import { EditPreReport } from '../components/operations/pre-report/EditPreReport';
-import { PreReportDetails } from '../components/operations/pre-report/PreReportDetails';
+import  PreReportDetails from '../components/operations/pre-report/PreReportDetails';
 import PreReportPreviewPage from '../components/operations/pre-report/PreReportPreviewPage';
 
 // ADD these 3 imports alongside existing imports
 import CreateReportPage from '../components/operations/report-create/CreateReportPage';
 import EditReportPage from '../components/operations/report-create/EditReportPage';
 import PreviewReportPage from '../components/operations/report-create/PreviewReportPage';
+import CreateProposalPage    from '../components/admin/proposal/CreateProposalPage';
+import ProposalPreviewPage   from '../components/admin/proposal/ProposalPreviewPage';
 
 
 // ✅ Import Auth Pages & Route Guards
@@ -111,20 +113,22 @@ const AdminProfileFormWrapper = () => {
 const AppRoutes = () => {
   const { user } = useAuthStore();
 
-  const getDefaultRoute = () => {
-    if (!user) return '/auth/login';
+const getDefaultRoute = () => {
+  if (!user) return '/auth/login';
 
-    // Field Associate → their own dashboard
-    if (user.roleName === 'FIELD_ASSOCIATE') return '/field-associate/dashboard';
+  if (user.roleName === 'FIELD_ASSOCIATE') return '/field-associate/dashboard';
 
-    // Redirect admins to admin dashboard
-    if (user.roleName === 'SUPER_ADMIN' || user.roleName === 'HR_MANAGER') {
-      return '/admin';
-    }
+  if (
+    user.roleName === 'SUPER_ADMIN' ||
+    user.roleName === 'ADMIN' ||        // ← ADD
+    user.roleName === 'HR_MANAGER'
+  ) return '/admin';
 
-    // Redirect regular users to operations dashboard
-    return '/operations/dashboard';
-  };
+  if (user.roleName === 'ASSOCIATE') return '/operations/dashboard';
+
+  return '/auth/login';
+};
+
   return (
     <Routes>
       {/* ==================== PUBLIC ROUTES ==================== */}
@@ -214,7 +218,7 @@ const AppRoutes = () => {
         path="/admin/clients"
         element={
           <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER']}>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN','ADMIN']}>
               <AdminDashboard />
             </RoleBasedRoute>
           </ProtectedRoute>
@@ -226,7 +230,7 @@ const AppRoutes = () => {
         path="/admin"
         element={
           <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER']}>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
               <AdminDashboard />
             </RoleBasedRoute>
           </ProtectedRoute>
@@ -237,7 +241,7 @@ const AppRoutes = () => {
         path="/admin/login-history"
         element={
           <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER']}>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
               <LoginHistoryPage />
             </RoleBasedRoute>
           </ProtectedRoute>
@@ -248,7 +252,7 @@ const AppRoutes = () => {
         path="/admin/login-attempts"
         element={
           <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['SUPER_ADMIN']}>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
               <LoginAttemptsPage />
             </RoleBasedRoute>
           </ProtectedRoute>
@@ -323,7 +327,7 @@ const AppRoutes = () => {
         path="/admin/loa"
         element={
           <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER', 'ADMIN']}>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN','ADMIN']}>
               <AdminDashboard />
             </RoleBasedRoute>
           </ProtectedRoute>
@@ -334,7 +338,7 @@ const AppRoutes = () => {
         path="/admin/loa/create"
         element={
           <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER', 'ADMIN']}>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN','ADMIN']}>
               <AdminDashboard />
             </RoleBasedRoute>
           </ProtectedRoute>
@@ -345,7 +349,7 @@ const AppRoutes = () => {
         path="/admin/loa/:id/edit"
         element={
           <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER', 'ADMIN']}>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
               <AdminDashboard />
             </RoleBasedRoute>
           </ProtectedRoute>
@@ -387,12 +391,57 @@ const AppRoutes = () => {
         path="/admin/finalreports"
         element={
           <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER']}>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
               <AdminDashboard />
             </RoleBasedRoute>
           </ProtectedRoute>
         }
       />
+
+<Route
+  path="/admin/proposals"
+  element={
+    <ProtectedRoute>
+      <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
+        <AdminDashboard />
+      </RoleBasedRoute>
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/admin/proposals/create"
+  element={
+    <ProtectedRoute>
+      <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
+        <CreateProposalPage />
+      </RoleBasedRoute>
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/admin/proposals/:id/edit"
+  element={
+    <ProtectedRoute>
+      <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
+        <CreateProposalPage />
+      </RoleBasedRoute>
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/admin/proposals/:id/preview"
+  element={
+    <ProtectedRoute>
+      <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
+        <ProposalPreviewPage />
+      </RoleBasedRoute>
+    </ProtectedRoute>
+  }
+/>
+
 
       {/* ✅ Change Password - Protected (All authenticated users) */}
       <Route
@@ -420,7 +469,7 @@ const AppRoutes = () => {
         path="/admin"
         element={
           <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER']}>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
               <AdminDashboard />
             </RoleBasedRoute>
           </ProtectedRoute>
@@ -431,7 +480,7 @@ const AppRoutes = () => {
         path="/admin/employee/:employeeId"
         element={
           <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['SUPER_ADMIN']}>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
               <EmployeeProfile />
             </RoleBasedRoute>
           </ProtectedRoute>
@@ -442,7 +491,7 @@ const AppRoutes = () => {
         path="/admin/employee-change-report"
         element={
           <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER']}>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
               <EmployeeChangeHistoryReport />
             </RoleBasedRoute>
           </ProtectedRoute>
@@ -516,7 +565,7 @@ const AppRoutes = () => {
         path="/admin/cases"
         element={
           <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER']}>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
               <AdminDashboard />
             </RoleBasedRoute>
           </ProtectedRoute>
@@ -527,7 +576,7 @@ const AppRoutes = () => {
         path="/admin/profiles"
         element={
           <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER']}>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
               <AdminDashboard />
             </RoleBasedRoute>
           </ProtectedRoute>
@@ -538,7 +587,7 @@ const AppRoutes = () => {
         path="/admin/pre-reports"
         element={
           <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER']}>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
               <AdminDashboard />
             </RoleBasedRoute>
           </ProtectedRoute>
@@ -549,7 +598,7 @@ const AppRoutes = () => {
         path="/admin/cases/:caseId"
         element={
           <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER']}>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
               <CaseDashboard isAdminView />
             </RoleBasedRoute>
           </ProtectedRoute>
@@ -561,7 +610,7 @@ const AppRoutes = () => {
         path="/admin/pre-report/create"
         element={
           <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER']}>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
               <CreatePreReport />
             </RoleBasedRoute>
           </ProtectedRoute>
@@ -573,7 +622,7 @@ const AppRoutes = () => {
         path="/admin/finalreport/create"
         element={
           <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER']}>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
               <CreateReportPage />
             </RoleBasedRoute>
           </ProtectedRoute>
@@ -584,7 +633,7 @@ const AppRoutes = () => {
         path="/admin/finalreport/:reportId/edit"
         element={
           <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER']}>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
               <EditReportPage />
             </RoleBasedRoute>
           </ProtectedRoute>
@@ -595,7 +644,7 @@ const AppRoutes = () => {
         path="/admin/finalreport/:reportId/preview"
         element={
           <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER']}>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
               <PreviewReportPage />
             </RoleBasedRoute>
           </ProtectedRoute>
@@ -607,7 +656,7 @@ const AppRoutes = () => {
         path="/admin/profile/create"
         element={
           <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER']}>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
               <AdminProfileFormWrapper />
             </RoleBasedRoute>
           </ProtectedRoute>
@@ -618,7 +667,7 @@ const AppRoutes = () => {
         path="/admin/profile-form"
         element={
           <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER']}>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
               <AdminProfileFormWrapper />
             </RoleBasedRoute>
           </ProtectedRoute>

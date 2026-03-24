@@ -25,10 +25,29 @@ export const useAuth = () => {
       if (response.success && response.data) {
         const { token, expiresIn, empId, email, fullName, departmentName, roleName } = response.data;
         login(token, { empId, email, fullName, departmentName, roleName }, expiresIn);
-        const isAdmin = roleName === 'SUPER_ADMIN' || roleName === 'HR_MANAGER';
-        navigate(isAdmin ? '/admin' : '/operations/dashboard', { replace: true });
+
+        // ── Role-based redirect after login ───────────────────────────────────
+        let redirectPath: string;
+
+        switch (roleName) {
+          case 'SUPER_ADMIN':
+          case 'ADMIN':
+          case 'HR_MANAGER':          // ← FIX: was 'ASSOCIATE' (wrong)
+            redirectPath = '/admin';
+            break;
+          case 'FIELD_ASSOCIATE':
+            redirectPath = '/field-associate/dashboard';
+            break;
+          case 'ASSOCIATE':
+          default:
+            redirectPath = '/operations/dashboard';
+            break;
+        }
+
+        navigate(redirectPath, { replace: true });
       }
     },
+
 
     // ← REPLACE your existing onError:
     onError: (error: any) => {
@@ -114,6 +133,6 @@ export const useAuth = () => {
     loginError: loginMutation.error ? getErrorMessage(loginMutation.error) : null,
     resetLoginError: loginMutation.reset,
     resendVerification: resendMutation.mutate,
-  isResending: resendMutation.isPending,
+    isResending: resendMutation.isPending,
   };
 };

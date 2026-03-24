@@ -1,14 +1,15 @@
 import { AlertTriangle, Home, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
+import { useDashboardPath } from "../hooks/useDashboardPath"; // ← 1. IMPORT
 
 export default function NotFound() {
   const navigate = useNavigate();
+  const dashboardPath = useDashboardPath(); // ← 2. GET ROLE-BASED PATH
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-100 px-4">
       <div className="max-w-lg w-full bg-white border border-slate-200 rounded-xl shadow-sm p-8 text-center">
-        
+
         {/* Icon */}
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-50">
           <AlertTriangle className="h-7 w-7 text-red-600" />
@@ -39,7 +40,7 @@ export default function NotFound() {
           </button>
 
           <button
-            onClick={() => navigate("/operations/dashboard")}
+            onClick={() => navigate(dashboardPath, { replace: true })} // ← 3. USE IT
             className="inline-flex items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition"
           >
             <Home className="h-4 w-4" />
@@ -49,7 +50,7 @@ export default function NotFound() {
 
         {/* Footer */}
         <p className="mt-6 text-xs text-slate-400">
-          © {new Date().getFullYear()} RENU Enterprise Systems
+          © {new Date().getFullYear()} TBCPL Workforce Systems
         </p>
       </div>
     </div>

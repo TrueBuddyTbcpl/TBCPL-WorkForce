@@ -68,7 +68,7 @@ export const Step9Remarks = ({
       {/* Remarks */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Remarks <span className="text-red-500">*</span>
+          Remarks 
         </label>
         <textarea
           {...register('remarks')}

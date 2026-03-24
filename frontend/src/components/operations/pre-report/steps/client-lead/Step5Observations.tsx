@@ -4,16 +4,54 @@ import { Plus, Trash2 } from 'lucide-react';
 import { useAuthStore } from '../../../../../stores/authStore';
 import apiClient from '../../../../../services/api/apiClient';
 import { toast } from 'sonner';
-
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
-import { useQueryClient } from '@tanstack/react-query'; // ✅ ADD THIS
+import { useQueryClient } from '@tanstack/react-query';
 import { useUpdateStep } from '../../../../../hooks/prereport/useUpdateStep';
 import { clientLeadStep5Schema } from '../../../../../schemas/prereport.schemas';
 import { LeadType } from '../../../../../utils/constants';
 import type { ClientLeadStep5Input } from '../../../../../schemas/prereport.schemas';
 import type { ClientLeadData } from '../../../../../types/prereport.types';
+
+
+// ── Reusable Yes/No Toggle ─────────────────────────────────────────────────
+interface YesNoToggleProps {
+  value: string | null | undefined;
+  onChange: (val: string) => void;
+  error?: string;
+}
+
+const YesNoToggle = ({ value, onChange, error }: YesNoToggleProps) => (
+  <div className="space-y-1">
+    <div className="flex gap-3">
+      <button
+        type="button"
+        onClick={() => onChange('YES')}
+        className={`flex-1 py-2.5 rounded-lg border-2 text-sm font-semibold transition-all ${
+          value === 'YES'
+            ? 'bg-green-600 border-green-600 text-white shadow-sm'
+            : 'bg-white border-gray-300 text-gray-600 hover:border-green-400 hover:text-green-600'
+        }`}
+      >
+        ✓ Yes
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange('NO')}
+        className={`flex-1 py-2.5 rounded-lg border-2 text-sm font-semibold transition-all ${
+          value === 'NO'
+            ? 'bg-red-500 border-red-500 text-white shadow-sm'
+            : 'bg-white border-gray-300 text-gray-600 hover:border-red-400 hover:text-red-500'
+        }`}
+      >
+        ✗ No
+      </button>
+    </div>
+    {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+  </div>
+);
+
 
 interface Step5ObservationsProps {
   prereportId: number;
@@ -24,6 +62,7 @@ interface Step5ObservationsProps {
   onSkip: () => void;
 }
 
+
 export const Step5Observations = ({
   prereportId,
   reportId,
@@ -33,23 +72,23 @@ export const Step5Observations = ({
   onSkip,
 }: Step5ObservationsProps) => {
   const updateMutation = useUpdateStep();
-  const queryClient = useQueryClient(); // ✅ ADD THIS
-  // ── Custom Observations State ──────────────────────────────────────────────
+  const queryClient = useQueryClient();
   const { user } = useAuthStore();
+
   const canDelete =
     (user?.roleName === 'ADMIN' || user?.roleName === 'SUPER_ADMIN') &&
     user?.departmentName === 'Admin';
 
   interface CustomOption { id: number; optionName: string; }
 
-  const [customOptions, setCustomOptions] = useState<CustomOption[]>([]);
-  const [loadingOpts, setLoadingOpts] = useState(true);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newOptName, setNewOptName] = useState('');
-  const [addingOpt, setAddingOpt] = useState(false);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [customOptions, setCustomOptions]   = useState<CustomOption[]>([]);
+  const [loadingOpts, setLoadingOpts]       = useState(true);
+  const [showAddForm, setShowAddForm]       = useState(false);
+  const [newOptName, setNewOptName]         = useState('');
+  const [addingOpt, setAddingOpt]           = useState(false);
+  const [deletingId, setDeletingId]         = useState<number | null>(null);
 
-  // Per-option text, keyed by optionId
+  // Custom observations — store YES / NO per optionId
   const [customObsData, setCustomObsData] = useState<Record<number, string>>(() => {
     const map: Record<number, string> = {};
     data?.observationsCustomData?.forEach((e: any) => {
@@ -59,7 +98,8 @@ export const Step5Observations = ({
   });
 
   useEffect(() => {
-    apiClient.get('/operation/prereport/custom-options?stepNumber=5')
+    apiClient
+      .get('/operation/prereport/custom-options?stepNumber=5&leadType=CLIENT_LEAD')
       .then(res => setCustomOptions(res.data.data ?? []))
       .catch(() => toast.error('Failed to load custom options'))
       .finally(() => setLoadingOpts(false));
@@ -72,6 +112,7 @@ export const Step5Observations = ({
       const res = await apiClient.post('/operation/prereport/custom-options', {
         stepNumber: 5,
         optionName: newOptName.trim(),
+        leadType: 'CLIENT_LEAD',
       });
       setCustomOptions(prev => [...prev, res.data.data]);
       setNewOptName('');
@@ -90,11 +131,7 @@ export const Step5Observations = ({
     try {
       await apiClient.delete(`/operation/prereport/custom-options/${id}`);
       setCustomOptions(prev => prev.filter(o => o.id !== id));
-      setCustomObsData(prev => {
-        const next = { ...prev };
-        delete next[id];
-        return next;
-      });
+      setCustomObsData(prev => { const n = { ...prev }; delete n[id]; return n; });
       toast.success('Observation deleted');
     } catch {
       toast.error('Failed to delete option');
@@ -103,19 +140,18 @@ export const Step5Observations = ({
     }
   };
 
-
   const {
-    register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<ClientLeadStep5Input>({
     resolver: zodResolver(clientLeadStep5Schema),
     defaultValues: {
-      obsIdentifiableTarget: data?.obsIdentifiableTarget || '',
-      obsTraceability: data?.obsTraceability || '',
-      obsProductVisibility: data?.obsProductVisibility || '',
+      obsIdentifiableTarget:      data?.obsIdentifiableTarget      || '',
+      obsTraceability:            data?.obsTraceability            || '',
+      obsProductVisibility:       data?.obsProductVisibility       || '',
       obsCounterfeitingIndications: data?.obsCounterfeitingIndications || '',
-      obsEvidentiary_gaps: data?.obsEvidentiary_gaps || '',
+      obsEvidentiary_gaps:        data?.obsEvidentiary_gaps        || '',
     },
   });
 
@@ -134,116 +170,104 @@ export const Step5Observations = ({
         leadType: LeadType.CLIENT_LEAD,
         reportId,
       });
-
-      // ✅ Invalidate the prereport query so sidebar re-fetches fresh step statuses
       await queryClient.invalidateQueries({ queryKey: ['prereport', prereportId] });
-
       onNext();
     } catch (error) {
       console.error('Error saving step:', error);
     }
   };
 
+  // Fixed observation fields config
+  const fixedObservations = [
+    {
+      name: 'obsIdentifiableTarget' as const,
+      label: 'Availability of Identifiable Target',
+    },
+    {
+      name: 'obsTraceability' as const,
+      label: 'Traceability of Entity / Contact',
+    },
+    {
+      name: 'obsProductVisibility' as const,
+      label: 'Product Visibility / Market Presence',
+    },
+    {
+      name: 'obsCounterfeitingIndications' as const,
+      label: 'Indications of Counterfeiting / Lookalike',
+    },
+    {
+      name: 'obsEvidentiary_gaps' as const,
+      label: 'Evidentiary Gaps Identified',
+    },
+  ];
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      {/* Identifiable Target */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Availability of Identifiable Target <span className="text-red-500">*</span>
-        </label>
-        <textarea
-          {...register('obsIdentifiableTarget')}
-          rows={4}
-          placeholder="Observations about target identification"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        />
-        {errors.obsIdentifiableTarget && (
-          <p className="text-red-500 text-sm mt-1">{errors.obsIdentifiableTarget.message}</p>
-        )}
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-0">
+
+      {/* ── Fixed Observation Fields as Yes/No Table ───────────────────── */}
+      <div className="rounded-xl border border-gray-200 overflow-hidden mb-6">
+        {/* Table Header */}
+        <div className="grid grid-cols-[1fr_180px] bg-gray-50 border-b border-gray-200">
+          <div className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            Observation
+          </div>
+          <div className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide text-center">
+            Response
+          </div>
+        </div>
+
+        {/* Fixed Rows */}
+        {fixedObservations.map((obs, idx) => (
+          <div
+            key={obs.name}
+            className={`grid grid-cols-[1fr_180px] items-center border-b border-gray-100 last:border-b-0 ${
+              idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'
+            }`}
+          >
+            {/* Label */}
+            <div className="px-4 py-4">
+              <span className="text-sm font-medium text-gray-700">{obs.label}</span>
+            </div>
+
+            {/* Yes/No Toggle */}
+            <div className="px-4 py-3">
+              <Controller
+                name={obs.name}
+                control={control}
+                render={({ field }) => (
+                  <YesNoToggle
+                    value={field.value}
+                    onChange={field.onChange}
+                    error={errors[obs.name]?.message}
+                  />
+                )}
+              />
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* Traceability */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Traceability of Entity / Contact <span className="text-red-500">*</span>
-        </label>
-        <textarea
-          {...register('obsTraceability')}
-          rows={4}
-          placeholder="Observations about product traceability"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        />
-        {errors.obsTraceability && (
-          <p className="text-red-500 text-sm mt-1">{errors.obsTraceability.message}</p>
-        )}
-      </div>
-
-      {/* Product Visibility */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Product Visibility / Market Presence <span className="text-red-500">*</span>
-        </label>
-        <textarea
-          {...register('obsProductVisibility')}
-          rows={4}
-          placeholder="Observations about product visibility in market"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        />
-        {errors.obsProductVisibility && (
-          <p className="text-red-500 text-sm mt-1">{errors.obsProductVisibility.message}</p>
-        )}
-      </div>
-
-      {/* Counterfeiting Indications */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Indications of Counterfeiting / Lookalike <span className="text-red-500">*</span>
-        </label>
-        <textarea
-          {...register('obsCounterfeitingIndications')}
-          rows={4}
-          placeholder="Observations about counterfeiting indicators"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        />
-        {errors.obsCounterfeitingIndications && (
-          <p className="text-red-500 text-sm mt-1">{errors.obsCounterfeitingIndications.message}</p>
-        )}
-      </div>
-
-      {/* Evidentiary Gaps */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Evidentiary Gaps Identified <span className="text-red-500">*</span>
-        </label>
-        <textarea
-          {...register('obsEvidentiary_gaps')}
-          rows={4}
-          placeholder="Observations about gaps in evidence"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        />
-        {errors.obsEvidentiary_gaps && (
-          <p className="text-red-500 text-sm mt-1">{errors.obsEvidentiary_gaps.message}</p>
-        )}
-      </div>
-
-      {/* ── Custom Observation Fields ─────────────────────────────────────── */}
-      <div className="border-t border-dashed border-gray-300 pt-5">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-semibold text-gray-600">Custom Observations</p>
+      {/* ── Custom Observation Fields ──────────────────────────────────────── */}
+      <div className="rounded-xl border border-dashed border-indigo-200 overflow-hidden mb-6">
+        {/* Custom Section Header */}
+        <div className="flex items-center justify-between px-4 py-3 bg-indigo-50 border-b border-indigo-100">
+          <span className="text-xs font-semibold text-indigo-600 uppercase tracking-wide">
+            Custom Observations
+          </span>
           <button
             type="button"
             onClick={() => setShowAddForm(s => !s)}
-            className="flex items-center gap-1 text-xs px-3 py-1.5 bg-indigo-50
-                       text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-100"
+            className="flex items-center gap-1 text-xs px-3 py-1.5 bg-white
+                       text-indigo-600 border border-indigo-300 rounded-lg hover:bg-indigo-100 transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
-            Add Custom Observation
+            Add Observation
           </button>
         </div>
 
-        {/* Inline add form */}
+        {/* Inline Add Form */}
         {showAddForm && (
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 px-4 py-3 bg-white border-b border-indigo-100">
             <input
               type="text"
               value={newOptName}
@@ -272,58 +296,75 @@ export const Step5Observations = ({
           </div>
         )}
 
-        {/* Loading state */}
+        {/* Loading */}
         {loadingOpts && (
-          <div className="flex items-center gap-2 text-sm text-gray-400 py-2">
+          <div className="flex items-center gap-2 text-sm text-gray-400 px-4 py-4">
             <Loader2 className="w-4 h-4 animate-spin" /> Loading custom observations...
           </div>
         )}
 
-        {/* Empty state */}
+        {/* Empty State */}
         {!loadingOpts && customOptions.length === 0 && !showAddForm && (
-          <p className="text-xs text-gray-400 italic py-1">
-            No custom observations yet. Click "Add Custom Observation" to create one.
+          <p className="text-xs text-gray-400 italic px-4 py-4">
+            No custom observations yet. Click "Add Observation" to create one.
           </p>
         )}
 
-        {/* Custom observation textareas — same layout as fixed fields above */}
-        {!loadingOpts && customOptions.map(opt => (
-          <div key={opt.id} className="mb-4">
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-medium text-gray-700">
-                {opt.optionName}
-              </label>
-              {canDelete && (
-                <button
-                  type="button"
-                  onClick={() => handleDeleteOption(opt.id)}
-                  disabled={deletingId === opt.id}
-                  className="p-1 text-gray-300 hover:text-red-500 transition-colors"
-                  title="Delete observation (Admin only)"
-                >
-                  {deletingId === opt.id
-                    ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    : <Trash2 className="w-3.5 h-3.5" />
-                  }
-                </button>
-              )}
+        {/* Custom Rows — same Yes/No table layout */}
+        {!loadingOpts && customOptions.length > 0 && (
+          <>
+            {/* Sub-header */}
+            <div className="grid grid-cols-[1fr_180px] bg-indigo-50/60 border-b border-indigo-100">
+              <div className="px-4 py-2 text-xs font-semibold text-indigo-400 uppercase tracking-wide">
+                Custom Field
+              </div>
+              <div className="px-4 py-2 text-xs font-semibold text-indigo-400 uppercase tracking-wide text-center">
+                Response
+              </div>
             </div>
-            <textarea
-              value={customObsData[opt.id] ?? ''}
-              onChange={e =>
-                setCustomObsData(prev => ({ ...prev, [opt.id]: e.target.value }))
-              }
-              rows={4}
-              placeholder={`Enter observations for ${opt.optionName}`}
-              className="w-full px-3 py-2 border border-indigo-200 bg-indigo-50 rounded-lg
-                         focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-        ))}
+
+            {customOptions.map((opt, idx) => (
+              <div
+                key={opt.id}
+                className={`grid grid-cols-[1fr_180px] items-center border-b border-indigo-50 last:border-b-0 ${
+                  idx % 2 === 0 ? 'bg-white' : 'bg-indigo-50/20'
+                }`}
+              >
+                {/* Label + Delete */}
+                <div className="px-4 py-4 flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium text-gray-700">{opt.optionName}</span>
+                  {canDelete && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteOption(opt.id)}
+                      disabled={deletingId === opt.id}
+                      className="p-1 text-gray-300 hover:text-red-500 transition-colors flex-shrink-0"
+                      title="Delete (Admin only)"
+                    >
+                      {deletingId === opt.id
+                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        : <Trash2 className="w-3.5 h-3.5" />
+                      }
+                    </button>
+                  )}
+                </div>
+
+                {/* Yes/No Toggle */}
+                <div className="px-4 py-3">
+                  <YesNoToggle
+                    value={customObsData[opt.id] ?? ''}
+                    onChange={val =>
+                      setCustomObsData(prev => ({ ...prev, [opt.id]: val }))
+                    }
+                  />
+                </div>
+              </div>
+            ))}
+          </>
+        )}
       </div>
 
-
-      {/* Actions */}
+      {/* ── Actions ───────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
         <button
           type="button"
@@ -333,11 +374,10 @@ export const Step5Observations = ({
           <ArrowLeft className="w-4 h-4" />
           Previous
         </button>
-        {/* Skip Button */}
         <button
           type="button"
           onClick={onSkip}
-          className="px-6 py-3 border-2 border-yellow-400 text-yellow-700 font-medium rounded-lg hover:bg-yellow-50 transition-colors"
+          className="px-6 py-2 border-2 border-yellow-400 text-yellow-700 font-medium rounded-lg hover:bg-yellow-50 transition-colors"
         >
           Skip Step
         </button>

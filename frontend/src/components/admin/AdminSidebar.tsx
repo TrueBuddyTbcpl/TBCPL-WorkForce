@@ -18,7 +18,7 @@ import {
 
 
 
-export type ViewMode = 'employees' | 'cases' | 'profiles' | 'prereports' | 'clients' | 'finalreports' | 'loa';
+export type ViewMode = 'employees' | 'cases' | 'profiles' | 'prereports' | 'clients' | 'finalreports' | 'loa' | 'proposals';
 
 
 
@@ -201,13 +201,25 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
             <button
               onClick={() => navigate('/admin/loa')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition font-medium ${viewMode === 'loa'
-                  ? 'bg-blue-50 text-blue-600 border-2 border-blue-600'
-                  : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                ? 'bg-blue-50 text-blue-600 border-2 border-blue-600'
+                : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
                 }`}
             >
               <FileSignature className="w-5 h-5" />
               Authority Letters
             </button>
+
+            <button
+              onClick={() => navigate('/admin/proposals')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition font-medium ${viewMode === 'proposals'
+                  ? 'bg-blue-50 text-blue-600 border-2 border-blue-600'
+                  : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                }`}
+            >
+              <FileText className="w-5 h-5" />
+              Proposals
+            </button>
+
 
           </div>
         </div>

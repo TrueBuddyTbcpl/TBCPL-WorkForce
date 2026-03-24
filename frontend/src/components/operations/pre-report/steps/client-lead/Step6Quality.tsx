@@ -33,7 +33,7 @@ export const Step6Quality = ({
   } = useForm<ClientLeadStep6Input>({
     resolver: zodResolver(clientLeadStep6Schema),
     defaultValues: {
-      qaCompleteness: data?.qaCompleteness || QACompleteness.INCOMPLETE,
+      qaCompleteness: data?.qaCompleteness || QACompleteness.INCOMPLETED,
       qaAccuracy: data?.qaAccuracy || QAAccuracy.UNCERTAIN,
       qaIndependentInvestigation: data?.qaIndependentInvestigation ,
       qaPriorConfrontation: data?.qaPriorConfrontation ,
@@ -61,7 +61,7 @@ export const Step6Quality = ({
       {/* Completeness */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Completeness of Initial Information <span className="text-red-500">*</span>
+          Completeness of Initial Information 
         </label>
         <select
           {...register('qaCompleteness')}
@@ -81,7 +81,7 @@ export const Step6Quality = ({
       {/* Accuracy */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Accuracy of Case Description (prima facie) <span className="text-red-500">*</span>
+          Accuracy of Case Description (prima facie) 
         </label>
         <select
           {...register('qaAccuracy')}
@@ -101,7 +101,7 @@ export const Step6Quality = ({
       {/* Independent Investigation */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Any Independent Client Investigation Conducted <span className="text-red-500">*</span>
+          Any Independent Client Investigation Conducted 
         </label>
         <select
           {...register('qaIndependentInvestigation')}
@@ -121,7 +121,7 @@ export const Step6Quality = ({
       {/* Prior Confrontation */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Any Prior Confrontation with Seller / Suspect <span className="text-red-500">*</span>
+          Any Prior Confrontation with Seller / Suspect 
         </label>
         <select
           {...register('qaPriorConfrontation')}
@@ -141,7 +141,7 @@ export const Step6Quality = ({
       {/* Contamination Risk */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Risk of Information Contamination <span className="text-red-500">*</span>
+          Risk of Information Contamination 
         </label>
         <select
           {...register('qaContaminationRisk')}
