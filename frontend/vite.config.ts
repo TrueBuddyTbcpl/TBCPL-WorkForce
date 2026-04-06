@@ -23,4 +23,7 @@ export default defineConfig(({ mode }) => ({    // ✅ function form, receives m
     outDir: 'dist',
     sourcemap: mode !== 'production',
   },
+  optimizeDeps: {
+    include: ['pdfmake/build/pdfmake', 'pdfmake/build/vfs_fonts'],
+  },
 }))                                             // ✅ closing )) not });

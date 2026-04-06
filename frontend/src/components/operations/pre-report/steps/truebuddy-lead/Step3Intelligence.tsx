@@ -2,18 +2,17 @@
 import React from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import type {
-  TrueBuddyLeadStep3Input,
-} from '../../../../../schemas/prereport.schemas';
-import {trueBuddyLeadStep3Schema} from '../../../../../schemas/prereport.schemas';
+import type { TrueBuddyLeadStep3Input } from '../../../../../schemas/prereport.schemas';
+import { trueBuddyLeadStep3Schema } from '../../../../../schemas/prereport.schemas';
 import type { TrueBuddyLeadData } from '../../../../../types/prereport.types';
 import {
   IntelNature,
   SuspectedActivity,
   ProductCategory,
-  SupplyChainStage,
-  YesNoUnknown,
+  YesNo,
 } from '../../../../../utils/constants';
+
+
 
 interface Step3Props {
   data: TrueBuddyLeadData;
@@ -22,20 +21,33 @@ interface Step3Props {
   onSkip: () => void;
 }
 
-const TrueBuddyStep3Intelligence: React.FC<Step3Props> = ({ data, onNext, onBack,onSkip }) => {
+
+
+const TrueBuddyStep3Intelligence: React.FC<Step3Props> = ({ data, onNext, onBack, onSkip }) => {
   const {
     control,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<TrueBuddyLeadStep3Input>({
     resolver: zodResolver(trueBuddyLeadStep3Schema),
     defaultValues: {
-      intelNature: data.intelNature || IntelNature.MANUFACTURING,
-      suspectedActivity: data.suspectedActivity || SuspectedActivity.COUNTERFEITING,
-      productSegment: data.productSegment || ProductCategory.CROP_PROTECTION,
-      supplyChainStage: data.supplyChainStage || SupplyChainStage.UPSTREAM,
+      intelNature:                  data.intelNature                 || IntelNature.MARKET_INFORMATION,
+      intelNatureCustomText:        data.intelNatureCustomText        || '',        // ← CHANGED
+      suspectedActivity:            data.suspectedActivity            || SuspectedActivity.COUNTERFEITING,
+      suspectedActivityCustomText:  data.suspectedActivityCustomText  || '',        // ← CHANGED
+      productSegment:               data.productSegment               || ProductCategory.CROP_PROTECTION,
+      productSegmentCustomText:     data.productSegmentCustomText     || '',        // ← CHANGED
+      repeatIntelligence:           (data.repeatIntelligence as string) || undefined,
+      multiBrandRisk:               (data.multiBrandRisk as string)     || undefined,
     },
   });
+
+
+  const watchIntelNature       = watch('intelNature');
+  const watchSuspectedActivity = watch('suspectedActivity');
+  const watchProductSegment    = watch('productSegment');
+
 
   const onSubmit = async (formData: TrueBuddyLeadStep3Input) => {
     try {
@@ -45,6 +57,13 @@ const TrueBuddyStep3Intelligence: React.FC<Step3Props> = ({ data, onNext, onBack
     }
   };
 
+
+  const inputClass = (hasError: boolean) =>
+    `w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+      hasError ? 'border-red-500' : 'border-gray-300'
+    }`;
+
+
   return (
     <div className="space-y-6">
       <div className="bg-white shadow-sm rounded-lg p-6">
@@ -52,22 +71,20 @@ const TrueBuddyStep3Intelligence: React.FC<Step3Props> = ({ data, onNext, onBack
           Step 3: High-Level Lead Description (Sanitised)
         </h2>
 
+
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {/* Intelligence Nature */}
+
+
+          {/* ── Intelligence Nature ──────────────────────────────────────── */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Intelligence Nature *
+              Intelligence Nature
             </label>
             <Controller
               name="intelNature"
               control={control}
               render={({ field }) => (
-                <select
-                  {...field}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    errors.intelNature ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                >
+                <select {...field} className={inputClass(!!errors.intelNature)}>
                   <option value="">Select Intelligence Nature</option>
                   {Object.values(IntelNature).map((nature) => (
                     <option key={nature} value={nature}>
@@ -83,23 +100,41 @@ const TrueBuddyStep3Intelligence: React.FC<Step3Props> = ({ data, onNext, onBack
             <p className="mt-1 text-sm text-gray-500">
               Specify the nature of intelligence received
             </p>
+            {watchIntelNature === IntelNature.CUSTOM && (
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Intel Nature (Custom)
+                </label>
+                <Controller
+                  name="intelNatureCustomText"                              // ← CHANGED
+                  control={control}
+                  render={({ field }) => (
+                    <input
+                      type="text"                                           // ← CHANGED
+                      {...field}
+                      placeholder="Describe custom intelligence nature"    // ← CHANGED
+                      className={inputClass(!!errors.intelNatureCustomText)}
+                    />
+                  )}
+                />
+                {errors.intelNatureCustomText && (
+                  <p className="mt-1 text-sm text-red-600">{errors.intelNatureCustomText.message}</p>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Suspected Activity */}
+
+          {/* ── Suspected Activity ───────────────────────────────────────── */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Suspected Activity *
+              Suspected Activity
             </label>
             <Controller
               name="suspectedActivity"
               control={control}
               render={({ field }) => (
-                <select
-                  {...field}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    errors.suspectedActivity ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                >
+                <select {...field} className={inputClass(!!errors.suspectedActivity)}>
                   <option value="">Select Suspected Activity</option>
                   {Object.values(SuspectedActivity).map((activity) => (
                     <option key={activity} value={activity}>
@@ -115,23 +150,41 @@ const TrueBuddyStep3Intelligence: React.FC<Step3Props> = ({ data, onNext, onBack
             <p className="mt-1 text-sm text-gray-500">
               Type of suspected illegal activity
             </p>
+            {watchSuspectedActivity === SuspectedActivity.CUSTOM && (
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Suspected Activity (Custom)
+                </label>
+                <Controller
+                  name="suspectedActivityCustomText"                        // ← CHANGED
+                  control={control}
+                  render={({ field }) => (
+                    <input
+                      type="text"                                           // ← CHANGED
+                      {...field}
+                      placeholder="Describe custom suspected activity"     // ← CHANGED
+                      className={inputClass(!!errors.suspectedActivityCustomText)}
+                    />
+                  )}
+                />
+                {errors.suspectedActivityCustomText && (
+                  <p className="mt-1 text-sm text-red-600">{errors.suspectedActivityCustomText.message}</p>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Product Segment */}
+
+          {/* ── Product Segment ──────────────────────────────────────────── */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Product Segment *
+              Product Segment
             </label>
             <Controller
               name="productSegment"
               control={control}
               render={({ field }) => (
-                <select
-                  {...field}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    errors.productSegment ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                >
+                <select {...field} className={inputClass(!!errors.productSegment)}>
                   <option value="">Select Product Segment</option>
                   {Object.values(ProductCategory).map((segment) => (
                     <option key={segment} value={segment}>
@@ -147,51 +200,45 @@ const TrueBuddyStep3Intelligence: React.FC<Step3Props> = ({ data, onNext, onBack
             <p className="mt-1 text-sm text-gray-500">
               Product category affected by this intelligence
             </p>
-          </div>
-
-          {/* Supply Chain Stage */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Supply Chain Stage *
-            </label>
-            <Controller
-              name="supplyChainStage"
-              control={control}
-              render={({ field }) => (
-                <select
-                  {...field}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    errors.supplyChainStage ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                >
-                  <option value="">Select Supply Chain Stage</option>
-                  {Object.values(SupplyChainStage).map((stage) => (
-                    <option key={stage} value={stage}>
-                      {stage.replace(/_/g, ' ')}
-                    </option>
-                  ))}
-                </select>
-              )}
-            />
-            {errors.supplyChainStage && (
-              <p className="mt-1 text-sm text-red-600">{errors.supplyChainStage.message}</p>
+            {watchProductSegment === ProductCategory.CUSTOM && (
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Product Segment (Custom)
+                </label>
+                <Controller
+                  name="productSegmentCustomText"                           // ← CHANGED
+                  control={control}
+                  render={({ field }) => (
+                    <input
+                      type="text"                                           // ← CHANGED
+                      {...field}
+                      placeholder="Describe custom product segment"        // ← CHANGED
+                      className={inputClass(!!errors.productSegmentCustomText)}
+                    />
+                  )}
+                />
+                {errors.productSegmentCustomText && (
+                  <p className="mt-1 text-sm text-red-600">{errors.productSegmentCustomText.message}</p>
+                )}
+              </div>
             )}
-            <p className="mt-1 text-sm text-gray-500">
-              Stage in supply chain where activity is suspected
-            </p>
           </div>
 
-          {/* Repeat Intelligence */}
+
+          {/* ❌ Supply Chain Stage — REMOVED ENTIRELY */}
+
+
+          {/* ── Repeat Intelligence ──────────────────────────────────────── */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Repeat Intelligence *
+              Repeat Intelligence
             </label>
             <Controller
               name="repeatIntelligence"
               control={control}
               render={({ field }) => (
                 <div className="space-y-2">
-                  {Object.values(YesNoUnknown).map((option) => (
+                  {Object.values(YesNo).map((option) => (
                     <label key={option} className="flex items-center">
                       <input
                         type="radio"
@@ -200,9 +247,7 @@ const TrueBuddyStep3Intelligence: React.FC<Step3Props> = ({ data, onNext, onBack
                         checked={field.value === option}
                         className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-2 focus:ring-blue-500"
                       />
-                      <span className="ml-2 text-sm text-gray-700">
-                        {option}
-                      </span>
+                      <span className="ml-2 text-sm text-gray-700">{option}</span>
                     </label>
                   ))}
                 </div>
@@ -216,17 +261,18 @@ const TrueBuddyStep3Intelligence: React.FC<Step3Props> = ({ data, onNext, onBack
             </p>
           </div>
 
-          {/* Multi-Brand Risk */}
+
+          {/* ── Multi-Brand Risk ─────────────────────────────────────────── */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Multi-Brand Risk *
+              Multi-Brand Risk
             </label>
             <Controller
               name="multiBrandRisk"
               control={control}
               render={({ field }) => (
                 <div className="space-y-2">
-                  {Object.values(YesNoUnknown).map((option) => (
+                  {Object.values(YesNo).map((option) => (
                     <label key={option} className="flex items-center">
                       <input
                         type="radio"
@@ -235,9 +281,7 @@ const TrueBuddyStep3Intelligence: React.FC<Step3Props> = ({ data, onNext, onBack
                         checked={field.value === option}
                         className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-2 focus:ring-blue-500"
                       />
-                      <span className="ml-2 text-sm text-gray-700">
-                        {option}
-                      </span>
+                      <span className="ml-2 text-sm text-gray-700">{option}</span>
                     </label>
                   ))}
                 </div>
@@ -251,7 +295,8 @@ const TrueBuddyStep3Intelligence: React.FC<Step3Props> = ({ data, onNext, onBack
             </p>
           </div>
 
-          {/* Form Actions */}
+
+          {/* ── Form Actions ─────────────────────────────────────────────── */}
           <div className="flex justify-between pt-6 border-t">
             <button
               type="button"
@@ -260,14 +305,13 @@ const TrueBuddyStep3Intelligence: React.FC<Step3Props> = ({ data, onNext, onBack
             >
               Back
             </button>
-            {/* Skip Button */}
-        <button
-          type="button"
-          onClick={onSkip}
-          className="px-6 py-3 border-2 border-yellow-400 text-yellow-700 font-medium rounded-lg hover:bg-yellow-50 transition-colors"
-        >
-          Skip Step
-        </button>
+            <button
+              type="button"
+              onClick={onSkip}
+              className="px-6 py-3 border-2 border-yellow-400 text-yellow-700 font-medium rounded-lg hover:bg-yellow-50 transition-colors"
+            >
+              Skip Step
+            </button>
             <button
               type="submit"
               disabled={isSubmitting}
@@ -279,21 +323,13 @@ const TrueBuddyStep3Intelligence: React.FC<Step3Props> = ({ data, onNext, onBack
         </form>
       </div>
 
-      {/* Info Box */}
+
+      {/* ── Info Box ─────────────────────────────────────────────────────── */}
       <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
         <div className="flex">
           <div className="flex-shrink-0">
-            <svg
-              className="h-5 w-5 text-amber-400"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                clipRule="evenodd"
-              />
+            <svg className="h-5 w-5 text-amber-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
             </svg>
           </div>
           <div className="ml-3">
@@ -310,5 +346,6 @@ const TrueBuddyStep3Intelligence: React.FC<Step3Props> = ({ data, onNext, onBack
     </div>
   );
 };
+
 
 export default TrueBuddyStep3Intelligence;

@@ -1,24 +1,92 @@
+import { useMemo, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Edit, Download, Loader2,
   ChevronDown, ChevronUp, Mail, Eye,
-  AlertTriangle, XCircle,               // ← ADD for banners
+  AlertTriangle, XCircle,
 } from 'lucide-react';
-import { useState } from 'react';
 import { usePreReportDetail } from '../../../hooks/prereport/usePreReportDetail';
+import { useCustomScopes } from '../../../hooks/prereport/useCustomScope';
 import { PreReportStatusBadge } from './PreReportStatusBadge';
 import { formatDate, formatLeadType } from '../../../utils/formatters';
-import { getStepTitle } from '../../../utils/helpers';
 import { getCompletionPercentage } from '../../../utils/stepValidation';
 import { exportPreReportToPDF, type PreReportPDFData } from '../../../utils/preReportPdfExport';
 import { toast } from 'sonner';
 import { useAuthStore } from '../../../stores/authStore';
+// ✅ ADD this import (after useAuthStore import):
+import { apiClient } from '../../../lib/api-client';
+import { SendMailModal } from './SendMailModal';
+
+type StepConfig = {
+  stepNumber: number;
+  title: string;
+  fields: string[];
+};
+
+// ✅ Fix
+// ✅ Match exactly what backend returns
+type CustomScopeItem = {
+  id: number;
+  stepNumber: number;
+  optionName: string;
+  optionDescription?: string;
+  leadType: string;
+  fieldKey?: string;
+};
+
+type VerificationCustomItem = {
+  optionId: number;
+  status?: string;
+  notes?: string;
+};
+
+type ObservationCustomItem = {
+  optionId: number;
+  text?: string;
+};
+
+type RiskCustomItem = {
+  optionId: number;
+  value?: string;
+};
+
+const FIELD_LABELS: Record<string, string> = {
+  dateInfoReceived: 'Date Info Received',
+  scopeCustomIds: 'Custom Scope Options',
+  verificationCustomData: 'Custom Verification Items',
+  observationsCustomData: 'Custom Observations',
+  riskCustomData: 'Custom Risk Factors',
+  recCustomIds: 'Custom Recommendations',
+  productCategoryCustomText: 'Product Category (Custom)',
+  infringementTypeCustomText: 'Infringement Type (Custom)',
+  reasonOfSuspicionCustomText: 'Reason of Suspicion (Custom)',
+  natureOfEntityCustomText: 'Nature of Entity (Custom)',
+  intelNatureCustomText: 'Nature of Intelligence (Custom)',
+  suspectedActivityCustomText: 'Suspected Activity (Custom)',
+  productSegmentCustomText: 'Product Segment (Custom)',
+  obsBrandExposureCustomText: 'Brand Exposure (Custom)',
+  obsEvidentiary_gaps: 'Evidentiary Gaps',
+};
+
+const formatLabel = (key: string) =>
+  FIELD_LABELS[key] ??
+  key
+    .replace(/_/g, ' ')
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/\s+/g, ' ')
+    .replace(/^./, str => str.toUpperCase())
+    .trim();
+
+const formatDisplayText = (value: unknown) =>
+  String(value ?? '').replace(/_/g, ' ');
 
 export const PreReportDetails = () => {
   const { reportId } = useParams<{ reportId: string }>();
   const navigate = useNavigate();
   const [expandedSteps, setExpandedSteps] = useState<number[]>([]);
   const [isExporting, setIsExporting] = useState(false);
+  // Add these right after const [isExporting, setIsExporting] = useState(false);
+  const [isMailModalOpen, setIsMailModalOpen] = useState(false);
 
   const { user } = useAuthStore();
 
@@ -37,6 +105,330 @@ export const PreReportDetails = () => {
 
   const { data, isLoading, isError } = usePreReportDetail(reportId!);
 
+  const { data: customScopes = [] } = useCustomScopes();
+  console.log('✅ customScopes from API:', customScopes);
+
+
+  const preReport = data?.preReport;
+  const clientLeadData = data?.clientLeadData;
+  const trueBuddyLeadData = data?.trueBuddyLeadData;
+  const [allCustomOptions, setAllCustomOptions] = useState<CustomScopeItem[]>([]);
+  useEffect(() => {
+    if (!preReport?.leadType) return;
+    const leadType = preReport.leadType;
+
+    Promise.all([
+      apiClient.get(`/operation/prereport/custom-options?stepNumber=2&leadType=${leadType}`),
+      apiClient.get(`/operation/prereport/custom-options?stepNumber=4&leadType=${leadType}`),
+      apiClient.get(`/operation/prereport/custom-options?stepNumber=5&leadType=${leadType}`),
+      apiClient.get(`/operation/prereport/custom-options?stepNumber=6&leadType=${leadType}`),
+      apiClient.get(`/operation/prereport/custom-options?stepNumber=8&leadType=${leadType}`),
+    ]).then(([step2, step4, step5, step6, step8]) => {
+      setAllCustomOptions([
+        ...(step2.data.data ?? []),
+        ...(step4.data.data ?? []),
+        ...(step5.data.data ?? []),
+        ...(step6.data.data ?? []),
+        ...(step8.data.data ?? []),
+      ]);
+    }).catch(() => { });
+  }, [preReport?.leadType]);
+
+
+  const customScopeMap = useMemo(
+    () => new Map<number, CustomScopeItem>(
+      [...(customScopes as CustomScopeItem[]), ...allCustomOptions]
+        .map(scope => [scope.id, scope])
+    ),
+    [customScopes, allCustomOptions]
+  );
+
+  console.log('🗺️ customScopeMap:', customScopeMap);
+  console.log('🗺️ map keys:', [...customScopeMap.keys()]);
+
+  const completionPercentage = useMemo(() => {
+    if (!preReport) return 0;
+    return getCompletionPercentage(
+      preReport.leadType,
+      clientLeadData,
+      trueBuddyLeadData
+    );
+  }, [preReport, clientLeadData, trueBuddyLeadData]);
+
+  const isRequestedForChanges =
+    preReport?.reportStatus === 'REQUESTED_FOR_CHANGES';
+
+  const isDisapproved =
+    preReport?.reportStatus === 'DISAPPROVED_BY_CLIENT';
+
+  const getStepConfigs = (isClientLead: boolean): StepConfig[] => {
+    if (isClientLead) {
+      return [
+        {
+          stepNumber: 1,
+          title: 'Client & Case Details',
+          fields: ['dateInfoReceived', 'clientSpocName', 'clientSpocContact'],
+        },
+        {
+          stepNumber: 2,
+          title: 'Mandate / Scope Requested',
+          fields: [
+            'scopeDueDiligence',
+            'scopeIprRetailer',
+            'scopeIprSupplier',
+            'scopeIprManufacturer',
+            'scopeOnlinePurchase',
+            'scopeOfflinePurchase',
+            'scopeCustomIds',
+            'scopetitle',
+          ],
+        },
+        {
+          stepNumber: 3,
+          title: 'Information Received from Client',
+          fields: [
+            'entityName',
+            'suspectName',
+            'contactNumbers',
+            'addressLine1',
+            'addressLine2',
+            'city',
+            'state',
+            'pincode',
+            'onlinePresences',
+            'productDetails',
+            'photosProvided',
+            'videoProvided',
+            'invoiceAvailable',
+            'sourceNarrative',
+          ],
+        },
+        {
+          stepNumber: 4,
+          title: 'Preliminary Verification Conducted by True Buddy',
+          fields: [
+            'verificationClientDiscussion',
+            'verificationClientDiscussionNotes',
+            'verificationOsint',
+            'verificationOsintNotes',
+            'verificationMarketplace',
+            'verificationMarketplaceNotes',
+            'verificationPretextCalling',
+            'verificationPretextCallingNotes',
+            'verificationProductReview',
+            'verificationProductReviewNotes',
+            'verificationCustomData',
+          ],
+        },
+        {
+          stepNumber: 5,
+          title: 'Key Observations',
+          fields: [
+            'obsIdentifiableTarget',
+            'obsTraceability',
+            'obsProductVisibility',
+            'obsCounterfeitingIndications',
+            'obsEvidentiary_gaps',
+            'observationsCustomData',
+          ],
+        },
+        {
+          stepNumber: 6,
+          title: 'Information Quality Assessment',
+          fields: [
+            'qaCompleteness',
+            'qaAccuracy',
+            'qaIndependentInvestigation',
+            'qaPriorConfrontation',
+            'qaContaminationRisk',
+          ],
+        },
+        {
+          stepNumber: 7,
+          title: "True Buddy's Preliminary Assessment",
+          fields: ['assessmentOverall', 'assessmentRationale'],
+        },
+        {
+          stepNumber: 8,
+          title: 'Recommended Way Forward',
+          fields: [
+            'recMarketSurvey',
+            'recCovertInvestigation',
+            'recTestPurchase',
+            'recEnforcementAction',
+            'recAdditionalInfo',
+            'recClosureHold',
+            'recCustomIds',
+          ],
+        },
+        {
+          stepNumber: 9,
+          title: 'Remarks',
+          fields: ['remarks'],
+        },
+        {
+          stepNumber: 10,
+          title: 'Disclaimer',
+          fields: ['customDisclaimer'],
+        },
+      ];
+    }
+
+    return [
+      {
+        stepNumber: 1,
+        title: 'Client & Case Reference',
+        fields: [
+          'dateInternalLeadGeneration',
+          'productCategory',
+          'productCategoryCustomText',
+          'infringementType',
+          'infringementTypeCustomText',
+          'broadGeography',
+          'reasonOfSuspicion',
+          'reasonOfSuspicionCustomText',
+          'expectedSeizure',
+          'natureOfEntity',
+          'natureOfEntityCustomText',
+        ],
+      },
+      {
+        stepNumber: 2,
+        title: 'Mandate / Scope Proposed',
+        fields: [
+          'scopeIprSupplier',
+          'scopeIprManufacturer',
+          'scopeIprStockist',
+          'scopeMarketVerification',
+          'scopeEtp',
+          'scopeEnforcement',
+          'scopeCustomIds',
+        ],
+      },
+      {
+        stepNumber: 3,
+        title: 'High-Level Lead Description (Sanitised)',
+        fields: [
+          'intelNature',
+          'intelNatureCustomText',
+          'suspectedActivity',
+          'suspectedActivityCustomText',
+          'productSegment',
+          'productSegmentCustomText',
+          'repeatIntelligence',
+          'multiBrandRisk',
+        ],
+      },
+      {
+        stepNumber: 4,
+        title: 'Preliminary Verification Conducted by True Buddy',
+        fields: [
+          'verificationIntelCorroboration',
+          'verificationIntelCorroborationNotes',
+          'verificationOsint',
+          'verificationOsintNotes',
+          'verificationPatternMapping',
+          'verificationPatternMappingNotes',
+          'verificationJurisdiction',
+          'verificationJurisdictionNotes',
+          'verificationRiskAssessment',
+          'verificationRiskAssessmentNotes',
+          'verificationCustomData',
+        ],
+      },
+      {
+        stepNumber: 5,
+        title: 'Key Observations (Client-Safe)',
+        fields: [
+          'obsOperationScale',
+          'obsCounterfeitLikelihood',
+          'obsBrandExposure',
+          'obsBrandExposureCustomText',
+          'obsEnforcementSensitivity',
+          'observationsCustomData',
+        ],
+      },
+      {
+        stepNumber: 6,
+        title: 'Information Integrity & Risk Assessment',
+        fields: [
+          'riskSourceReliability',
+          'riskClientConflict',
+          'riskImmediateAction',
+          'riskControlledValidation',
+          'riskCustomData',
+        ],
+      },
+      {
+        stepNumber: 7,
+        title: "True Buddy's Preliminary Assessment",
+        fields: ['assessmentOverall', 'assessmentRationale'],
+      },
+      {
+        stepNumber: 8,
+        title: 'Recommended Way Forward',
+        fields: [
+          'recCovertValidation',
+          'recEtp',
+          'recMarketReconnaissance',
+          'recEnforcementDeferred',
+          'recContinuedMonitoring',
+          'recClientSegregation',
+          'recCustomIds',
+        ],
+      },
+      {
+        stepNumber: 9,
+        title: 'Remarks',
+        fields: ['remarks'],
+      },
+      {
+        stepNumber: 10,
+        title: 'Disclaimer',
+        fields: ['customDisclaimer'],
+      },
+    ];
+  };
+
+  const isMeaningfulValue = (value: any): boolean => {
+    if (value === null || value === undefined || value === '') return false;
+    if (Array.isArray(value)) return value.length > 0;
+    if (typeof value === 'object') return Object.keys(value).length > 0;
+    return true;
+  };
+
+  const getStepData = (fields: string[]) => {
+    if (!preReport) return null;
+
+    const isClientLead = preReport.leadType === 'CLIENT_LEAD';
+    const sourceData = isClientLead ? clientLeadData : trueBuddyLeadData;
+    if (!sourceData) return null;
+
+    const stepData: Record<string, any> = {};
+    fields.forEach(field => {
+      const value = sourceData[field as keyof typeof sourceData];
+      if (isMeaningfulValue(value)) {
+        stepData[field] = value;
+      }
+    });
+
+    return Object.keys(stepData).length > 0 ? stepData : null;
+  };
+
+  const stepConfigs = useMemo(() => {
+    if (!preReport) return [];
+    return getStepConfigs(preReport.leadType === 'CLIENT_LEAD');
+  }, [preReport?.leadType]);
+
+  const visibleSteps = useMemo(() => {
+    return stepConfigs
+      .map(config => {
+        const stepData = getStepData(config.fields);
+        return stepData ? { ...config, stepData } : null;
+      })
+      .filter(Boolean) as Array<StepConfig & { stepData: Record<string, any> }>;
+  }, [stepConfigs, clientLeadData, trueBuddyLeadData, preReport]);
+
   const toggleStep = (stepNum: number) => {
     setExpandedSteps(prev =>
       prev.includes(stepNum)
@@ -47,27 +439,35 @@ export const PreReportDetails = () => {
 
   const handleExportPDF = async () => {
     if (!data || !isAdmin) return;
+
     setIsExporting(true);
     try {
       const { preReport, clientLeadData, trueBuddyLeadData } = data;
       const pdfLeadType =
-        preReport.leadType === 'TRUEBUDDY_LEAD' ? 'TRUE_BUDDY_LEAD' : 'CLIENT_LEAD';
+        preReport.leadType === 'TRUEBUDDY_LEAD'
+          ? 'TRUE_BUDDY_LEAD'
+          : 'CLIENT_LEAD';
 
       const pdfData: PreReportPDFData = {
         reportId: preReport.reportId,
         clientName: preReport.clientName,
         leadType: pdfLeadType,
-        status: preReport.reportStatus,
         createdAt: preReport.createdAt,
         updatedAt: preReport.updatedAt,
         products: preReport.productNames?.map((name: string) => ({
-          name, category: 'N/A', status: 'ACTIVE',
+          name,
+          category: 'N/A',
+          status: 'ACTIVE',
         })),
+        customOptions: customScopes,
       };
 
       if (preReport.leadType === 'CLIENT_LEAD' && clientLeadData) {
         pdfData.clientLeadData = clientLeadData;
-      } else if (preReport.leadType === 'TRUEBUDDY_LEAD' && trueBuddyLeadData) {
+      } else if (
+        preReport.leadType === 'TRUEBUDDY_LEAD' &&
+        trueBuddyLeadData
+      ) {
         pdfData.trueBuddyLeadData = trueBuddyLeadData;
       }
 
@@ -86,126 +486,218 @@ export const PreReportDetails = () => {
     navigate(`/operations/pre-report/${reportId}/preview`);
   };
 
-  const handleSendMail = async () => {
+  const handleSendMail = () => {
     if (!isAdmin) return;
-    toast.info('Send Mail feature will be implemented soon.');
+    setIsMailModalOpen(true);
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-      </div>
-    );
-  }
-
-  if (isError || !data) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <p className="text-red-600 text-lg font-semibold mb-2">Error loading report</p>
-          <button onClick={() => navigate(preReportsPath)} className="text-blue-600 hover:underline">
-            Back to Reports
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const { preReport, clientLeadData, trueBuddyLeadData } = data;
-  const completionPercentage = getCompletionPercentage(
-    preReport.leadType, clientLeadData, trueBuddyLeadData
-  );
-
-  // ── Status flags ────────────────────────────────────────────────────────────
-  const isRequestedForChanges = preReport.reportStatus === 'REQUESTED_FOR_CHANGES';
-  const isDisapproved = preReport.reportStatus === 'DISAPPROVED_BY_CLIENT';
-
-  const getStepFields = (stepNum: number, isClientLead: boolean): string[] => {
-    if (isClientLead) {
-      const clientLeadSteps: Record<number, string[]> = {
-        1: ['dateInfoReceived', 'clientSpocName', 'clientSpocContact'],
-        2: ['scopeDueDiligence', 'scopeIprRetailer', 'scopeIprSupplier', 'scopeIprManufacturer', 'scopeOnlinePurchase', 'scopeOfflinePurchase', 'scopeCustomIds'],
-        3: ['entityName', 'suspectName', 'contactNumbers', 'addressLine1', 'addressLine2', 'city', 'state', 'pincode', 'onlinePresences', 'productDetails', 'photosProvided', 'videoProvided', 'invoiceAvailable', 'sourceNarrative'],
-        4: ['verificationClientDiscussion', 'verificationClientDiscussionNotes', 'verificationOsint', 'verificationOsintNotes', 'verificationMarketplace', 'verificationMarketplaceNotes', 'verificationPretextCalling', 'verificationPretextCallingNotes', 'verificationProductReview', 'verificationProductReviewNotes'],
-        5: ['obsIdentifiableTarget', 'obsTraceability', 'obsProductVisibility', 'obsCounterfeitingIndications', 'obsEvidentiary_gaps'],
-        6: ['qaCompleteness', 'qaAccuracy', 'qaIndependentInvestigation', 'qaPriorConfrontation', 'qaContaminationRisk'],
-        7: ['assessmentOverall', 'assessmentRationale'],
-        8: ['recMarketSurvey', 'recCovertInvestigation', 'recTestPurchase', 'recEnforcementAction', 'recAdditionalInfo', 'recClosureHold'],
-        9: ['remarks'],
-        10: ['customDisclaimer'],
-      };
-      return clientLeadSteps[stepNum] || [];
-    } else {
-      const trueBuddySteps: Record<number, string[]> = {
-        1: ['dateInternalLeadGeneration', 'productCategory', 'infringementType', 'broadGeography', 'clientSpocName', 'clientSpocDesignation', 'natureOfEntity'],
-        2: ['scopeIprSupplier', 'scopeIprManufacturer', 'scopeIprStockist', 'scopeMarketVerification', 'scopeEtp', 'scopeEnforcement'],
-        3: ['intelNature', 'suspectedActivity', 'productSegment', 'supplyChainStage', 'repeatIntelligence', 'multiBrandRisk'],
-        4: ['verificationIntelCorroboration', 'verificationIntelCorroborationNotes', 'verificationOsint', 'verificationOsintNotes', 'verificationPatternMapping', 'verificationPatternMappingNotes', 'verificationJurisdiction', 'verificationJurisdictionNotes', 'verificationRiskAssessment', 'verificationRiskAssessmentNotes'],
-        5: ['obsOperationScale', 'obsCounterfeitLikelihood', 'obsBrandExposure', 'obsEnforcementSensitivity', 'obsLeakageRisk'],
-        6: ['riskSourceReliability', 'riskClientConflict', 'riskImmediateAction', 'riskControlledValidation', 'riskPrematureDisclosure'],
-        7: ['assessmentOverall', 'assessmentRationale'],
-        8: ['recCovertValidation', 'recEtp', 'recMarketReconnaissance', 'recEnforcementDeferred', 'recContinuedMonitoring', 'recClientSegregation'],
-        9: ['confidentialityNote'],
-        10: ['remarks'],
-        11: ['customDisclaimer'],
-      };
-      return trueBuddySteps[stepNum] || [];
+  const handleMailConfirm = async (toEmail: string, toName: string, notes: string) => {
+    if (!reportId) return;
+    try {
+      await apiClient.post(`/operation/pre-reports/${reportId}/send-mail`, {
+        toEmail,
+        toName,
+        notes,
+      });
+      toast.success(`Report sent successfully to ${toEmail}`);
+      setIsMailModalOpen(false);
+    } catch (error: any) {
+      const message = error?.response?.data?.message ?? 'Failed to send mail. Please try again.';
+      toast.error(message);
+      throw error; // keeps modal open for retry
+    } finally {
     }
   };
 
-  const getStepData = (stepNum: number) => {
-    const isClientLead = preReport.leadType === 'CLIENT_LEAD';
-    const sourceData = isClientLead ? clientLeadData : trueBuddyLeadData;
-    if (!sourceData) return null;
+  const renderCustomScopes = (ids: number[]) => {
+    if (!ids || ids.length === 0) return null;
 
-    const fields = getStepFields(stepNum, isClientLead);
-    const stepData: Record<string, any> = {};
-    fields.forEach(field => {
-      const value = sourceData[field as keyof typeof sourceData];
-      if (value !== undefined && value !== null && value !== '') {
-        stepData[field] = value;
-      }
-    });
-    return Object.keys(stepData).length > 0 ? stepData : null;
+    const resolvedScopes = ids
+      .map((id) => customScopeMap.get(Number(id)))
+      .filter(Boolean) as CustomScopeItem[];
+
+    if (resolvedScopes.length === 0) return null;
+
+    return (
+      <div className="flex flex-wrap gap-2">
+        {resolvedScopes.map((scope: CustomScopeItem) => (
+          <span
+            key={scope.id}
+            className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-sm border border-blue-200"
+          >
+            {scope.optionName}  {/* ✅ correct field */}
+          </span>
+        ))}
+      </div>
+    );
   };
 
-  const formatLabel = (key: string) =>
-    key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim();
+  const renderVerificationCustomData = (items: VerificationCustomItem[]) => {
+    if (!items.length) return null;
+    return (
+      <div className="mt-2 space-y-3">
+        {items.map((item, idx) => {
+          const optionName = customScopeMap.get(item.optionId)?.optionName ?? `Custom Verification #${item.optionId}`;
+          return (
+            <div key={`${item.optionId}-${idx}`} className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+              <p className="text-sm font-semibold text-blue-900">{optionName}</p>
+              <p className="mt-1 text-sm text-blue-800">Status: {formatDisplayText(item.status || 'N/A')}</p>
+              {item.notes && <p className="mt-1 text-sm text-blue-700">Notes: {item.notes}</p>}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
-  const renderField = (label: string, value: any) => {
+  // ✅ REPLACE entire function:
+  const renderObservationsCustomData = (items: ObservationCustomItem[]) => {
+    if (!items.length) return null;
+    return (
+      <div className="mt-2 space-y-3">
+        {items.map((item, idx) => {
+          const optionName = customScopeMap.get(item.optionId)?.optionName ?? `Custom Observation #${item.optionId}`;
+          return (
+            <div key={`${item.optionId}-${idx}`} className="rounded-lg border border-purple-200 bg-purple-50 p-3">
+              <p className="text-sm font-semibold text-purple-900">{optionName}</p>
+              <p className="mt-1 text-sm text-purple-700">{item.text || 'N/A'}</p>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // ✅ REPLACE entire function:
+  const renderRiskCustomData = (items: RiskCustomItem[]) => {
+    if (!items.length) return null;
+    return (
+      <div className="mt-2 space-y-3">
+        {items.map((item, idx) => {
+          const optionName = customScopeMap.get(item.optionId)?.optionName ?? `Custom Risk #${item.optionId}`;
+          return (
+            <div key={`${item.optionId}-${idx}`} className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+              <p className="text-sm font-semibold text-amber-900">{optionName}</p>
+              <p className="mt-1 text-sm text-amber-700">Value: {formatDisplayText(item.value || 'N/A')}</p>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const prettifyValue = (value: any) => {
+    if (Array.isArray(value) && value.every(v => typeof v === 'string')) {
+      return value.map(v => v.replace(/_/g, ' '));
+    }
+    return value;
+  };
+
+  const renderField = (label: string, value: any, key?: string) => {
     if (value === null || value === undefined || value === '') return null;
-    if (label.toLowerCase().includes('created at') || label.toLowerCase().includes('updated at')) return null;
+    if (
+      label.toLowerCase().includes('created at') ||
+      label.toLowerCase().includes('updated at')
+    ) {
+      return null;
+    }
 
-    if (typeof value === 'boolean') {
+    const safeValue = prettifyValue(value);
+
+    if (key === 'scopeCustomIds' && Array.isArray(safeValue)) {
+      return (
+        <div key={label} className="py-3 border-b border-gray-100 last:border-0">
+          <span className="text-sm font-medium text-gray-700">{label}:</span>
+          {renderCustomScopes(safeValue.map(Number))}
+        </div>
+      );
+    }
+
+    if (key === 'verificationCustomData' && Array.isArray(safeValue)) {
+      return (
+        <div key={label} className="py-3 border-b border-gray-100 last:border-0">
+          <span className="text-sm font-medium text-gray-700">{label}:</span>
+          {renderVerificationCustomData(safeValue as VerificationCustomItem[])}
+        </div>
+      );
+    }
+
+    if (key === 'observationsCustomData' && Array.isArray(safeValue)) {
+      return (
+        <div key={label} className="py-3 border-b border-gray-100 last:border-0">
+          <span className="text-sm font-medium text-gray-700">{label}:</span>
+          {renderObservationsCustomData(safeValue as ObservationCustomItem[])}
+        </div>
+      );
+    }
+
+    if (key === 'riskCustomData' && Array.isArray(safeValue)) {
+      return (
+        <div key={label} className="py-3 border-b border-gray-100 last:border-0">
+          <span className="text-sm font-medium text-gray-700">{label}:</span>
+          {renderRiskCustomData(safeValue as RiskCustomItem[])}
+        </div>
+      );
+    }
+
+    if (key === 'recCustomIds' && Array.isArray(safeValue)) {
+      return (
+        <div key={label} className="py-3 border-b border-gray-100 last:border-0">
+          <span className="text-sm font-medium text-gray-700">{label}:</span>
+          {renderCustomScopes(safeValue.map(Number))}
+        </div>
+      );
+    }
+
+    if (typeof safeValue === 'boolean') {
       return (
         <div key={label} className="py-2 border-b border-gray-100 last:border-0">
           <span className="text-sm font-medium text-gray-700">{label}:</span>
-          <span className={`ml-2 text-sm font-semibold ${value ? 'text-green-600' : 'text-red-600'}`}>
-            {value ? 'Yes' : 'No'}
+          <span
+            className={`ml-2 text-sm font-semibold ${safeValue ? 'text-green-600' : 'text-red-600'
+              }`}
+          >
+            {safeValue ? 'Yes' : 'No'}
           </span>
         </div>
       );
     }
 
-    if (label === 'Online Presences' && Array.isArray(value) && value.length > 0) {
+    if (
+      label === 'Online Presences' &&
+      Array.isArray(safeValue) &&
+      safeValue.length > 0
+    ) {
       return (
         <div key={label} className="py-3 border-b border-gray-100 last:border-0">
-          <span className="text-sm font-medium text-gray-700 block mb-2">{label}:</span>
+          <span className="text-sm font-medium text-gray-700 block mb-2">
+            {label}:
+          </span>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Platform</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Link</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    Platform
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    Link
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {value.map((presence: any, idx: number) => (
+                {safeValue.map((presence: any, idx: number) => (
                   <tr key={idx} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 text-sm text-gray-900">{presence.platformName || 'N/A'}</td>
+                    <td className="px-4 py-2 text-sm text-gray-900">
+                      {presence.platformName || 'N/A'}
+                    </td>
                     <td className="px-4 py-2 text-sm text-blue-600">
-                      <a href={presence.link} target="_blank" rel="noopener noreferrer" className="hover:underline break-all">
+                      <a
+                        href={presence.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:underline break-all"
+                      >
                         {presence.link}
                       </a>
                     </td>
@@ -218,15 +710,20 @@ export const PreReportDetails = () => {
       );
     }
 
-    if (Array.isArray(value)) {
-      if (value.length === 0) return null;
+    if (Array.isArray(safeValue)) {
+      if (safeValue.length === 0) return null;
       return (
         <div key={label} className="py-2 border-b border-gray-100 last:border-0">
           <span className="text-sm font-medium text-gray-700">{label}:</span>
           <div className="mt-1 flex flex-wrap gap-2">
-            {value.map((item, idx) => (
-              <span key={idx} className="inline-flex items-center px-2 py-1 rounded bg-blue-50 text-xs text-blue-700">
-                {typeof item === 'object' ? JSON.stringify(item) : String(item)}
+            {safeValue.map((item, idx) => (
+              <span
+                key={idx}
+                className="inline-flex items-center px-2 py-1 rounded bg-blue-50 text-xs text-blue-700"
+              >
+                {typeof item === 'object'
+                  ? JSON.stringify(item)
+                  : formatDisplayText(item)}
               </span>
             ))}
           </div>
@@ -234,21 +731,28 @@ export const PreReportDetails = () => {
       );
     }
 
-    if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}/)) {
+    if (
+      typeof safeValue === 'string' &&
+      safeValue.match(/^\d{4}-\d{2}-\d{2}/)
+    ) {
       return (
         <div key={label} className="py-2 border-b border-gray-100 last:border-0">
           <span className="text-sm font-medium text-gray-700">{label}:</span>
-          <span className="ml-2 text-sm text-gray-900">{formatDate(value)}</span>
+          <span className="ml-2 text-sm text-gray-900">
+            {formatDate(safeValue)}
+          </span>
         </div>
       );
     }
 
-    if (typeof value === 'object' && value !== null) {
+    if (typeof safeValue === 'object' && safeValue !== null) {
       return (
         <div key={label} className="py-2 border-b border-gray-100 last:border-0">
           <span className="text-sm font-medium text-gray-700">{label}:</span>
           <div className="ml-4 mt-1 text-xs bg-gray-50 p-2 rounded">
-            <pre className="whitespace-pre-wrap">{JSON.stringify(value, null, 2)}</pre>
+            <pre className="whitespace-pre-wrap">
+              {JSON.stringify(safeValue, null, 2)}
+            </pre>
           </div>
         </div>
       );
@@ -257,30 +761,53 @@ export const PreReportDetails = () => {
     return (
       <div key={label} className="py-2 border-b border-gray-100 last:border-0">
         <span className="text-sm font-medium text-gray-700">{label}:</span>
-        <span className="ml-2 text-sm text-gray-900">{String(value)}</span>
+        <span className="ml-2 text-sm text-gray-900">
+          {formatDisplayText(safeValue)}
+        </span>
       </div>
     );
   };
 
   const renderStepDetails = (stepData: Record<string, any> | null) => {
     if (!stepData || Object.keys(stepData).length === 0) {
-      return <p className="text-gray-500 text-sm italic">No data entered yet</p>;
+      return null;
     }
+
     return (
       <div className="mt-3 bg-gray-50 rounded-lg p-4 space-y-1">
         {Object.entries(stepData)
           .filter(([key]) => !['id', 'prereportId', 'createdAt', 'updatedAt'].includes(key))
-          .map(([key, value]) => renderField(formatLabel(key), value))}
+          .map(([key, value]) => renderField(formatLabel(key), value, key))}
       </div>
     );
   };
 
-  const totalSteps = preReport.leadType === 'CLIENT_LEAD' ? 10 : 11;
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  if (isError || !data || !preReport) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <p className="text-red-600 text-lg font-semibold mb-2">Error loading report</p>
+          <button
+            onClick={() => navigate(preReportsPath)}
+            className="text-blue-600 hover:underline"
+          >
+            Back to Reports
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
-
-      {/* Header */}
       <div className="mb-6">
         <button
           onClick={() => navigate(preReportsPath)}
@@ -308,16 +835,15 @@ export const PreReportDetails = () => {
 
             <button
               onClick={handlePreview}
-              disabled={!canPreview}                   // ← was !isAdmin
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${canPreview                             // ← was isAdmin
-                  ? 'border border-purple-600 text-purple-700 hover:bg-purple-50'
-                  : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+              disabled={!canPreview}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${canPreview
+                ? 'border border-purple-600 text-purple-700 hover:bg-purple-50'
+                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
                 }`}
             >
               <Eye className="w-4 h-4" />
               Preview PDF
             </button>
-
 
             <button
               onClick={handleExportPDF}
@@ -328,9 +854,15 @@ export const PreReportDetails = () => {
                 }`}
             >
               {isExporting ? (
-                <><Loader2 className="w-4 h-4 animate-spin" />Exporting...</>
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Exporting...
+                </>
               ) : (
-                <><Download className="w-4 h-4" />Export PDF</>
+                <>
+                  <Download className="w-4 h-4" />
+                  Export PDF
+                </>
               )}
             </button>
 
@@ -349,7 +881,6 @@ export const PreReportDetails = () => {
         </div>
       </div>
 
-      {/* ── CHANGES REQUESTED BANNER ─────────────────────────────────────────── */}
       {isRequestedForChanges && (
         <div className="mb-6 border border-amber-300 bg-amber-50 rounded-lg p-5">
           <div className="flex items-start gap-3">
@@ -369,7 +900,6 @@ export const PreReportDetails = () => {
                 Last updated: {formatDate(preReport.updatedAt)}
               </p>
             </div>
-            {/* Quick action — jumps directly to edit */}
             <button
               onClick={() => navigate(`/operations/pre-report/${reportId}/edit`)}
               className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 text-white text-xs font-medium rounded-md hover:bg-amber-700 transition-colors"
@@ -381,7 +911,6 @@ export const PreReportDetails = () => {
         </div>
       )}
 
-      {/* ── DISAPPROVED BANNER ───────────────────────────────────────────────── */}
       {isDisapproved && (
         <div className="mb-6 border border-red-300 bg-red-50 rounded-lg p-5">
           <div className="flex items-start gap-3">
@@ -405,7 +934,6 @@ export const PreReportDetails = () => {
         </div>
       )}
 
-      {/* Overview Card */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Report Overview</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -443,8 +971,11 @@ export const PreReportDetails = () => {
         <div className="mt-6">
           <p className="text-sm font-medium text-gray-700 mb-2">Products:</p>
           <div className="flex flex-wrap gap-2">
-            {preReport.productNames.map((product: string, idx: number) => (
-              <span key={idx} className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-sm text-blue-700">
+            {(preReport.productNames ?? []).map((product: string, idx: number) => (
+              <span
+                key={idx}
+                className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-sm text-blue-700"
+              >
                 {product}
               </span>
             ))}
@@ -452,61 +983,76 @@ export const PreReportDetails = () => {
         </div>
       </div>
 
-      {/* Step Details */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Step Details</h2>
         <div className="space-y-3">
-          {Array.from({ length: totalSteps }, (_, i) => i + 1).map(stepNum => {
-            const stepData = getStepData(stepNum);
-            const isCompleted = preReport.currentStep >= stepNum;
-            const isExpanded = expandedSteps.includes(stepNum);
-            const hasData = stepData && Object.keys(stepData).length > 0;
+          {visibleSteps.map((step, index) => {
+            const originalStepNum = step.stepNumber;
+            const visibleStepNum = index + 1;
+            const isCompleted = preReport.currentStep >= originalStepNum;
+            const isExpanded = expandedSteps.includes(originalStepNum);
 
             return (
               <div
-                key={stepNum}
+                key={originalStepNum}
                 className={`border rounded-lg transition-all ${isCompleted ? 'border-green-200 bg-green-50/30' : 'border-gray-200'
                   }`}
               >
                 <button
-                  onClick={() => toggleStep(stepNum)}
+                  onClick={() => toggleStep(originalStepNum)}
                   className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors rounded-lg"
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full font-semibold ${isCompleted ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'
-                      }`}>
-                      {stepNum}
+                    <div
+                      className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full font-semibold ${isCompleted ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'
+                        }`}
+                    >
+                      {visibleStepNum}
                     </div>
                     <div className="text-left">
-                      <p className="font-medium text-gray-900">
-                        {getStepTitle(preReport.leadType, stepNum)}
+                      <p className="font-medium text-gray-900">{step.title}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {Object.keys(step.stepData).length} fields filled
                       </p>
-                      {hasData && (
-                        <p className="text-xs text-gray-500 mt-0.5">
-                          {Object.keys(stepData!).length} fields filled
-                        </p>
-                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className={`text-sm font-medium ${isCompleted ? 'text-green-600' : 'text-gray-400'}`}>
+                    <span
+                      className={`text-sm font-medium ${isCompleted ? 'text-green-600' : 'text-gray-400'
+                        }`}
+                    >
                       {isCompleted ? 'Completed' : 'Pending'}
                     </span>
-                    {isExpanded
-                      ? <ChevronUp className="w-5 h-5 text-gray-400" />
-                      : <ChevronDown className="w-5 h-5 text-gray-400" />
-                    }
+                    {isExpanded ? (
+                      <ChevronUp className="w-5 h-5 text-gray-400" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-gray-400" />
+                    )}
                   </div>
                 </button>
 
                 {isExpanded && (
-                  <div className="px-4 pb-4">{renderStepDetails(stepData)}</div>
+                  <div className="px-4 pb-4">{renderStepDetails(step.stepData)}</div>
                 )}
               </div>
             );
           })}
+
+
+
+          {visibleSteps.length === 0 && (
+            <div className="text-sm text-gray-500 italic">No step data available.</div>
+          )}
         </div>
       </div>
+      <SendMailModal
+        isOpen={isMailModalOpen}
+        reportId={preReport.reportId}
+        clientName={preReport.clientName}
+        defaultEmail=""
+        onClose={() => setIsMailModalOpen(false)}
+        onConfirm={handleMailConfirm}
+      />
     </div>
   );
 };

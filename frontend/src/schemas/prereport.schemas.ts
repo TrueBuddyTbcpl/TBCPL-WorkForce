@@ -7,37 +7,40 @@ import {
   QACompleteness,
   QAAccuracy,
   YesNoUnknown,
+  YesNo,                 // ← ADD
   RiskLevel,
   ProductCategory,
   InfringementType,
   NatureOfEntity,
   OperationScale,
   BrandExposure,
-  SupplyChainStage,
   IntelNature,
   SuspectedActivity,
+  ReasonOfSuspicion,     // ← ADD
+  // ❌ REMOVED: SupplyChainStage
 } from '../utils/constants';
 
-// Helper function to create enum validator from const object
+
 const createEnumValidator = <T extends Record<string, string>>(enumObj: T) => {
   return z.enum(Object.values(enumObj) as [string, ...string[]]);
 };
 
-// Online Presence Schema
+
 export const onlinePresenceSchema = z.object({
   platformName: z.string().optional(),
   link: z.string().url('Invalid URL format').optional(),
 });
 
-// Initialize Report Schema (Keep this as required)
+
 export const initializeReportSchema = z.object({
   clientId: z.number().min(1, 'Client is required'),
   productIds: z.array(z.number()).min(1, 'At least one product is required'),
   leadType: createEnumValidator(LeadType),
 });
 
+
 // ===================================
-// CLIENT LEAD SCHEMAS (Steps 1-10) - ALL OPTIONAL
+// CLIENT LEAD SCHEMAS — no changes
 // ===================================
 
 export const clientLeadStep1Schema = z.object({
@@ -124,20 +127,29 @@ export const clientLeadStep10Schema = z.object({
   customDisclaimer: z.string().optional(),
 });
 
+
 // ===================================
-// TRUEBUDDY LEAD SCHEMAS (Steps 1-11) - ALL OPTIONAL
+// TRUEBUDDY LEAD SCHEMAS (Steps 1-10)
 // ===================================
 
+// ✅ Step 1: removed clientSpocName/Designation, added reasonOfSuspicion + expectedSeizure + customIds
 export const trueBuddyLeadStep1Schema = z.object({
-  dateInternalLeadGeneration: z.string().optional(),
-  productCategory: createEnumValidator(ProductCategory).optional(),
-  infringementType: createEnumValidator(InfringementType).optional(),
-  broadGeography: z.string().optional(),
-  clientSpocName: z.string().optional(),
-  clientSpocDesignation: z.string().optional(),
-  natureOfEntity: createEnumValidator(NatureOfEntity).optional(),
+  dateInternalLeadGeneration:   z.string().optional(),
+  productCategory:              createEnumValidator(ProductCategory).optional(),
+  productCategoryCustomText:    z.string().optional(),        // ← CHANGED: z.number() → z.string()
+  infringementType:             createEnumValidator(InfringementType).optional(),
+  infringementTypeCustomText:   z.string().optional(),        // ← CHANGED: z.number() → z.string()
+  broadGeography:               z.string().optional(),
+  reasonOfSuspicion: z
+    .array(createEnumValidator(ReasonOfSuspicion))
+    .optional(),
+  reasonOfSuspicionCustomText:  z.string().optional(),        // ← CHANGED: z.number() → z.string()
+  expectedSeizure:              z.string().optional(),
+  natureOfEntity:               createEnumValidator(NatureOfEntity).optional(),
+  natureOfEntityCustomText:     z.string().optional(),        // ← CHANGED: z.number() → z.string()
 });
 
+// ✅ Step 2: no changes
 export const trueBuddyLeadStep2Schema = z.object({
   scopeIprSupplier: z.boolean().optional(),
   scopeIprManufacturer: z.boolean().optional(),
@@ -147,15 +159,19 @@ export const trueBuddyLeadStep2Schema = z.object({
   scopeEnforcement: z.boolean().optional(),
 });
 
+// ✅ Step 3: removed supplyChainStage, added customIds, YesNoUnknown → YesNo
 export const trueBuddyLeadStep3Schema = z.object({
-  intelNature: createEnumValidator(IntelNature),
-  suspectedActivity: createEnumValidator(SuspectedActivity),
-  productSegment: createEnumValidator(ProductCategory),
-  supplyChainStage: createEnumValidator(SupplyChainStage),
-  repeatIntelligence: createEnumValidator(YesNoUnknown),
-  multiBrandRisk: createEnumValidator(YesNoUnknown),
+  intelNature:                  createEnumValidator(IntelNature).optional(),
+  intelNatureCustomText:        z.string().optional(),        // ← CHANGED: z.number() → z.string()
+  suspectedActivity:            createEnumValidator(SuspectedActivity).optional(),
+  suspectedActivityCustomText:  z.string().optional(),        // ← CHANGED: z.number() → z.string()
+  productSegment:               createEnumValidator(ProductCategory).optional(),
+  productSegmentCustomText:     z.string().optional(),        // ← CHANGED: z.number() → z.string()
+  repeatIntelligence:           createEnumValidator(YesNo).optional(),
+  multiBrandRisk:               createEnumValidator(YesNo).optional(),
 });
 
+// ✅ Step 4: no changes
 export const trueBuddyLeadStep4Schema = z.object({
   verificationIntelCorroboration: createEnumValidator(VerificationStatus).optional(),
   verificationIntelCorroborationNotes: z.string().optional(),
@@ -169,27 +185,31 @@ export const trueBuddyLeadStep4Schema = z.object({
   verificationRiskAssessmentNotes: z.string().optional(),
 });
 
+// ✅ Step 5: removed obsLeakageRisk, added obsBrandExposureCustomId
 export const trueBuddyLeadStep5Schema = z.object({
-  obsOperationScale: createEnumValidator(OperationScale).optional(),
-  obsCounterfeitLikelihood: createEnumValidator(RiskLevel).optional(),
-  obsBrandExposure: createEnumValidator(BrandExposure).optional(),
-  obsEnforcementSensitivity: createEnumValidator(RiskLevel).optional(),
-  obsLeakageRisk: createEnumValidator(RiskLevel).optional(),
+  obsOperationScale:           createEnumValidator(OperationScale).optional(),
+  obsCounterfeitLikelihood:    createEnumValidator(RiskLevel).optional(),
+  obsBrandExposure:            createEnumValidator(BrandExposure).optional(),
+  obsBrandExposureCustomText:  z.string().optional(),         // ← CHANGED: z.number() → z.string()
+  obsEnforcementSensitivity:   createEnumValidator(RiskLevel).optional(),
 });
 
+// ✅ Step 6: removed riskPrematureDisclosure, YesNoUnknown → YesNo
 export const trueBuddyLeadStep6Schema = z.object({
   riskSourceReliability: createEnumValidator(RiskLevel).optional(),
   riskClientConflict: createEnumValidator(RiskLevel).optional(),
-  riskImmediateAction: createEnumValidator(YesNoUnknown).optional(),
-  riskControlledValidation: createEnumValidator(YesNoUnknown).optional(),
-  riskPrematureDisclosure: createEnumValidator(RiskLevel).optional(),
+  riskImmediateAction: createEnumValidator(YesNo).optional(),        // ← CHANGED from YesNoUnknown
+  riskControlledValidation: createEnumValidator(YesNo).optional(),   // ← CHANGED from YesNoUnknown
+  // ❌ REMOVED: riskPrematureDisclosure
 });
 
+// ✅ Step 7: no changes
 export const trueBuddyLeadStep7Schema = z.object({
   assessmentOverall: createEnumValidator(AssessmentType).optional(),
   assessmentRationale: z.string().optional(),
 });
 
+// ✅ Step 8: no changes
 export const trueBuddyLeadStep8Schema = z.object({
   recCovertValidation: z.boolean().optional(),
   recEtp: z.boolean().optional(),
@@ -199,19 +219,25 @@ export const trueBuddyLeadStep8Schema = z.object({
   recClientSegregation: z.boolean().optional(),
 });
 
+// ✅ Step 9 (was Step10): Remarks
 export const trueBuddyLeadStep9Schema = z.object({
-  confidentialityNote: z.string().optional(),
-});
-
-export const trueBuddyLeadStep10Schema = z.object({
   remarks: z.string().optional(),
+  // ❌ REMOVED: old step9 was confidentialityNote — that schema is gone
 });
 
-export const trueBuddyLeadStep11Schema = z.object({
+// ✅ Step 10 (was Step11): Disclaimer
+export const trueBuddyLeadStep10Schema = z.object({
   customDisclaimer: z.string().optional(),
 });
 
-// Export types
+// ❌ REMOVED: trueBuddyLeadStep11Schema (disclaimer moved to step10)
+// ❌ REMOVED: old trueBuddyLeadStep9Schema (confidentialityNote)
+
+
+// ===================================
+// EXPORTED TYPES
+// ===================================
+
 export type InitializeReportInput = z.infer<typeof initializeReportSchema>;
 export type ClientLeadStep1Input = z.infer<typeof clientLeadStep1Schema>;
 export type ClientLeadStep2Input = z.infer<typeof clientLeadStep2Schema>;
@@ -231,6 +257,6 @@ export type TrueBuddyLeadStep5Input = z.infer<typeof trueBuddyLeadStep5Schema>;
 export type TrueBuddyLeadStep6Input = z.infer<typeof trueBuddyLeadStep6Schema>;
 export type TrueBuddyLeadStep7Input = z.infer<typeof trueBuddyLeadStep7Schema>;
 export type TrueBuddyLeadStep8Input = z.infer<typeof trueBuddyLeadStep8Schema>;
-export type TrueBuddyLeadStep9Input = z.infer<typeof trueBuddyLeadStep9Schema>;
-export type TrueBuddyLeadStep10Input = z.infer<typeof trueBuddyLeadStep10Schema>;
-export type TrueBuddyLeadStep11Input = z.infer<typeof trueBuddyLeadStep11Schema>;
+export type TrueBuddyLeadStep9Input = z.infer<typeof trueBuddyLeadStep9Schema>;   // ← was Step10
+export type TrueBuddyLeadStep10Input = z.infer<typeof trueBuddyLeadStep10Schema>; // ← was Step11
+// ❌ REMOVED: TrueBuddyLeadStep11Input

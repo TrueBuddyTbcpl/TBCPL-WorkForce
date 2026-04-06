@@ -30,9 +30,8 @@ import TrueBuddyStep5Observations from './steps/truebuddy-lead/Step5Observations
 import TrueBuddyStep6Risk from './steps/truebuddy-lead/Step6Risk';
 import TrueBuddyStep7Assessment from './steps/truebuddy-lead/Step7Assessment';
 import TrueBuddyStep8Recommendations from './steps/truebuddy-lead/Step8Recommendations';
-import TrueBuddyStep9Confidentiality from './steps/truebuddy-lead/Step9Confidentiality';
-import TrueBuddyStep10Remarks from './steps/truebuddy-lead/Step10Remarks';
-import TrueBuddyStep11Disclaimer from './steps/truebuddy-lead/Step11Disclaimer';
+import TrueBuddyStep9Remarks from '../pre-report/steps/truebuddy-lead/Step9Remarks';
+import TrueBuddyStep10Disclaimer from '../pre-report/steps/truebuddy-lead/Step10Remarks';
 import { PreReportStatusBadge } from './PreReportStatusBadge';
 import { queryClient } from '../../../lib/queryClient';
 import { useStepStatus } from '../../../hooks/prereport/useStepStatus';
@@ -78,7 +77,7 @@ export const EditPreReport = () => {
   }
 
   const { preReport, clientLeadData, trueBuddyLeadData } = data;
-  const totalSteps = preReport.leadType === 'CLIENT_LEAD' ? 10 : 11;
+  const totalSteps = preReport.leadType === 'CLIENT_LEAD' ? 10 : 10;
   const isLastStep = currentStep === totalSteps;
 
   // ✅ Handle step navigation and data saving
@@ -200,9 +199,8 @@ export const EditPreReport = () => {
         6: TrueBuddyStep6Risk,
         7: TrueBuddyStep7Assessment,
         8: TrueBuddyStep8Recommendations,
-        9: TrueBuddyStep9Confidentiality,
-        10: TrueBuddyStep10Remarks,
-        11: TrueBuddyStep11Disclaimer,
+        9: TrueBuddyStep9Remarks,        // ← was Step9Confidentiality
+        10: TrueBuddyStep10Disclaimer,
       };
       const StepComponent = stepComponents[currentStep as keyof typeof stepComponents];
       return StepComponent ? (

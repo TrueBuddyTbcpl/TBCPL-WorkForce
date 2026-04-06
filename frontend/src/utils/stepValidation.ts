@@ -36,7 +36,6 @@ export const isStepComplete = (
           trueBuddyLeadData.intelNature &&
           trueBuddyLeadData.suspectedActivity &&
           trueBuddyLeadData.productSegment &&
-          trueBuddyLeadData.supplyChainStage &&
           trueBuddyLeadData.repeatIntelligence &&
           trueBuddyLeadData.multiBrandRisk
         );
@@ -47,10 +46,8 @@ export const isStepComplete = (
       case 8:
         return true; // Recommendations are optional checkboxes
       case 9:
-        return !!trueBuddyLeadData.confidentialityNote;
-      case 10:
         return !!trueBuddyLeadData.remarks;
-      case 11:
+      case 10:
         return !!trueBuddyLeadData.customDisclaimer;
       default:
         return false;

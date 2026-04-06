@@ -30,7 +30,6 @@ import type {
   TrueBuddyLeadStep8,
   TrueBuddyLeadStep9,
   TrueBuddyLeadStep10,
-  TrueBuddyLeadStep11,
 } from '../../types/prereport.types';
 import { LeadType, ReportStatus } from '../../utils/constants';
 
@@ -272,12 +271,7 @@ export const updateTrueBuddyLeadStep10 = async (
   await apiClient.put(`${BASE_PATH}/${prereportId}/truebuddy-lead/step/10`, data);
 };
 
-export const updateTrueBuddyLeadStep11 = async (
-  prereportId: number,
-  data: TrueBuddyLeadStep11
-): Promise<void> => {
-  await apiClient.put(`${BASE_PATH}/${prereportId}/truebuddy-lead/step/11`, data);
-};
+
 
 // Add this with your other API functions
 export const getReportStepStatus = async (prereportId: number): Promise<PreReportStepStatusResponse> => {

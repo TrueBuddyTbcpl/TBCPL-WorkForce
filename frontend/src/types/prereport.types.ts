@@ -1,6 +1,27 @@
-import { LeadType, ReportStatus, VerificationStatus, AssessmentType, QACompleteness, QAAccuracy, YesNoUnknown, RiskLevel, ProductCategory, InfringementType, NatureOfEntity, OperationScale, BrandExposure, SupplyChainStage, IntelNature, SuspectedActivity } from '../utils/constants';
+// src/types/prereport.types.ts
+import {
+  LeadType,
+  ReportStatus,
+  VerificationStatus,
+  AssessmentType,
+  QACompleteness,
+  QAAccuracy,
+  YesNoUnknown,
+  YesNo,              // ← ADD
+  RiskLevel,
+  ProductCategory,
+  InfringementType,
+  NatureOfEntity,
+  OperationScale,
+  BrandExposure,
+  ReasonOfSuspicion,  // ← ADD
+  IntelNature,
+  SuspectedActivity,
+  // ❌ REMOVED: SupplyChainStage
+} from '../utils/constants';
 
-// Dropdown Types
+
+// ─── Dropdown Types ────────────────────────────────────────────────────────────
 export interface Client {
   clientId: number;
   clientName: string;
@@ -12,7 +33,8 @@ export interface Product {
   clientId: number;
 }
 
-// PreReport Base
+
+// ─── PreReport Base ────────────────────────────────────────────────────────────
 export interface PreReport {
   id: number;
   reportId: string;
@@ -27,18 +49,20 @@ export interface PreReport {
   createdAt: string;
   updatedAt: string;
   status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
-  changeComments?: string;    // ← ADD
+  changeComments?: string;
   rejectionReason?: string;
 }
 
-// Initialize Request
+
+// ─── Initialize Request ────────────────────────────────────────────────────────
 export interface InitializeReportRequest {
   clientId: number;
   productIds: number[];
   leadType: LeadType;
 }
 
-// Paginated Response
+
+// ─── Paginated Response ────────────────────────────────────────────────────────
 export interface PaginatedResponse<T> {
   reports: T[];
   currentPage: number;
@@ -47,13 +71,17 @@ export interface PaginatedResponse<T> {
   pageSize: number;
 }
 
-// Online Presence
+
+// ─── Online Presence ───────────────────────────────────────────────────────────
 export interface OnlinePresence {
   platformName: string;
   link: string;
 }
 
-// Client Lead Data Types
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CLIENT LEAD DATA TYPES (unchanged)
+// ══════════════════════════════════════════════════════════════════════════════
 export interface ClientLeadStep1 {
   dateInfoReceived: string;
 }
@@ -198,178 +226,211 @@ export interface ClientLeadData {
   recCustomIds?: number[];
 }
 
-// TrueBuddy Lead Data Types
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TRUEBUDDY LEAD STEP INTERFACES
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── Step 1 ────────────────────────────────────────────────────────────────────
 export interface TrueBuddyLeadStep1 {
   dateInternalLeadGeneration: string;
-  productCategory: ProductCategory;
-  infringementType: InfringementType;
-  broadGeography: string;
-  clientSpocName: string;
-  clientSpocDesignation: string;
-  natureOfEntity: NatureOfEntity;
+  productCategory:            ProductCategory;
+  productCategoryCustomText?: string;          // ← CHANGED: number → string
+  infringementType:           InfringementType;
+  infringementTypeCustomText?: string;         // ← CHANGED: number → string
+  broadGeography:             string;
+  reasonOfSuspicion?: ReasonOfSuspicion[];
+  reasonOfSuspicionCustomText?: string;        // ← CHANGED: number → string
+  expectedSeizure?:           string;
+  natureOfEntity:             NatureOfEntity;
+  natureOfEntityCustomText?:  string;          // ← CHANGED: number → string
 }
 
+// ── Step 2 (unchanged) ────────────────────────────────────────────────────────
 export interface TrueBuddyLeadStep2 {
-  scopeIprSupplier: boolean;
-  scopeIprManufacturer: boolean;
-  scopeIprStockist: boolean;
+  scopeIprSupplier:        boolean;
+  scopeIprManufacturer:    boolean;
+  scopeIprStockist:        boolean;
   scopeMarketVerification: boolean;
-  scopeEtp: boolean;
-  scopeEnforcement: boolean;
+  scopeEtp:                boolean;
+  scopeEnforcement:        boolean;
 }
 
+// ── Step 3 ────────────────────────────────────────────────────────────────────
+// ── Step 3 ────────────────────────────────────────────────────────────────────
 export interface TrueBuddyLeadStep3 {
-  intelNature: IntelNature;
-  suspectedActivity: SuspectedActivity;
-  productSegment: ProductCategory;
-  supplyChainStage: SupplyChainStage;
-  repeatIntelligence: YesNoUnknown;
-  multiBrandRisk: YesNoUnknown;
+  intelNature:                 IntelNature;
+  intelNatureCustomText?:      string;         // ← CHANGED: number → string
+  suspectedActivity:           SuspectedActivity;
+  suspectedActivityCustomText?: string;        // ← CHANGED: number → string
+  productSegment:              ProductCategory;
+  productSegmentCustomText?:   string;         // ← CHANGED: number → string
+  repeatIntelligence:          YesNo;
+  multiBrandRisk:              YesNo;
 }
 
+// ── Step 4 (unchanged) ────────────────────────────────────────────────────────
 export interface TrueBuddyLeadStep4 {
-  verificationIntelCorroboration: VerificationStatus;
+  verificationIntelCorroboration:      VerificationStatus;
   verificationIntelCorroborationNotes: string;
-  verificationOsint: VerificationStatus;
-  verificationOsintNotes: string;
-  verificationPatternMapping: VerificationStatus;
-  verificationPatternMappingNotes: string;
-  verificationJurisdiction: VerificationStatus;
-  verificationJurisdictionNotes: string;
-  verificationRiskAssessment: VerificationStatus;
-  verificationRiskAssessmentNotes: string;
+  verificationOsint:                   VerificationStatus;
+  verificationOsintNotes:              string;
+  verificationPatternMapping:          VerificationStatus;
+  verificationPatternMappingNotes:     string;
+  verificationJurisdiction:            VerificationStatus;
+  verificationJurisdictionNotes:       string;
+  verificationRiskAssessment:          VerificationStatus;
+  verificationRiskAssessmentNotes:     string;
 }
 
+// ── Step 5 ────────────────────────────────────────────────────────────────────
 export interface TrueBuddyLeadStep5 {
-  obsOperationScale: OperationScale;
-  obsCounterfeitLikelihood: RiskLevel;
-  obsBrandExposure: BrandExposure;
-  obsEnforcementSensitivity: RiskLevel;
-  obsLeakageRisk: RiskLevel;
+  obsOperationScale:           OperationScale;
+  obsCounterfeitLikelihood:    RiskLevel;
+  obsBrandExposure:            BrandExposure;
+  obsBrandExposureCustomText?: string;         // ← CHANGED: number → string
+  obsEnforcementSensitivity:   RiskLevel;
 }
 
+// ── Step 6 ────────────────────────────────────────────────────────────────────
 export interface TrueBuddyLeadStep6 {
-  riskSourceReliability: RiskLevel;
-  riskClientConflict: RiskLevel;
-  riskImmediateAction: YesNoUnknown;
-  riskControlledValidation: YesNoUnknown;
-  riskPrematureDisclosure: RiskLevel;
+  riskSourceReliability:    RiskLevel;
+  riskClientConflict:       RiskLevel;
+  riskImmediateAction:      YesNo;   // ← CHANGED from YesNoUnknown
+  riskControlledValidation: YesNo;   // ← CHANGED from YesNoUnknown
+  // ❌ REMOVED: riskPrematureDisclosure
 }
 
+// ── Step 7 (unchanged) ────────────────────────────────────────────────────────
 export interface TrueBuddyLeadStep7 {
-  assessmentOverall: AssessmentType;
+  assessmentOverall:   AssessmentType;
   assessmentRationale: string;
 }
 
+// ── Step 8 (unchanged) ────────────────────────────────────────────────────────
 export interface TrueBuddyLeadStep8 {
-  recCovertValidation: boolean;
-  recEtp: boolean;
+  recCovertValidation:     boolean;
+  recEtp:                  boolean;
   recMarketReconnaissance: boolean;
-  recEnforcementDeferred: boolean;
-  recContinuedMonitoring: boolean;
-  recClientSegregation: boolean;
+  recEnforcementDeferred:  boolean;
+  recContinuedMonitoring:  boolean;
+  recClientSegregation:    boolean;
 }
 
+// ── Step 9 ────────────────────────────────────────────────────────────────────
 export interface TrueBuddyLeadStep9 {
-  confidentialityNote: string;
+  remarks: string;             // ← CHANGED from confidentialityNote
 }
 
+// ── Step 10 ───────────────────────────────────────────────────────────────────
 export interface TrueBuddyLeadStep10 {
-  remarks: string;
+  customDisclaimer: string;    // ← CHANGED from remarks
 }
 
-export interface TrueBuddyLeadStep11 {
-  customDisclaimer: string;
-}
 
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TRUEBUDDY LEAD DATA (flat merged type used across all steps)
+// ══════════════════════════════════════════════════════════════════════════════
 export interface TrueBuddyLeadData {
-  // Step 1: Basic Information
+
+
+  // ── Step 1 ─────────────────────────────────────────────────────────────────
   dateInternalLeadGeneration?: string;
-  productCategory?: string;  // Changed from ProductCategory enum
-  infringementType?: string;  // Changed from InfringementType enum
-  broadGeography?: string;
-  clientSpocName?: string;
-  clientSpocDesignation?: string;
-  natureOfEntity?: string;  // Changed from NatureOfEntity enum
+  productCategory?:            string;
+  productCategoryCustomText?:  string;         // ← CHANGED: number → string
+  infringementType?:           string;
+  infringementTypeCustomText?: string;         // ← CHANGED: number → string
+  broadGeography?:             string;
+  reasonOfSuspicion?:          string[];
+  reasonOfSuspicionCustomText?: string;        // ← CHANGED: number → string
+  expectedSeizure?:            string;
+  natureOfEntity?:             string;
+  natureOfEntityCustomText?:   string;         // ← CHANGED: number → string
 
-  // Step 2: Scope
-  scopeIprSupplier?: boolean;
-  scopeIprManufacturer?: boolean;
-  scopeIprStockist?: boolean;
+  // ❌ REMOVED: clientSpocName, clientSpocDesignation
+
+  // ── Step 2: Scope ──────────────────────────────────────────────────────────
+  scopeIprSupplier?:        boolean;
+  scopeIprManufacturer?:    boolean;
+  scopeIprStockist?:        boolean;
   scopeMarketVerification?: boolean;
-  scopeEtp?: boolean;
-  scopeEnforcement?: boolean;
+  scopeEtp?:                boolean;
+  scopeEnforcement?:        boolean;
 
-  // Step 3: Intelligence
-  intelNature?: string;  // Changed from IntelNature enum
-  suspectedActivity?: string;  // Changed from SuspectedActivity enum
-  productSegment?: string;  // Changed from ProductCategory enum
-  supplyChainStage?: string;  // Changed from SupplyChainStage enum
-  repeatIntelligence?: string;  // Changed from YesNoUnknown enum
-  multiBrandRisk?: string;  // Changed from YesNoUnknown enum
+  // ── Step 3: Intelligence ───────────────────────────────────────────────────
+  intelNature?:                 string;
+  intelNatureCustomText?:       string;        // ← CHANGED: number → string
+  suspectedActivity?:           string;
+  suspectedActivityCustomText?: string;        // ← CHANGED: number → string
+  productSegment?:              string;
+  productSegmentCustomText?:    string;        // ← CHANGED: number → string
+  repeatIntelligence?:          string;
+  multiBrandRisk?:              string;
 
-  // Step 4: Verification
-  verificationIntelCorroboration?: string;  // Changed from VerificationStatus enum
+  // ── Step 4: Verification ───────────────────────────────────────────────────
+  verificationIntelCorroboration?:      string;
   verificationIntelCorroborationNotes?: string;
-  verificationOsint?: string;  // Changed from VerificationStatus enum
-  verificationOsintNotes?: string;
-  verificationPatternMapping?: string;  // Changed from VerificationStatus enum
-  verificationPatternMappingNotes?: string;
-  verificationJurisdiction?: string;  // Changed from VerificationStatus enum
-  verificationJurisdictionNotes?: string;
-  verificationRiskAssessment?: string;  // Changed from VerificationStatus enum
-  verificationRiskAssessmentNotes?: string;
+  verificationOsint?:                   string;
+  verificationOsintNotes?:              string;
+  verificationPatternMapping?:          string;
+  verificationPatternMappingNotes?:     string;
+  verificationJurisdiction?:            string;
+  verificationJurisdictionNotes?:       string;
+  verificationRiskAssessment?:          string;
+  verificationRiskAssessmentNotes?:     string;
 
-  // Step 5: Observations
-  obsOperationScale?: string;  // Changed from OperationScale enum
-  obsCounterfeitLikelihood?: string;  // Changed from RiskLevel enum
-  obsBrandExposure?: string;  // Changed from BrandExposure enum
-  obsEnforcementSensitivity?: string;  // Changed from RiskLevel enum
-  obsLeakageRisk?: string;  // Changed from RiskLevel enum
+  // ── Step 5: Observations ───────────────────────────────────────────────────
+  obsOperationScale?:          string;
+  obsCounterfeitLikelihood?:   string;
+  obsBrandExposure?:           string;
+  obsBrandExposureCustomText?: string;         // ← CHANGED: number → string
+  obsEnforcementSensitivity?:  string;
 
-  // Step 6: Risk Assessment
-  riskSourceReliability?: string;  // Changed from RiskLevel enum
-  riskClientConflict?: string;  // Changed from RiskLevel enum
-  riskImmediateAction?: string;  // Changed from YesNoUnknown enum
-  riskControlledValidation?: string;  // Changed from YesNoUnknown enum
-  riskPrematureDisclosure?: string;  // Changed from RiskLevel enum
+  // ── Step 6: Risk Assessment ────────────────────────────────────────────────
+  riskSourceReliability?:    string;
+  riskClientConflict?:       string;
+  riskImmediateAction?:      string;      // now YesNo values only
+  riskControlledValidation?: string;      // now YesNo values only
+  // ❌ REMOVED: riskPrematureDisclosure
 
-  // Step 7: Assessment
-  assessmentOverall?: string;  // Changed from AssessmentType enum
+  // ── Step 7: Assessment ────────────────────────────────────────────────────
+  assessmentOverall?:   string;
   assessmentRationale?: string;
 
-  // Step 8: Recommendations
-  recCovertValidation?: boolean;
-  recEtp?: boolean;
+  // ── Step 8: Recommendations ───────────────────────────────────────────────
+  recCovertValidation?:     boolean;
+  recEtp?:                  boolean;
   recMarketReconnaissance?: boolean;
-  recEnforcementDeferred?: boolean;
-  recContinuedMonitoring?: boolean;
-  recClientSegregation?: boolean;
+  recEnforcementDeferred?:  boolean;
+  recContinuedMonitoring?:  boolean;
+  recClientSegregation?:    boolean;
 
-  // Step 9: Confidentiality
-  confidentialityNote?: string;
+  // ── Step 9: Remarks ────────────────────────────────────────────────────────
+  remarks?: string;              // ← MOVED from Step 10 (was confidentialityNote in Step 9)
+  // ❌ REMOVED: confidentialityNote
 
-  // Step 10: Remarks
-  remarks?: string;
+  // ── Step 10: Disclaimer ────────────────────────────────────────────────────
+  customDisclaimer?: string;     // ← MOVED from Step 11
 
-  // Step 11: Disclaimer
-  customDisclaimer?: string;
-
-  scopeCustomIds?: number[];
-  verificationCustomData?: { optionId: number; status: string; notes: string }[];
-  recCustomIds?: number[];
-  observationsCustomData?: { optionId: number; text: string }[];
-  riskCustomData?: { optionId: number; value: string }[];
+  // ── Custom Data Payloads ───────────────────────────────────────────────────
+  scopeCustomIds?:          number[];
+  verificationCustomData?:  { optionId: number; status: string; notes: string }[];
+  observationsCustomData?:  { optionId: number; text: string }[];
+  riskCustomData?:          { optionId: number; value: string }[];
+  recCustomIds?:            number[];
 }
 
-// Report Detail Response
+
+// ─── Report Detail Response ────────────────────────────────────────────────────
 export interface PreReportDetailResponse {
   preReport: PreReport;
   clientLeadData: ClientLeadData | null;
   trueBuddyLeadData: TrueBuddyLeadData | null;
 }
 
-// Custom Scope
+
+// ─── Custom Scope ──────────────────────────────────────────────────────────────
 export interface CustomScope {
   id: number;
   prereportId: number;
@@ -382,12 +443,14 @@ export interface CreateCustomScopeRequest {
   scopeDescription: string;
 }
 
-// Update Status Request
+
+// ─── Update Status Request ─────────────────────────────────────────────────────
 export interface UpdateStatusRequest {
   reportStatus: ReportStatus;
 }
 
-// Add this near your other interfaces
+
+// ─── Step Status ───────────────────────────────────────────────────────────────
 export interface StepStatusDetail {
   stepNumber: number;
   stepName: string;
@@ -395,22 +458,21 @@ export interface StepStatusDetail {
 }
 
 export interface PreReportStepStatusResponse {
-  prereportId: number;
-  reportId: string;
-  leadType: LeadType;
-  reportStatus: ReportStatus;
-  currentStep: number;
-  canEdit: boolean;
-  changeComments?: string;
+  prereportId:      number;
+  reportId:         string;
+  leadType:         LeadType;
+  reportStatus:     ReportStatus;
+  currentStep:      number;
+  canEdit:          boolean;
+  changeComments?:  string;
   rejectionReason?: string;
-  steps: StepStatusDetail[];
+  steps:            StepStatusDetail[];
 }
 
 export interface PreReportListResponse {
-  reports: PreReport[];
-  currentPage: number;
-  totalPages: number;
-  totalElements: number;  // ✅ This matches backend
-  pageSize: number;
+  reports:       PreReport[];
+  currentPage:   number;
+  totalPages:    number;
+  totalElements: number;
+  pageSize:      number;
 }
-

@@ -1,5 +1,5 @@
 // ADD these alongside your existing imports:
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { useAuthStore } from '../../../../../stores/authStore';
 import apiClient from '../../../../../services/api/apiClient';
@@ -49,13 +49,26 @@ export const Step8Recommendations = ({
   const [addingOpt, setAddingOpt] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
-  // Track which custom option IDs are checked
-  const [checkedCustomIds, setCheckedCustomIds] = useState<number[]>(
-    data?.recCustomIds ?? []
-  );
+  const [checkedCustomIds, setCheckedCustomIds] = useState<number[]>([]);
+  const isInitialized = useRef(false);
 
   useEffect(() => {
-    apiClient.get('/operation/prereport/custom-options?stepNumber=8')
+  // Only initialize ONCE from saved data — don't override user changes after that
+  if (!isInitialized.current && data?.recCustomIds !== undefined) {
+    setCheckedCustomIds((data.recCustomIds ?? []).map(Number));
+    isInitialized.current = true;
+  }
+}, [data?.recCustomIds]);
+
+  useEffect(() => {
+    if (data?.recCustomIds?.length) {
+      // Ensure IDs are numbers (API sometimes returns strings)
+      setCheckedCustomIds(data.recCustomIds.map(Number));
+    }
+  }, [data?.recCustomIds]);
+
+  useEffect(() => {
+    apiClient.get('/operation/prereport/custom-options?stepNumber=8&leadType=CLIENT_LEAD')
       .then(res => setCustomOptions(res.data.data ?? []))
       .catch(() => toast.error('Failed to load custom options'))
       .finally(() => setLoadingOpts(false));
@@ -67,6 +80,7 @@ export const Step8Recommendations = ({
     try {
       const res = await apiClient.post('/operation/prereport/custom-options', {
         stepNumber: 8,
+        leadType: 'CLIENT_LEAD',
         optionName: newOptName.trim(),
         optionDescription: newOptDesc.trim() || undefined,
       });
@@ -193,7 +207,7 @@ export const Step8Recommendations = ({
         <p className="text-red-500 text-sm">{errors.root.message}</p>
       )}
 
-            {/* ── Custom Recommendations ────────────────────────────────────────── */}
+      {/* ── Custom Recommendations ────────────────────────────────────────── */}
       <div className="border-t border-dashed border-gray-300 pt-5">
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm font-semibold text-gray-600">Custom Recommendations</p>

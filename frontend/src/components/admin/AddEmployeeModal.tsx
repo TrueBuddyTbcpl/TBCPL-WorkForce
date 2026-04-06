@@ -79,9 +79,8 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ onClose, onSuccess 
       newErrors.firstName = 'First name must be between 2 and 50 characters';
     }
 
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = 'Last name is required';
-    } else if (formData.lastName.length < 2 || formData.lastName.length > 50) {
+    // ✅ ADD THIS
+    if (formData.lastName && (formData.lastName.length < 2 || formData.lastName.length > 50)) {
       newErrors.lastName = 'Last name must be between 2 and 50 characters';
     }
 
@@ -132,7 +131,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ onClose, onSuccess 
         emailDomain: formData.emailDomain,
         password: formData.password,
         firstName: formData.firstName.trim(),
-        lastName: formData.lastName.trim(),
+        lastName: formData.lastName.trim() || undefined,
         middleName: formData.middleName.trim() || undefined,
         departmentId: Number(formData.departmentId),
         roleId: Number(formData.roleId),
@@ -208,7 +207,8 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ onClose, onSuccess 
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Last Name *
+                Last Name
+                <span className="text-gray-400 font-normal ml-1">(Optional)</span>
               </label>
               <input
                 type="text"

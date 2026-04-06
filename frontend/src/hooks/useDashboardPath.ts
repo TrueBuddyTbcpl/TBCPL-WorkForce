@@ -8,13 +8,11 @@ export const useDashboardPath = (): string => {
 
 switch (user.roleName) {
   case 'SUPER_ADMIN':
-  case 'ADMIN':           // ← ADD
-  case 'HR_MANAGER':
+    return '/super-admin';
+  case 'ADMIN':      
     return '/admin';
-
   case 'FIELD_ASSOCIATE':
     return '/field-associate/dashboard';
-
   case 'ASSOCIATE':
   default:
     return '/operations/dashboard';

@@ -115,7 +115,7 @@ const LoaPreviewPage: React.FC = () => {
           {/* Left: Back + Title */}
           <div className="flex items-center gap-4">
             <button
-              onClick={() => navigate('/admin/loa')}
+              onClick={() => navigate('/super-admin/loa')}
               className="p-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />

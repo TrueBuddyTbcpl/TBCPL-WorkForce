@@ -57,6 +57,12 @@ export const YesNoUnknown = {
 } as const;
 export type YesNoUnknown = (typeof YesNoUnknown)[keyof typeof YesNoUnknown];
 
+export const YesNo = {
+  YES: 'YES',
+  NO: 'NO',
+} as const;
+export type YesNo = (typeof YesNo)[keyof typeof YesNo];
+
 // Risk Levels
 export const RiskLevel = {
   HIGH: 'HIGH',
@@ -67,28 +73,35 @@ export type RiskLevel = (typeof RiskLevel)[keyof typeof RiskLevel];
 
 
 
-// Product Category (TrueBuddy)
+// REPLACE existing block with this
 export const ProductCategory = {
   CROP_PROTECTION: 'CROP_PROTECTION',
   SEEDS: 'SEEDS',
+  CUSTOM: 'CUSTOM',        // ← ADD
 } as const;
 export type ProductCategory = (typeof ProductCategory)[keyof typeof ProductCategory];
 
-// Infringement Type (TrueBuddy)
+// REPLACE existing block with this
 export const InfringementType = {
   COUNTERFEIT: 'COUNTERFEIT',
+  LOOKALIKE: 'LOOKALIKE',    // ← ADD
   TRADEMARK: 'TRADEMARK',
   PATENT: 'PATENT',
   OTHER: 'OTHER',
+  CUSTOM: 'CUSTOM',          // ← ADD
 } as const;
 export type InfringementType = (typeof InfringementType)[keyof typeof InfringementType];
 
-// Nature of Entity (TrueBuddy)
+// REPLACE existing block with this
 export const NatureOfEntity = {
+  SUPPLIER: 'SUPPLIER',        // ← ADD
   MANUFACTURER: 'MANUFACTURER',
+  PACKAGER: 'PACKAGER',        // ← ADD
+  STOCKIST: 'STOCKIST',        // ← ADD
   DISTRIBUTOR: 'DISTRIBUTOR',
   RETAILER: 'RETAILER',
   ONLINE_SELLER: 'ONLINE_SELLER',
+  CUSTOM: 'CUSTOM',            // ← ADD
 } as const;
 export type NatureOfEntity = (typeof NatureOfEntity)[keyof typeof NatureOfEntity];
 
@@ -100,34 +113,44 @@ export const OperationScale = {
 } as const;
 export type OperationScale = (typeof OperationScale)[keyof typeof OperationScale];
 
-// Brand Exposure
+// REPLACE existing block with this
 export const BrandExposure = {
   SINGLE_BRAND: 'SINGLE_BRAND',
   MULTIPLE_BRANDS: 'MULTIPLE_BRANDS',
+  CUSTOM: 'CUSTOM',    // ← ADD
 } as const;
 export type BrandExposure = (typeof BrandExposure)[keyof typeof BrandExposure];
 
-// Supply Chain Stage
-export const SupplyChainStage = {
-  UPSTREAM: 'UPSTREAM',
-  MIDSTREAM: 'MIDSTREAM',
-  DOWNSTREAM: 'DOWNSTREAM',
+export const ReasonOfSuspicion = {
+  SIGNIFICANTLY_LOW_COST: 'SIGNIFICANTLY_LOW_COST',
+  UNAUTHORISED_ILLEGAL_SUPPLIER: 'UNAUTHORISED_ILLEGAL_SUPPLIER',
+  POOR_PRINTING_AND_PACKAGING_QUALITY: 'POOR_PRINTING_AND_PACKAGING_QUALITY',
+  BLACK_LISTED_SERIAL_NUMBERS: 'BLACK_LISTED_SERIAL_NUMBERS',
+  REPEATED_SERIAL_NUMBERS: 'REPEATED_SERIAL_NUMBERS',
+  SUSPICIOUS_BLACKLISTED_BATCH_NUMBER: 'SUSPICIOUS_BLACKLISTED_BATCH_NUMBER',
+  PRINTING_ERROR: 'PRINTING_ERROR',
+  CUSTOM: 'CUSTOM',
 } as const;
-export type SupplyChainStage = (typeof SupplyChainStage)[keyof typeof SupplyChainStage];
+export type ReasonOfSuspicion = (typeof ReasonOfSuspicion)[keyof typeof ReasonOfSuspicion];
 
-// Intelligence Nature
+
+
+// REPLACE existing block with this
 export const IntelNature = {
-  MANUFACTURING: 'MANUFACTURING',
-  DISTRIBUTION: 'MARKET',
-  RETAIL: 'SUPPLY_CHAIN',
+  MARKET_INFORMATION: 'MARKET_INFORMATION',   // ← REPLACE all 3 old values
+  SOURCE_INFORMATION: 'SOURCE_INFORMATION',
+  CUSTOM: 'CUSTOM',
 } as const;
 export type IntelNature = (typeof IntelNature)[keyof typeof IntelNature];
 
-// Suspected Activity
+// REPLACE existing block with this
 export const SuspectedActivity = {
   COUNTERFEITING: 'COUNTERFEITING',
+  LOOKALIKE: 'LOOKALIKE',                      // ← ADD
   LOOK_ALIKE_PRODUCTS: 'LOOK_ALIKE_PRODUCTS',
+  SPURIOUS: 'SPURIOUS',                        // ← ADD
   SPURIOUS_DISTRIBUTION: 'SPURIOUS_DISTRIBUTION',
+  CUSTOM: 'CUSTOM',                            // ← ADD
 } as const;
 export type SuspectedActivity = (typeof SuspectedActivity)[keyof typeof SuspectedActivity];
 
@@ -169,10 +192,10 @@ export const LEAD_TYPE_LABELS: Record<LeadType, string> = {
   [LeadType.TRUEBUDDY_LEAD]: 'TrueBuddy Lead',
 };
 
-// Step Counts
+// REPLACE existing block with this
 export const STEP_COUNTS = {
   [LeadType.CLIENT_LEAD]: 10,
-  [LeadType.TRUEBUDDY_LEAD]: 11,
+  [LeadType.TRUEBUDDY_LEAD]: 10,   // ← CHANGE from 11 to 10
 };
 
 // API Endpoints

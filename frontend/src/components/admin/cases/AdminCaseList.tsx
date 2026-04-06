@@ -1,11 +1,10 @@
-// src/components/admin/cases/AdminCaseList.tsx
+
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Loader2,
   FileText,
-  FolderOpen,
   AlertCircle,
   Search,
 } from 'lucide-react';
@@ -85,17 +84,10 @@ const AdminCaseList = () => {
   return (
     <div className="space-y-6">
 
-      {/* Header */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-          <FolderOpen className="w-7 h-7 text-blue-600" />
-          All Cases (Admin View)
-        </h1>
-        <p className="text-gray-600 mt-1">Manage and track all investigation cases</p>
-      </div>
+      
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-2">
         <div className="bg-white border border-gray-200 rounded-lg p-4">
           <div className="text-2xl font-bold text-blue-600">{pagination?.totalCases ?? 0}</div>
           <div className="text-sm text-gray-600 mt-1">Total Cases</div>

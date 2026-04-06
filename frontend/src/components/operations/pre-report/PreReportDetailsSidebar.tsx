@@ -24,7 +24,7 @@ export const PreReportDetailsSidebar: React.FC<PreReportDetailsSidebarProps> = (
   stepStatuses = [],
   onStepClick,             // ← now consumed
 }) => {
-  const totalSteps = leadType === 'CLIENT_LEAD' ? 10 : 11;
+  const totalSteps = leadType === 'CLIENT_LEAD' ? 10 : 10;
 
   const completedSteps = stepStatuses.filter(s => s.status === 'COMPLETED').length;
   const progress = Math.round((completedSteps / totalSteps) * 100);

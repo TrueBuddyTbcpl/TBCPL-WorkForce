@@ -20,7 +20,6 @@ import {
   updateTrueBuddyLeadStep8,
   updateTrueBuddyLeadStep9,
   updateTrueBuddyLeadStep10,
-  updateTrueBuddyLeadStep11,
 } from '../../services/api/prereport.service';
 import { QUERY_KEYS, LeadType } from '../../utils/constants';
 import type { LeadType as LeadTypeType } from '../../utils/constants';
@@ -85,8 +84,6 @@ export const useUpdateStep = () => {
             return updateTrueBuddyLeadStep9(prereportId, data);
           case 10:
             return updateTrueBuddyLeadStep10(prereportId, data);
-          case 11:
-            return updateTrueBuddyLeadStep11(prereportId, data);
           default:
             throw new Error(`Invalid step number: ${stepNumber}`);
         }

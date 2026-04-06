@@ -95,7 +95,7 @@ const AdminLoaList: React.FC = () => {
         <div className="flex items-center gap-4">
           {canCreateEdit(user?.roleName, user?.departmentName) && (
             <button
-              onClick={() => navigate('/admin/loa/create')}
+              onClick={() => navigate('/super-admin/loa/create')}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
             >
               <Plus className="w-4 h-4" />
@@ -172,7 +172,7 @@ const AdminLoaList: React.FC = () => {
                           {/* Preview */}
                           <button
                             title="Preview LOA"
-                            onClick={() => navigate(`/admin/loa/${loa.id}/preview`)}
+                            onClick={() => navigate(`/super-admin/loa/${loa.id}/preview`)}
                             className="p-1.5 rounded-md text-blue-600 hover:bg-blue-50 transition-colors"
                           >
                             <Eye className="w-4 h-4" />
@@ -191,7 +191,7 @@ const AdminLoaList: React.FC = () => {
                           {loa.status === 'DRAFT' && canCreateEdit(user?.roleName, user?.departmentName) && (
                             <button
                               title="Edit LOA"
-                              onClick={() => navigate(`/admin/loa/${loa.id}/edit`)}
+                              onClick={() => navigate(`/super-admin/loa/${loa.id}/edit`)}
                               className="p-1.5 rounded-md text-orange-600 hover:bg-orange-50 transition-colors"
                             >
                               <Edit className="w-4 h-4" />

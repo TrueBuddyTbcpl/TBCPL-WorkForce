@@ -1,3 +1,4 @@
+// src/components/operations/pre-report/PreReportPreviewPage.tsx
 import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
@@ -5,22 +6,51 @@ import { usePreReportDetail } from '../../../hooks/prereport/usePreReportDetail'
 import { openPreReportInNewTab, type PreReportPDFData } from '../../../utils/preReportPdfExport';
 import { toast } from 'sonner';
 import { useAuthStore } from '../../../stores/authStore';
-import { useDashboardPath } from '../../../hooks/useDashboardPath'; // ← ADD
+import { useDashboardPath } from '../../../hooks/useDashboardPath';
+import { useCustomScopes } from '../../../hooks/prereport/useCustomScope';
+
 
 const PreReportPreviewPage: React.FC = () => {
   const { reportId } = useParams<{ reportId: string }>();
-  const navigate = useNavigate();
+  const navigate     = useNavigate();
 
-  const { user } = useAuthStore();
-  const dashboardPath = useDashboardPath(); // ← role-aware redirect path
+  const { user }        = useAuthStore();
+  const dashboardPath   = useDashboardPath();
 
-  // ── FIX 1: include ADMIN and ASSOCIATE ───────────────────────────────────
   const canPreview =
     user?.roleName === 'SUPER_ADMIN' ||
-    user?.roleName === 'ADMIN' ||
+    user?.roleName === 'ADMIN'       ||
     user?.roleName === 'ASSOCIATE';
 
-  const { data, isLoading, isError } = usePreReportDetail(reportId!);
+  // ── Step 1: Load report ──────────────────────────────────────────────────
+  const { data, isLoading: isReportLoading, isError } = usePreReportDetail(reportId!);
+
+  // ── Step 2: Derive leadType once report is loaded ────────────────────────
+  const leadType = data?.preReport?.leadType;  // undefined until report loads
+
+  // ── Step 3: Fetch custom options for ALL steps, correct leadType ─────────
+  // Each query is disabled until leadType is known (enabled: !!leadType)
+  const { data: step2Options = [], isLoading: isStep2Loading } = useCustomScopes(leadType, 2);
+  const { data: step4Options = [], isLoading: isStep4Loading } = useCustomScopes(leadType, 4);
+  const { data: step5Options = [], isLoading: isStep5Loading } = useCustomScopes(leadType, 5);
+  const { data: step8Options = [], isLoading: isStep8Loading } = useCustomScopes(leadType, 8);
+
+  // ── Merged options from all steps ────────────────────────────────────────
+  const allCustomOptions = [
+    ...step2Options,
+    ...step4Options,
+    ...step5Options,
+    ...step8Options,
+  ];
+
+  // ── True loading: report + all option queries must finish ─────────────────
+  const isLoading =
+    isReportLoading ||
+    isStep2Loading  ||
+    isStep4Loading  ||
+    isStep5Loading  ||
+    isStep8Loading;
+
 
   // ── Intercept browser back button ────────────────────────────────────────
   useEffect(() => {
@@ -30,7 +60,8 @@ const PreReportPreviewPage: React.FC = () => {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [navigate, dashboardPath]);
 
-  // ── FIX 2: use dashboardPath instead of hardcoded '/dashboard' ────────────
+
+  // ── Access guard ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (!canPreview) {
       toast.error('Access denied. You do not have permission to preview.');
@@ -38,13 +69,15 @@ const PreReportPreviewPage: React.FC = () => {
     }
   }, [canPreview, navigate, dashboardPath]);
 
-  // ── Trigger PDF once data is ready ───────────────────────────────────────
+
+  // ── Trigger PDF only when ALL data is ready ───────────────────────────────
   useEffect(() => {
     if (data && !isLoading && canPreview) {
       openPreview();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, isLoading]);
+
 
   // ── Error guard ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -53,6 +86,7 @@ const PreReportPreviewPage: React.FC = () => {
       navigate(dashboardPath, { replace: true });
     }
   }, [isError, navigate, dashboardPath]);
+
 
   // ── PDF data builder ──────────────────────────────────────────────────────
   const preparePDFData = (): PreReportPDFData | null => {
@@ -67,12 +101,13 @@ const PreReportPreviewPage: React.FC = () => {
       reportId:   preReport.reportId,
       clientName: preReport.clientName,
       leadType:   pdfLeadType,
-      status:     preReport.reportStatus,
       createdAt:  preReport.createdAt,
       updatedAt:  preReport.updatedAt,
       products: preReport.productNames?.map((name: string) => ({
         name, category: 'N/A', status: 'ACTIVE',
       })),
+      // ✅ FIX: all steps, correct leadType, field name already matches
+      customOptions: allCustomOptions,
     };
 
     if (preReport.leadType === 'CLIENT_LEAD' && clientLeadData) {
@@ -83,6 +118,7 @@ const PreReportPreviewPage: React.FC = () => {
 
     return pdfData;
   };
+
 
   // ── Open PDF then redirect ────────────────────────────────────────────────
   const openPreview = async () => {
@@ -99,7 +135,7 @@ const PreReportPreviewPage: React.FC = () => {
       toast.success('PDF preview opened in new tab.');
 
       setTimeout(() => {
-        navigate(dashboardPath, { replace: true }); // ← role-aware
+        navigate(dashboardPath, { replace: true });
       }, 500);
 
     } catch (error) {
@@ -108,6 +144,7 @@ const PreReportPreviewPage: React.FC = () => {
       navigate(dashboardPath, { replace: true });
     }
   };
+
 
   if (isLoading) {
     return (

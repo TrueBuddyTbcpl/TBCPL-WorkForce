@@ -21,6 +21,9 @@ interface Step4VerificationProps {
   onSkip: () => void;
 }
 
+interface CustomOption { id: number; optionName: string; }
+interface CustomVerifEntry { status: string; notes: string; }
+
 export const Step4Verification = ({
   prereportId,
   reportId,
@@ -30,24 +33,25 @@ export const Step4Verification = ({
   onSkip,
 }: Step4VerificationProps) => {
   const updateMutation = useUpdateStep();
-
-  // ── Custom Verification Options State ─────────────────────────────────────
   const { user } = useAuthStore();
+
   const canDelete =
     (user?.roleName === 'ADMIN' || user?.roleName === 'SUPER_ADMIN') &&
     user?.departmentName === 'Admin';
 
-  interface CustomOption { id: number; optionName: string; }
-  interface CustomVerifEntry { status: string; notes: string; }
-
+  // ── Custom Options State ───────────────────────────────────────────────────
   const [customOptions, setCustomOptions] = useState<CustomOption[]>([]);
   const [loadingOpts, setLoadingOpts] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newOptName, setNewOptName] = useState('');
-  const [addingOpt, setAddingOpt] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [addingOpt, setAddingOpt] = useState(false);
 
-  // Per-option status + notes, keyed by optionId
+  // ── Add-form fields ────────────────────────────────────────────────────────
+  const [newOptName, setNewOptName] = useState('');
+  const [newOptStatus, setNewOptStatus] = useState<string>(VerificationStatus.NOT_DONE);
+  const [newOptNotes, setNewOptNotes] = useState('');   // ← ADDED
+
+  // ── Per-option status + notes, keyed by optionId ──────────────────────────
   const [customVerifData, setCustomVerifData] = useState<Record<number, CustomVerifEntry>>(() => {
     const map: Record<number, CustomVerifEntry> = {};
     data?.verificationCustomData?.forEach((e: any) => {
@@ -56,13 +60,46 @@ export const Step4Verification = ({
     return map;
   });
 
+  // ── Load custom options on mount ───────────────────────────────────────────
   useEffect(() => {
-    apiClient.get('/operation/prereport/custom-options?stepNumber=4')
-      .then(res => setCustomOptions(res.data.data ?? []))
+    apiClient.get('/operation/prereport/custom-options?stepNumber=4&leadType=CLIENT_LEAD')
+      .then(res => {
+        const opts: CustomOption[] = res.data.data ?? [];
+        setCustomOptions(opts);
+        setCustomVerifData(prev => {
+          const next = { ...prev };
+          opts.forEach(opt => {
+            if (!next[opt.id]) {
+              next[opt.id] = { status: VerificationStatus.NOT_DONE, notes: '' };
+            }
+          });
+          return next;
+        });
+      })
       .catch(() => toast.error('Failed to load custom options'))
       .finally(() => setLoadingOpts(false));
   }, []);
 
+  useEffect(() => {
+    if (!data?.verificationCustomData?.length) return;
+
+    setCustomVerifData(prev => {
+      const next = { ...prev };
+      data.verificationCustomData!.forEach((e: any) => {
+        next[e.optionId] = { status: e.status, notes: e.notes ?? '' };
+      });
+      return next;
+    });
+  }, [data?.verificationCustomData]);
+  // ── Reset add form ─────────────────────────────────────────────────────────
+  const resetAddForm = () => {
+    setNewOptName('');
+    setNewOptStatus(VerificationStatus.NOT_DONE);
+    setNewOptNotes('');   // ← ADDED
+    setShowAddForm(false);
+  };
+
+  // ── Add new custom option ──────────────────────────────────────────────────
   const handleAddOption = async () => {
     if (!newOptName.trim()) return;
     setAddingOpt(true);
@@ -70,10 +107,17 @@ export const Step4Verification = ({
       const res = await apiClient.post('/operation/prereport/custom-options', {
         stepNumber: 4,
         optionName: newOptName.trim(),
+        leadType: LeadType.CLIENT_LEAD,
       });
-      setCustomOptions(prev => [...prev, res.data.data]);
-      setNewOptName('');
-      setShowAddForm(false);
+      const newOpt: CustomOption = res.data.data;
+      setCustomOptions(prev => [...prev, newOpt]);
+
+      setCustomVerifData(prev => ({
+        ...prev,
+        [newOpt.id]: { status: newOptStatus, notes: newOptNotes },  // ← ADDED newOptNotes
+      }));
+
+      resetAddForm();
       toast.success('Custom verification item added');
     } catch {
       toast.error('Failed to add option');
@@ -82,6 +126,7 @@ export const Step4Verification = ({
     }
   };
 
+  // ── Delete custom option ───────────────────────────────────────────────────
   const handleDeleteOption = async (id: number) => {
     if (!window.confirm('Delete this custom verification item permanently?')) return;
     setDeletingId(id);
@@ -101,12 +146,8 @@ export const Step4Verification = ({
     }
   };
 
-
-
-  const {
-    register,
-    handleSubmit,
-  } = useForm<ClientLeadStep4Input>({
+  // ── React Hook Form ────────────────────────────────────────────────────────
+  const { register, handleSubmit } = useForm<ClientLeadStep4Input>({
     resolver: zodResolver(clientLeadStep4Schema),
     defaultValues: {
       verificationClientDiscussion: data?.verificationClientDiscussion || VerificationStatus.NOT_DONE,
@@ -145,62 +186,37 @@ export const Step4Verification = ({
   };
 
   const verificationItems = [
-    {
-      name: 'Case Discussion with Client Team',
-      statusField: 'verificationClientDiscussion',
-      notesField: 'verificationClientDiscussionNotes',
-    },
-    {
-      name: 'Internet / OSINT Search',
-      statusField: 'verificationOsint',
-      notesField: 'verificationOsintNotes',
-    },
-    {
-      name: 'Marketplace Verification (IndiaMART / Social Media)',
-      statusField: 'verificationMarketplace',
-      notesField: 'verificationMarketplaceNotes',
-    },
-    {
-      name: 'Pretext Calling (if applicable)',
-      statusField: 'verificationPretextCalling',
-      notesField: 'verificationPretextCallingNotes',
-    },
-    {
-      name: 'Preliminary Product Image Review',
-      statusField: 'verificationProductReview',
-      notesField: 'verificationProductReviewNotes',
-    },
+    { name: 'Case Discussion with Client Team', statusField: 'verificationClientDiscussion', notesField: 'verificationClientDiscussionNotes' },
+    { name: 'Internet / OSINT Search', statusField: 'verificationOsint', notesField: 'verificationOsintNotes' },
+    { name: 'Marketplace Verification (IndiaMART / Social Media)', statusField: 'verificationMarketplace', notesField: 'verificationMarketplaceNotes' },
+    { name: 'Pretext Calling (if applicable)', statusField: 'verificationPretextCalling', notesField: 'verificationPretextCallingNotes' },
+    { name: 'Preliminary Product Image Review', statusField: 'verificationProductReview', notesField: 'verificationProductReviewNotes' },
   ] as const;
+
+  const formatStatus = (s: string) =>
+    s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+
+      {/* ── Fixed Verification Items ─────────────────────────────────────── */}
       {verificationItems.map((item) => (
         <div key={item.statusField} className="p-4 border border-gray-300 rounded-lg">
           <h3 className="font-medium text-gray-900 mb-3">{item.name}</h3>
-
           <div className="space-y-3">
-            {/* Status */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Status 
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
               <select
                 {...register(item.statusField as any)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                {Object.values(VerificationStatus).map((status) => (
-                  <option key={status} value={status}>
-                    {status.replace('_', ' ')}
-                  </option>
+                {Object.values(VerificationStatus).map((s) => (
+                  <option key={s} value={s}>{formatStatus(s)}</option>
                 ))}
               </select>
             </div>
-
-            {/* Notes */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Notes
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
               <textarea
                 {...register(item.notesField as any)}
                 rows={3}
@@ -211,8 +227,11 @@ export const Step4Verification = ({
           </div>
         </div>
       ))}
-      {/* ── Custom Verification Items ────────────────────────────────────── */}
+
+      {/* ── Custom Verification Items ─────────────────────────────────────── */}
       <div className="border-t border-dashed border-gray-300 pt-5">
+
+        {/* Section header */}
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm font-semibold text-gray-600">Custom Verification Items</p>
           <button
@@ -226,34 +245,78 @@ export const Step4Verification = ({
           </button>
         </div>
 
-        {/* Inline add form */}
+        {/* ── Inline Add Form ─────────────────────────────────────────────── */}
         {showAddForm && (
-          <div className="flex items-center gap-2 mb-4">
-            <input
-              type="text"
-              value={newOptName}
-              onChange={e => setNewOptName(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddOption())}
-              placeholder="Verification item name..."
-              className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg
-                         focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-            />
-            <button
-              type="button"
-              onClick={handleAddOption}
-              disabled={addingOpt || !newOptName.trim()}
-              className="px-3 py-1.5 bg-indigo-600 text-white text-sm rounded-lg
-                         hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {addingOpt ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
-            </button>
-            <button
-              type="button"
-              onClick={() => { setShowAddForm(false); setNewOptName(''); }}
-              className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              Cancel
-            </button>
+          <div className="mb-4 p-4 border border-indigo-200 bg-indigo-50 rounded-lg space-y-3">
+            <p className="text-xs font-semibold text-indigo-700 uppercase tracking-wide">
+              New Custom Verification Item
+            </p>
+
+            {/* Verification Title */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Verification Title <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={newOptName}
+                onChange={e => setNewOptName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddOption())}
+                placeholder="e.g. Physical Market Visit"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                           focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              />
+            </div>
+
+            {/* Status */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <select
+                value={newOptStatus}
+                onChange={e => setNewOptStatus(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                           focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              >
+                {Object.values(VerificationStatus).map(s => (
+                  <option key={s} value={s}>{formatStatus(s)}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Notes ← ADDED */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+              <textarea
+                value={newOptNotes}
+                onChange={e => setNewOptNotes(e.target.value)}
+                rows={3}
+                placeholder="Enter verification notes"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                           focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={handleAddOption}
+                disabled={addingOpt || !newOptName.trim()}
+                className="px-4 py-1.5 bg-indigo-600 text-white text-sm rounded-lg
+                           hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed
+                           flex items-center gap-1.5"
+              >
+                {addingOpt ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                {addingOpt ? 'Saving...' : 'Save Item'}
+              </button>
+              <button
+                type="button"
+                onClick={resetAddForm}
+                className="px-4 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         )}
 
@@ -271,13 +334,13 @@ export const Step4Verification = ({
           </p>
         )}
 
-        {/* Custom option cards — same layout as fixed items above */}
+        {/* ── Saved Custom Option Cards ──────────────────────────────────── */}
         {!loadingOpts && customOptions.map(opt => (
           <div
             key={opt.id}
             className="p-4 border border-indigo-200 bg-indigo-50 rounded-lg mb-3"
           >
-            {/* Header row */}
+            {/* Header */}
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-medium text-gray-900">{opt.optionName}</h3>
               {canDelete && (
@@ -297,11 +360,9 @@ export const Step4Verification = ({
             </div>
 
             <div className="space-y-3">
-              {/* Status dropdown */}
+              {/* Status */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Status
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                 <select
                   value={customVerifData[opt.id]?.status ?? VerificationStatus.NOT_DONE}
                   onChange={e =>
@@ -314,16 +375,14 @@ export const Step4Verification = ({
                              focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   {Object.values(VerificationStatus).map(s => (
-                    <option key={s} value={s}>{s.replace('_', ' ')}</option>
+                    <option key={s} value={s}>{formatStatus(s)}</option>
                   ))}
                 </select>
               </div>
 
-              {/* Notes textarea */}
+              {/* Notes */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Notes
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
                 <textarea
                   value={customVerifData[opt.id]?.notes ?? ''}
                   onChange={e =>
@@ -343,8 +402,7 @@ export const Step4Verification = ({
         ))}
       </div>
 
-
-      {/* Actions */}
+      {/* ── Actions ────────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
         <button
           type="button"
@@ -354,7 +412,6 @@ export const Step4Verification = ({
           <ArrowLeft className="w-4 h-4" />
           Previous
         </button>
-        {/* Skip Button */}
         <button
           type="button"
           onClick={onSkip}
@@ -368,15 +425,9 @@ export const Step4Verification = ({
           className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {updateMutation.isPending ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin" />
-              Saving...
-            </>
+            <><Loader2 className="w-5 h-5 animate-spin" /> Saving...</>
           ) : (
-            <>
-              Save & Continue
-              <ArrowRight className="w-4 h-4" />
-            </>
+            <>Save & Continue <ArrowRight className="w-4 h-4" /></>
           )}
         </button>
       </div>

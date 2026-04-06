@@ -80,7 +80,7 @@ const AdminLoaCreate: React.FC = () => {
         const created = await loaApi.createLoa(payload);
         toast.success(`LOA ${created.loaNumber} created successfully.`);
       }
-      navigate('/admin/loa');
+      navigate('/super-admin/loa');
     } catch (err: any) {
       toast.error(err?.response?.data?.message ?? 'Failed to save LOA.');
     } finally {
@@ -93,7 +93,7 @@ const AdminLoaCreate: React.FC = () => {
       {/* Header */}
       <div className="flex items-center gap-4">
         <button
-          onClick={() => navigate('/admin/loa')}
+          onClick={() => navigate('/super-admin/loa')}
           className="p-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -208,7 +208,7 @@ const AdminLoaCreate: React.FC = () => {
               </button>
               <button
                 type="button"
-                onClick={() => navigate('/admin/loa')}
+                onClick={() => navigate('/super-admin/loa')}
                 className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 Cancel

@@ -7,7 +7,6 @@ import ProfileForm from '../components/operations/profile/ProfileForm';
 import ReportDashboard from '../components/operations/report-create/report-dashboard';
 import AdminDashboard from '../components/admin/admin-dashboard';
 import EmployeeProfile from '../components/admin/EmployeeProfile';
-import Login from '../components/auth/Login';
 import EmployeeChangeHistoryReport from '../components/admin/EmployeeChangeHistoryReport';
 import NotFound from './NotFound';
 import ResetPasswordPage from '../pages/ResetPasswordPage';
@@ -43,6 +42,7 @@ import VerifyEmailPage from '../components/auth/VerifyEmailPage';
 
 import LoaPreviewPage from '../components/admin/loa/LoaPreviewPage';
 import FieldAssociateDashboard from '../components/operations/grnd_operation/FieldAssociateDashboard';
+import SuperAdminDashboard from '../components/super-admin/SuperAdminDashboard';
 
 
 
@@ -107,9 +107,6 @@ const AdminProfileFormWrapper = () => {
   );
 };
 
-
-
-
 const AppRoutes = () => {
   const { user } = useAuthStore();
 
@@ -117,121 +114,28 @@ const AppRoutes = () => {
     if (!user) return '/auth/login';
 
     if (user.roleName === 'FIELD_ASSOCIATE') return '/field-associate/dashboard';
-
-    if (
-      user.roleName === 'SUPER_ADMIN' ||
-      user.roleName === 'ADMIN' ||        // ← ADD
-      user.roleName === 'HR_MANAGER'
-    ) return '/admin';
-
+    if (user.roleName === 'ADMIN') return '/admin';
     if (user.roleName === 'ASSOCIATE') return '/operations/dashboard';
+    if (user.roleName === 'SUPER_ADMIN') return '/super-admin';
+    if (user.roleName === 'HR_MANAGER') return '/hr-manager';
+    if (user.roleName === 'HR_MANAGER') return '/hr-manager';
 
     return '/auth/login';
   };
 
   return (
     <Routes>
-      {/* ==================== PUBLIC ROUTES ==================== */}
-      {/* Login Routes - Two paths for backward compatibility */}
+      {/* Login Routes - Two paths for backward compatibility & Default redirect */}
       <Route path="/auth/login" element={<LoginPage />} />
-      <Route path="/admin/login" element={<Login />} />
       <Route path="/auth/verify-email" element={<VerifyEmailPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
-
-      {/* Default redirect */}
-      <Route
-        path="/"
-        element={<Navigate to={getDefaultRoute()} replace />}
-      />
-
-      {/* ==================== PROTECTED ROUTES ==================== */}
-      {/* Operations Module - Protected but accessible to all authenticated users */}
-      <Route
-        path="/operations/dashboard"
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/operations/report-create"
-        element={
-          <ProtectedRoute>
-            <ReportCreate />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/operations/profile"
-        element={
-          <ProtectedRoute>
-            <DashboardLayout>
-              <ProfileIndex />
-            </DashboardLayout>
-          </ProtectedRoute>
-        }
-      />
-
-      // routes/index.tsx
-
-      <Route
-        path="/operations/pre-report/:reportId/preview"
-        element={
-          <ProtectedRoute>
-            {/* ← ADD 'ADMIN' to allowed roles */}
-            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'ASSOCIATE']}>
-              <PreReportPreviewPage />
-            </RoleBasedRoute>
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/" element={<Navigate to={getDefaultRoute()} replace />} />
 
 
-      <Route
-        path="/operations/profile/create"
-        element={
-          <ProtectedRoute>
-            <ProfileFormWrapper />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/operations/profile-form"
-        element={
-          <ProtectedRoute>
-            <ProfileFormWrapper />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/operations/case"
-        element={
-          <ProtectedRoute>
-            <CaseIndex />
-          </ProtectedRoute>
-        }
-      />
-
-
-      <Route
-        path="/admin/clients"
-        element={
-          <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
-              <AdminDashboard />
-            </RoleBasedRoute>
-          </ProtectedRoute>
-        }
-      />
-
-      // Make sure this route exists and is accessible
-      <Route
-        path="/admin"
+      {/*--------------Admin Routes------------- */}
+      <Route path="/admin" element={<ProtectedRoute> <RoleBasedRoute allowedRoles={['ADMIN']}><AdminDashboard /></RoleBasedRoute></ProtectedRoute>} />
+      
+      <Route path="/admin/clients"
         element={
           <ProtectedRoute>
             <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
@@ -264,129 +168,10 @@ const AppRoutes = () => {
       />
 
       <Route
-        path="/operations/reports"
-        element={
-          <ProtectedRoute>
-            <ReportDashboard />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/operations/pre-reports"
-        element={
-          <ProtectedRoute>
-            <DashboardLayout>
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <EmployeePreReportList />
-              </div>
-            </DashboardLayout>
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/operations/pre-report/create"
-        element={
-          <ProtectedRoute>
-            <CreatePreReport />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* ── Field Associate Dashboard ──────────────────────────────── */}
-      <Route
-        path="/field-associate/dashboard"
-        element={
-          <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['FIELD_ASSOCIATE']}>
-              <FieldAssociateDashboard />
-            </RoleBasedRoute>
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/field-associate/loa"
-        element={
-          <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['FIELD_ASSOCIATE']}>
-              <FieldAssociateDashboard />
-            </RoleBasedRoute>
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/field-associate/loa/:id/preview"
+        path="/super-admin/loa/:id/preview"
         element={
           <ProtectedRoute>
             <LoaPreviewPage />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* ── Admin LOA Routes ────────────────────────────────────────── */}
-      <Route
-        path="/admin/loa"
-        element={
-          <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
-              <AdminDashboard />
-            </RoleBasedRoute>
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/admin/loa/create"
-        element={
-          <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
-              <AdminDashboard />
-            </RoleBasedRoute>
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/admin/loa/:id/edit"
-        element={
-          <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
-              <AdminDashboard />
-            </RoleBasedRoute>
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/admin/loa/:id/preview"
-        element={
-          <ProtectedRoute>
-            <LoaPreviewPage />
-          </ProtectedRoute>
-        }
-      />
-
-
-
-
-
-      <Route
-        path="/operations/pre-report/:reportId"
-        element={
-          <ProtectedRoute>
-            <PreReportDetails />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/operations/pre-report/:reportId/edit"
-        element={
-          <ProtectedRoute>
-            <EditPreReport />
           </ProtectedRoute>
         }
       />
@@ -446,29 +231,6 @@ const AppRoutes = () => {
         }
       />
 
-
-      {/* ✅ Change Password - Protected (All authenticated users) */}
-      <Route
-        path="/auth/change-password"
-        element={
-          <ProtectedRoute>
-            <ChangePasswordPage />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* Employee Profile - Protected */}
-      <Route
-        path="/operations/employee/profile"
-        element={
-          <ProtectedRoute>
-            <EmployeeProfile />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* ==================== ADMIN ROUTES ==================== */}
-      {/* Admin Module - Protected and Role-Based (SUPER_ADMIN, HR_MANAGER only) */}
       <Route
         path="/admin"
         element={
@@ -502,69 +264,6 @@ const AppRoutes = () => {
         }
       />
 
-
-
-      {/* ── Final Report Routes ──────────────────────────────────── */}
-      <Route
-        path="/operations/finalreport/create"
-        element={
-          <ProtectedRoute>
-            <CreateReportPage />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/operations/finalreport/:reportId/edit"
-        element={
-          <ProtectedRoute>
-            <EditReportPage />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/operations/finalreport/:reportId/preview"
-        element={
-          <ProtectedRoute>
-            <PreviewReportPage />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/operations/final-reports"
-        element={
-          <ProtectedRoute>
-            <FinalReportList />
-          </ProtectedRoute>
-        }
-      />
-
-
-
-      // ── Operations Case Routes ─────────────────────────────────────────────
-      <Route
-        path="/operations/cases"
-        element={
-          <ProtectedRoute>
-            <DashboardLayout>
-              <CaseIndex />
-            </DashboardLayout>
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/operations/cases/:caseId"
-        element={
-          <ProtectedRoute>
-            <CaseDashboard />
-          </ProtectedRoute>
-        }
-      />
-
-// ── Admin Case Routes ──────────────────────────────────────────────────
       <Route
         path="/admin/cases"
         element={
@@ -677,6 +376,343 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+
+
+      {/*------X-------Admin Routes-----X------- */}
+
+
+
+      {/*--------------Super-Admin Routes------------- */}
+      <Route path="/super-admin/cases" element={<SuperAdminDashboard />} />
+      <Route
+        path="/super-admin/cases/:caseId"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
+              <CaseDashboard isAdminView />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route path="/super-admin/profiles" element={ <RoleBasedRoute allowedRoles={['SUPER_ADMIN', ]}><SuperAdminDashboard /></RoleBasedRoute>} />
+      <Route path="/super-admin/pre-reports" element={ <RoleBasedRoute allowedRoles={['SUPER_ADMIN', ]}><SuperAdminDashboard /></RoleBasedRoute>} />
+      <Route path="/super-admin/clients" element={ <RoleBasedRoute allowedRoles={['SUPER_ADMIN', ]}><SuperAdminDashboard /></RoleBasedRoute>} />
+      <Route path="/super-admin/finalreports" element={ <RoleBasedRoute allowedRoles={['SUPER_ADMIN']}><SuperAdminDashboard /></RoleBasedRoute>} />
+      <Route path="/super-admin/loa" element={ <RoleBasedRoute allowedRoles={['SUPER_ADMIN', ]}><SuperAdminDashboard /></RoleBasedRoute>} />
+      <Route path="/super-admin/loa/create" element={ <RoleBasedRoute allowedRoles={['SUPER_ADMIN', ]}><SuperAdminDashboard /></RoleBasedRoute>} />
+      <Route path="/super-admin/proposals" element={ <RoleBasedRoute allowedRoles={['SUPER_ADMIN', ]}><SuperAdminDashboard /></RoleBasedRoute>} />
+      <Route
+        path="/super-admin/loa/:id/edit"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN']}>
+              <SuperAdminDashboard />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/super-admin"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN']}>
+              <SuperAdminDashboard />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+      {/*------X-------Super-Admin Routes----X-------- */}
+
+
+
+      {/*--------------Operations Routes------------- */}
+
+      <Route
+        path="/operations/dashboard"
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/operations/report-create"
+        element={
+          <ProtectedRoute>
+            <ReportCreate />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/operations/profile"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <ProfileIndex />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      // routes/index.tsx
+
+      <Route
+        path="/operations/pre-report/:reportId/preview"
+        element={
+          <ProtectedRoute>
+            {/* ← ADD 'ADMIN' to allowed roles */}
+            <RoleBasedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'ASSOCIATE']}>
+              <PreReportPreviewPage />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+
+
+      <Route
+        path="/operations/profile/create"
+        element={
+          <ProtectedRoute>
+            <ProfileFormWrapper />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/operations/profile-form"
+        element={
+          <ProtectedRoute>
+            <ProfileFormWrapper />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/operations/case"
+        element={
+          <ProtectedRoute>
+            <CaseIndex />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/operations/reports"
+        element={
+          <ProtectedRoute>
+            <ReportDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/operations/pre-reports"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <EmployeePreReportList />
+              </div>
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/operations/pre-report/create"
+        element={
+          <ProtectedRoute>
+            <CreatePreReport />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/operations/pre-report/:reportId"
+        element={
+          <ProtectedRoute>
+            <PreReportDetails />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/operations/pre-report/:reportId/edit"
+        element={
+          <ProtectedRoute>
+            <EditPreReport />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/operations/employee/profile"
+        element={
+          <ProtectedRoute>
+            <EmployeeProfile />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* ==================== ADMIN ROUTES ==================== */}
+      {/* Admin Module - Protected and Role-Based (SUPER_ADMIN, HR_MANAGER only) */}
+
+
+
+      {/* ── Final Report Routes ──────────────────────────────────── */}
+      <Route
+        path="/operations/finalreport/create"
+        element={
+          <ProtectedRoute>
+            <CreateReportPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/operations/finalreport/:reportId/edit"
+        element={
+          <ProtectedRoute>
+            <EditReportPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/operations/finalreport/:reportId/preview"
+        element={
+          <ProtectedRoute>
+            <PreviewReportPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/operations/final-reports"
+        element={
+          <ProtectedRoute>
+            <FinalReportList />
+          </ProtectedRoute>
+        }
+      />
+
+
+
+      // ── Operations Case Routes ─────────────────────────────────────────────
+      <Route
+        path="/operations/cases"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <CaseIndex />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/operations/cases/:caseId"
+        element={
+          <ProtectedRoute>
+            <CaseDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+
+      {/*------X-------Operations Routes----X-------- */}
+
+      {/*--------------Operations-field Associate Routes------------- */}
+
+      <Route
+        path="/field-associate/dashboard"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={['FIELD_ASSOCIATE']}>
+              <FieldAssociateDashboard />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/field-associate/loa"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={['FIELD_ASSOCIATE']}>
+              <FieldAssociateDashboard />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/field-associate/loa/:id/preview"
+        element={
+          <ProtectedRoute>
+            <LoaPreviewPage />
+          </ProtectedRoute>
+        }
+      />
+
+
+      {/*------X-------Operations-field Associate Routes----X-------- */}
+
+
+
+
+      {/* ==================== PROTECTED ROUTES ==================== */}
+      {/* Operations Module - Protected but accessible to all authenticated users */}
+
+
+
+      // Super Admin Routes
+
+      // Make sure this route exists and is accessible
+
+
+
+
+
+
+
+      {/* ── Field Associate Dashboard ──────────────────────────────── */}
+
+      {/* ── Admin LOA Routes ────────────────────────────────────────── */}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      {/* ✅ Change Password - Protected (All authenticated users) */}
+      <Route
+        path="/auth/change-password"
+        element={
+          <ProtectedRoute>
+            <ChangePasswordPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Employee Profile - Protected */}
+
+// ── Admin Case Routes ──────────────────────────────────────────────────
+
+
+
 
 
 

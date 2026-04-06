@@ -31,8 +31,9 @@ export const useAuth = () => {
 
         switch (roleName) {
           case 'SUPER_ADMIN':
-          case 'ADMIN':
-          case 'HR_MANAGER':          // ← FIX: was 'ASSOCIATE' (wrong)
+            redirectPath = '/super-admin';
+            break;
+          case 'ADMIN':         
             redirectPath = '/admin';
             break;
           case 'FIELD_ASSOCIATE':
