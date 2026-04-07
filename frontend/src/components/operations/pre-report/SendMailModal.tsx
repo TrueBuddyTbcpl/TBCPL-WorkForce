@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Mail, User, MessageSquare, Send, Loader2, AlertCircle } from 'lucide-react';
+import { X, Mail, User, MessageSquare, Send, Loader2, AlertCircle, FileText } from 'lucide-react';
 
 interface SendMailModalProps {
     isOpen: boolean;
@@ -7,7 +7,7 @@ interface SendMailModalProps {
     clientName: string;
     defaultEmail?: string;
     onClose: () => void;
-    onConfirm: (toEmail: string, toName: string, notes: string) => Promise<void>;
+    onConfirm: (toEmail: string, toName: string, caseTitle: string, notes: string) => Promise<void>;
 }
 
 const isValidEmail = (email: string) =>
@@ -21,9 +21,10 @@ export const SendMailModal = ({
     onClose,
     onConfirm,
 }: SendMailModalProps) => {
-    const [toEmail, setToEmail] = useState(defaultEmail);
-    const [toName, setToName] = useState(clientName ?? '');
-    const [notes, setNotes] = useState('');
+    const [toEmail, setToEmail]     = useState(defaultEmail);
+    const [toName, setToName]       = useState(clientName ?? '');
+    const [caseTitle, setCaseTitle] = useState('');   // ← NEW
+    const [notes, setNotes]         = useState('');
     const [isSending, setIsSending] = useState(false);
     const [emailError, setEmailError] = useState('');
 
@@ -32,6 +33,7 @@ export const SendMailModal = ({
         if (isOpen) {
             setToEmail(defaultEmail);
             setToName(clientName ?? '');
+            setCaseTitle('');   // ← NEW
             setNotes('');
             setEmailError('');
             setIsSending(false);
@@ -43,22 +45,21 @@ export const SendMailModal = ({
         if (emailError && isValidEmail(val)) setEmailError('');
     };
 
-    // In SendMailModal.tsx
     const handleSubmit = async () => {
         if (!isValidEmail(toEmail)) {
             setEmailError('Please enter a valid email address');
             return;
         }
-        if (!toName.trim()) return;
+        if (!toName.trim() || !caseTitle.trim()) return;  // ← caseTitle required
 
         setIsSending(true);
         try {
-            await onConfirm(toEmail.trim(), toName.trim(), notes.trim());
-            onClose(); // only close on success
+            await onConfirm(toEmail.trim(), toName.trim(), caseTitle.trim(), notes.trim());
+            onClose();
         } catch {
             // toast shown by parent — modal stays open for retry
         } finally {
-            setIsSending(false); // always re-enable button
+            setIsSending(false);
         }
     };
 
@@ -69,13 +70,11 @@ export const SendMailModal = ({
     if (!isOpen) return null;
 
     return (
-        // Backdrop
         <div
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
             onClick={(e) => { if (e.target === e.currentTarget && !isSending) onClose(); }}
             onKeyDown={handleKeyDown}
         >
-            {/* Modal */}
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
 
                 {/* Header */}
@@ -117,10 +116,7 @@ export const SendMailModal = ({
                                 className={`w-full pl-9 pr-4 py-2.5 text-sm border rounded-lg outline-none transition-colors
                   focus:ring-2 focus:ring-green-500 focus:border-green-500
                   disabled:bg-gray-50 disabled:cursor-not-allowed
-                  ${emailError
-                                        ? 'border-red-400 bg-red-50'
-                                        : 'border-gray-300 bg-white'
-                                    }`}
+                  ${emailError ? 'border-red-400 bg-red-50' : 'border-gray-300 bg-white'}`}
                             />
                         </div>
                         {emailError && (
@@ -148,6 +144,29 @@ export const SendMailModal = ({
                   disabled:bg-gray-50 disabled:cursor-not-allowed"
                             />
                         </div>
+                    </div>
+
+                    {/* ── Case Title (NEW) ── */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                            Case Title <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                            <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                            <input
+                                type="text"
+                                value={caseTitle}
+                                onChange={(e) => setCaseTitle(e.target.value)}
+                                placeholder="e.g. Investigation of XYZ – Counterfeit Products"
+                                disabled={isSending}
+                                className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg outline-none
+                  focus:ring-2 focus:ring-green-500 focus:border-green-500
+                  disabled:bg-gray-50 disabled:cursor-not-allowed"
+                            />
+                        </div>
+                        <p className="mt-1 text-xs text-gray-400">
+                            This will appear in the email body as the report subject/case description.
+                        </p>
                     </div>
 
                     {/* Notes */}
@@ -192,7 +211,7 @@ export const SendMailModal = ({
                     </button>
                     <button
                         onClick={handleSubmit}
-                        disabled={isSending || !toEmail.trim() || !toName.trim()}
+                        disabled={isSending || !toEmail.trim() || !toName.trim() || !caseTitle.trim()}
                         className="flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-green-600 rounded-lg
               hover:bg-green-700 transition-colors
               disabled:opacity-50 disabled:cursor-not-allowed"

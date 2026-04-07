@@ -17,10 +17,8 @@ import apiClient from '../../../services/api/apiClient';
 import { StatusDropdown } from '../StatusDropdown';
 import { RequestChangesModal } from '../RequestChangesModal';
 import { ReportStatus } from '../../../utils/constants';
-// ✅ Add these two imports to existing import list
 import CreateCaseModal from '../../operations/Cases/CreateCaseModal';
 import { useAuthStore } from '../../../stores/authStore';
-
 import { toast } from 'sonner';
 
 
@@ -28,7 +26,6 @@ interface ClientOption {
   id: number;
   name: string;
 }
-
 
 interface EmployeeOption {
   id: number;
@@ -43,7 +40,6 @@ export const AdminPreReportList: React.FC = () => {
   const [size] = useState(15);
 
   const [creatingCaseForReportId, setCreatingCaseForReportId] = useState<number | null>(null);
-
   const [modalReport, setModalReport] = useState<{
     id: number;
     reportId: string;
@@ -51,7 +47,6 @@ export const AdminPreReportList: React.FC = () => {
   } | null>(null);
 
   const { user } = useAuthStore();
-
 
   // Filter states
   const [showFilters, setShowFilters] = useState(false);
@@ -85,10 +80,15 @@ export const AdminPreReportList: React.FC = () => {
   // Modal state
   const [selectedReportForChanges, setSelectedReportForChanges] = useState<string | null>(null);
 
-  // ✅ ADDED: Employee names mapping for display
-  const [employeeNamesMap, setEmployeeNamesMap] = useState<Record<number, string>>({});
-
   const { data, isLoading, isError, refetch } = usePreReports({ page, size });
+
+  // ✅ Build employee name map from already-loaded employees — zero extra API calls
+  const employeeNamesMap = useMemo<Record<number, string>>(() => {
+    return employees.reduce((map, emp) => {
+      map[emp.id] = emp.name;
+      return map;
+    }, {} as Record<number, string>);
+  }, [employees]);
 
   // Fetch all clients for dropdown
   useEffect(() => {
@@ -109,7 +109,6 @@ export const AdminPreReportList: React.FC = () => {
         setIsLoadingClients(false);
       }
     };
-
     fetchClients();
   }, []);
 
@@ -121,7 +120,7 @@ export const AdminPreReportList: React.FC = () => {
         const res = await apiClient.get('/auth/employees', {
           params: { page: 0, size: 1000, sort: 'empId', direction: 'ASC' },
         });
-        const list = (res.data?.data?.employees || []) as any[];
+        const list = (res.data?.data?.content || []) as any[];
         setEmployees(
           list.map((e) => ({
             id: e.id,
@@ -135,40 +134,8 @@ export const AdminPreReportList: React.FC = () => {
         setIsLoadingEmployees(false);
       }
     };
-
     fetchEmployees();
   }, []);
-
-  // ✅ ADDED: Fetch employee names for reports
-  useEffect(() => {
-    const fetchEmployeeNamesForReports = async () => {
-      if (!data?.reports || data.reports.length === 0) return;
-
-      const uniqueEmployeeIds = [...new Set(data.reports.map(r => r.createdBy))];
-      const names: Record<number, string> = {};
-
-      await Promise.all(
-        uniqueEmployeeIds.map(async (employeeId) => {
-          try {
-            const response = await apiClient.get(`/auth/employees/id/${employeeId}`);
-
-            if (response.data?.success && response.data?.data) {
-              names[employeeId] = response.data.data.fullName;
-            } else {
-              names[employeeId] = `Employee ${employeeId}`;
-            }
-          } catch (error) {
-            console.error(`Failed to fetch employee name for ID ${employeeId}:`, error);
-            names[employeeId] = `Employee ${employeeId}`;
-          }
-        })
-      );
-
-      setEmployeeNamesMap(names);
-    };
-
-    fetchEmployeeNamesForReports();
-  }, [data?.reports]);
 
   const filteredClients = useMemo(() => {
     if (!clientSearchQuery) return clients;
@@ -185,13 +152,7 @@ export const AdminPreReportList: React.FC = () => {
   }, [employees, employeeSearchQuery]);
 
   const handleSearch = () => {
-    setAppliedFilters({
-      clientName,
-      createdBy,
-      leadType,
-      dateFrom,
-      dateTo,
-    });
+    setAppliedFilters({ clientName, createdBy, leadType, dateFrom, dateTo });
     setPage(0);
   };
 
@@ -203,13 +164,7 @@ export const AdminPreReportList: React.FC = () => {
     setDateTo('');
     setClientSearchQuery('');
     setEmployeeSearchQuery('');
-    setAppliedFilters({
-      clientName: '',
-      createdBy: '',
-      leadType: '',
-      dateFrom: '',
-      dateTo: '',
-    });
+    setAppliedFilters({ clientName: '', createdBy: '', leadType: '', dateFrom: '', dateTo: '' });
     setPage(0);
   };
 
@@ -224,13 +179,12 @@ export const AdminPreReportList: React.FC = () => {
     setShowClientDropdown(false);
   };
 
-  // ✅ FIXED: Store employee ID instead of name
   const handleEmployeeSelect = (employee: EmployeeOption | null) => {
     if (!employee) {
       setCreatedBy('');
       setEmployeeSearchQuery('');
     } else {
-      setCreatedBy(employee.id.toString());  // ✅ Store employee ID
+      setCreatedBy(employee.id.toString());
       setEmployeeSearchQuery(employee.name);
     }
     setShowEmployeeDropdown(false);
@@ -241,7 +195,6 @@ export const AdminPreReportList: React.FC = () => {
       await apiClient.patch(`/operation/prereport/${reportId}/status`, {
         reportStatus: newStatus,
       });
-
       toast.success('Status updated successfully');
       refetch();
     } catch (error: any) {
@@ -255,7 +208,6 @@ export const AdminPreReportList: React.FC = () => {
       await apiClient.post(`/operation/prereport/${reportId}/request-changes`, {
         changeComments,
       });
-
       toast.success('Changes requested successfully');
       refetch();
     } catch (error: any) {
@@ -264,8 +216,6 @@ export const AdminPreReportList: React.FC = () => {
     }
   };
 
-  // ✅ ADDED: Handle create case
-  // ✅ Replace with this
   const handleCreateCase = async (
     prereportId: number,
     assignedEmployeeEmpIds: string[]
@@ -293,8 +243,6 @@ export const AdminPreReportList: React.FC = () => {
     }
   };
 
-
-  // ✅ FIXED: Filter by employee ID
   const getFilteredReports = () => {
     let reports = data?.reports || [];
 
@@ -305,7 +253,6 @@ export const AdminPreReportList: React.FC = () => {
     }
 
     if (appliedFilters.createdBy) {
-      // ✅ Filter by employee ID (number)
       reports = reports.filter((r) => r.createdBy === parseInt(appliedFilters.createdBy));
     }
 
@@ -359,24 +306,26 @@ export const AdminPreReportList: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
+      {/* Header — matches dashboard template */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Preliminary Reports</h2>
-          <p className="text-sm text-gray-600 mt-1">
+        <div className="ml-4 mt-5">
+          <h1 className="text-2xl font-bold text-white uppercase tracking-wide">
+            Preliminary Reports
+          </h1>
+          <p className="text-sm text-white/70 mt-1 tracking-wider">
             View and manage all pre-investigation reports
           </p>
         </div>
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate('/admin/pre-report/create')}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-          >
-            <FileText className="w-4 h-4" />
-            Create Report
-          </button>
+
+        <div className="flex items-center gap-3">
+          {/* Total count badge — inline, not a separate box */}
+          <span className="px-3 py-1.5 bg-blue-50 text-blue-700 text-sm font-semibold rounded-full border border-blue-200">
+            {pagination?.totalReports ?? filteredReports.length} Reports
+          </span>
+
           <button
             onClick={() => setShowFilters((v) => !v)}
-            className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${showFilters || hasActiveFilters
+            className={`flex items-center gap-2 px-4 py-2 border rounded-lg text-sm font-medium transition-colors ${showFilters || hasActiveFilters
               ? 'bg-blue-50 border-blue-300 text-blue-700'
               : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
               }`}
@@ -384,16 +333,19 @@ export const AdminPreReportList: React.FC = () => {
             <Filter className="w-4 h-4" />
             Filters
             {hasActiveFilters && (
-              <span className="ml-1 px-2 py-0.5 bg-blue-600 text-white text-xs rounded-full">
+              <span className="ml-1 px-1.5 py-0.5 bg-blue-600 text-white text-xs rounded-full">
                 {Object.values(appliedFilters).filter(Boolean).length}
               </span>
             )}
           </button>
 
-          <div className="bg-blue-50 px-4 py-2 rounded-lg">
-            <p className="text-sm text-gray-600">Total Reports</p>
-            <p className="text-2xl font-bold text-blue-600">{filteredReports.length}</p>
-          </div>
+          <button
+            onClick={() => navigate('/admin/pre-report/create')}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+          >
+            <FileText className="w-4 h-4" />
+            Create Report
+          </button>
         </div>
       </div>
 
@@ -425,14 +377,11 @@ export const AdminPreReportList: React.FC = () => {
                     setShowClientDropdown(true);
                   }}
                   onFocus={() => setShowClientDropdown(true)}
-                  placeholder={
-                    isLoadingClients ? 'Loading clients...' : 'Search client name...'
-                  }
+                  placeholder={isLoadingClients ? 'Loading clients...' : 'Search client name...'}
                   disabled={isLoadingClients}
                   className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-
                 {showClientDropdown && !isLoadingClients && (
                   <>
                     <div
@@ -493,7 +442,6 @@ export const AdminPreReportList: React.FC = () => {
                   className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-
                 {showEmployeeDropdown && !isLoadingEmployees && (
                   <>
                     <div
@@ -598,7 +546,6 @@ export const AdminPreReportList: React.FC = () => {
       {filteredReports.length > 0 ? (
         <>
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            {/* ✅ CHANGED: Proper overflow handling */}
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
@@ -652,18 +599,14 @@ export const AdminPreReportList: React.FC = () => {
                             : 'bg-purple-100 text-purple-800'
                             }`}
                         >
-                          {report.leadType === 'CLIENT_LEAD'
-                            ? 'Client Lead'
-                            : 'TrueBuddy Lead'}
+                          {report.leadType === 'CLIENT_LEAD' ? 'Client Lead' : 'TrueBuddy Lead'}
                         </span>
                       </td>
-                      {/* ✅ FIXED: Better approach - only add padding for last 2 rows */}
                       <td
                         className={`px-6 whitespace-nowrap ${index >= filteredReports.length - 2 ? 'py-4 pb-32' : 'py-4'
                           }`}
                         onClick={(e) => e.stopPropagation()}
                       >
-                        {/* ✅ CASE_GENERATED — show static badge, no dropdown */}
                         {report.reportStatus === 'CASE_GENERATED' ? (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-100 text-emerald-800 text-xs font-semibold rounded-full">
                             <Briefcase className="w-3 h-3" />
@@ -673,12 +616,17 @@ export const AdminPreReportList: React.FC = () => {
                           <StatusDropdown
                             currentStatus={report.reportStatus as ReportStatus}
                             reportId={report.reportId}
-                            onStatusChange={(newStatus) => handleStatusChange(report.reportId, newStatus)}
-                            onRequestChanges={() => setSelectedReportForChanges(report.reportId)}
+                            onStatusChange={(newStatus) =>
+                              handleStatusChange(report.reportId, newStatus)
+                            }
+                            onRequestChanges={() =>
+                              setSelectedReportForChanges(report.reportId)
+                            }
                           />
                         )}
                       </td>
 
+                      {/* ✅ FIXED: Resolved from local employees map — zero API calls */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <User className="w-4 h-4 text-gray-400 mr-2" />
@@ -687,6 +635,7 @@ export const AdminPreReportList: React.FC = () => {
                           </span>
                         </div>
                       </td>
+
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <Calendar className="w-4 h-4 text-gray-400 mr-2" />
@@ -701,16 +650,15 @@ export const AdminPreReportList: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex items-center gap-3">
-
-                          {/* View Details — always visible */}
                           <button
-                            onClick={() => navigate(`/operations/pre-report/${report.reportId}`)}
+                            onClick={() =>
+                              navigate(`/operations/pre-report/${report.reportId}`)
+                            }
                             className="text-blue-600 hover:text-blue-900 transition-colors"
                           >
                             View Details
                           </button>
 
-                          {/* Create Case button — only when READY_FOR_CREATE_CASE */}
                           {report.reportStatus === 'READY_FOR_CREATE_CASE' && (
                             <button
                               onClick={(e) => {
@@ -738,7 +686,6 @@ export const AdminPreReportList: React.FC = () => {
                             </button>
                           )}
 
-                          {/* ✅ Case Number clickable badge — only when CASE_GENERATED */}
                           {report.reportStatus === 'CASE_GENERATED' && report.caseNumber && (
                             <button
                               onClick={() => navigate(`/admin/cases/${report.caseId}`)}
@@ -749,10 +696,8 @@ export const AdminPreReportList: React.FC = () => {
                               {report.caseNumber}
                             </button>
                           )}
-
                         </div>
                       </td>
-
                     </tr>
                   ))}
                 </tbody>
@@ -760,7 +705,7 @@ export const AdminPreReportList: React.FC = () => {
             </div>
           </div>
 
-          {/* Pagination remains same */}
+          {/* Pagination */}
           {pagination && pagination.totalPages > 1 && (
             <div className="flex items-center justify-between bg-white px-6 py-3 border border-gray-200 rounded-lg">
               <div className="flex items-center gap-2">
@@ -816,7 +761,7 @@ export const AdminPreReportList: React.FC = () => {
         }
       />
 
-      {/* ✅ ADD: Create Case Modal */}
+      {/* Create Case Modal */}
       {modalReport && (
         <CreateCaseModal
           prereportId={modalReport.id}

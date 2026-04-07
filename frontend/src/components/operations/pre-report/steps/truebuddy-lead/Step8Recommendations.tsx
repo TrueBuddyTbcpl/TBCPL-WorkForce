@@ -155,7 +155,7 @@ const TrueBuddyStep8Recommendations: React.FC<Step8Props> = ({ data, onNext, onB
     },
     {
       name: 'recEnforcementDeferred' as const,
-      label: 'Enforcement (Deferred)',
+      label: 'Enforcement Planning',
       description: 'Recommend enforcement action after controlled validation and evidence collection',
       icon: (
         <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

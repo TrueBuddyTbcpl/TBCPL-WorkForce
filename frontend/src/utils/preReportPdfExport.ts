@@ -443,9 +443,9 @@ const generateClientLeadPDF = (data: PreReportPDFData): any => {
       sectionNumber++, 'Mandate / Scope Requested',
       buildCheckedList([
         { label: 'Due Diligence',                                           checked: cl.scopeDueDiligence },
-        { label: 'IPR Investigation -- Retailer / Wholesaler',              checked: cl.scopeIprRetailer },
-        { label: 'IPR Investigation -- Supplier',                           checked: cl.scopeIprSupplier },
-        { label: 'IPR Investigation -- Manufacturer / Packager / Warehouse',checked: cl.scopeIprManufacturer },
+        { label: 'IPR Retailer / Wholesaler',              checked: cl.scopeIprRetailer },
+        { label: 'IPR Supplier',                           checked: cl.scopeIprSupplier },
+        { label: 'IPR Manufacturer / Packager / Warehouse',checked: cl.scopeIprManufacturer },
         { label: 'Online Sample Purchase',                                  checked: cl.scopeOnlinePurchase },
         { label: 'Offline Sample Purchase',                                 checked: cl.scopeOfflinePurchase },
         ...customScopeItems,  // ✅ appended inline — same table, name resolved
@@ -572,11 +572,11 @@ const generateClientLeadPDF = (data: PreReportPDFData): any => {
     sections.push(sectionBlock(
       sectionNumber++, 'Recommended Way Forward',
       buildCheckedList([
-        { label: 'Market Survey / Reconnaissance',                  checked: cl.recMarketSurvey },
+        { label: 'Market Survey',                  checked: cl.recMarketSurvey },
         { label: 'Covert Investigation',                            checked: cl.recCovertInvestigation },
-        { label: 'Evidential Test Purchase',                        checked: cl.recTestPurchase },
-        { label: 'Direct Enforcement Action',                       checked: cl.recEnforcementAction },
-        { label: 'Additional Information Required from Client',     checked: cl.recAdditionalInfo },
+        { label: 'Test Purchase',                        checked: cl.recTestPurchase },
+        { label: 'Enforcement Action',                       checked: cl.recEnforcementAction },
+        { label: 'Additional Information Required',     checked: cl.recAdditionalInfo },
         { label: 'Closure / Hold',                                  checked: cl.recClosureHold },
         ...customRecItems,  // ✅ appended inline — same table, name resolved
       ])
@@ -742,12 +742,12 @@ const generateTrueBuddyLeadPDF = (data: PreReportPDFData): any => {
     sections.push(sectionBlock(
       sectionNumber++, 'Recommended Way Forward',
       buildCheckedList([
-        { label: 'Covert Intelligence Validation',            checked: tb.recCovertValidation },
-        { label: 'Evidential Test Purchase (ETP)',            checked: tb.recEtp },
-        { label: 'Controlled Market Reconnaissance',          checked: tb.recMarketReconnaissance },
-        { label: 'Enforcement Planning (Deferred)',           checked: tb.recEnforcementDeferred },
+        { label: 'Covert Validation',            checked: tb.recCovertValidation },
+        { label: 'ETP (Evidence Test Purchase)',            checked: tb.recEtp },
+        { label: 'Market Reconnaissance',          checked: tb.recMarketReconnaissance },
+        { label: 'Enforcement Planning',           checked: tb.recEnforcementDeferred },
         { label: 'Continued Monitoring',                      checked: tb.recContinuedMonitoring },
-        { label: 'Client-Specific Segregation Required',      checked: tb.recClientSegregation },
+        { label: 'Client Segregation',      checked: tb.recClientSegregation },
         ...(tb.recCustomIds || []).map(id => ({
           label: customOptMap.get(Number(id)) || `Custom Option #${id}`,
           checked: true,

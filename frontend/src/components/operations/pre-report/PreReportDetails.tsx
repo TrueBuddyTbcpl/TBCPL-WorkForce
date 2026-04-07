@@ -486,28 +486,28 @@ export const PreReportDetails = () => {
     navigate(`/operations/pre-report/${reportId}/preview`);
   };
 
-  const handleSendMail = () => {
+const handleSendMail = () => {
     if (!isAdmin) return;
     setIsMailModalOpen(true);
-  };
+};
 
-  const handleMailConfirm = async (toEmail: string, toName: string, notes: string) => {
+const handleMailConfirm = async (toEmail: string, toName: string, caseTitle: string, notes: string) => {
     if (!reportId) return;
     try {
-      await apiClient.post(`/operation/pre-reports/${reportId}/send-mail`, {
-        toEmail,
-        toName,
-        notes,
-      });
-      toast.success(`Report sent successfully to ${toEmail}`);
-      setIsMailModalOpen(false);
+        await apiClient.post(`/operation/pre-reports/${reportId}/send-mail`, {
+            toEmail,
+            toName,
+            caseTitle,   // ← NEW
+            notes,
+        });
+        toast.success(`Report sent successfully to ${toEmail}`);
+        setIsMailModalOpen(false);
     } catch (error: any) {
-      const message = error?.response?.data?.message ?? 'Failed to send mail. Please try again.';
-      toast.error(message);
-      throw error; // keeps modal open for retry
-    } finally {
+        const message = error?.response?.data?.message ?? 'Failed to send mail. Please try again.';
+        toast.error(message);
+        throw error; // keeps modal open for retry
     }
-  };
+};
 
   const renderCustomScopes = (ids: number[]) => {
     if (!ids || ids.length === 0) return null;

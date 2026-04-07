@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Plus, Calendar, User, MessageSquare, Clock, Loader2 } from 'lucide-react';
+import { Plus, Calendar, User, MessageSquare, Clock, Loader2, ChevronDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import apiClient from '../../../services/api/apiClient';
 import type { CaseUpdate, AddCaseUpdateRequest } from './types/case.types';
 import { useAuthStore } from '../../../stores/authStore';
+import { useOperationsEmployees } from '../../../hooks/cases/useOperationsEmployees';
 
 interface Props {
   caseId: number;
@@ -20,7 +21,12 @@ const InvestigationTracker = ({ caseId, currentStatus, updates, onUpdateAdded }:
   const [newUpdate, setNewUpdate] = useState<AddCaseUpdateRequest>({
     status: currentStatus,
     description: '',
+    procedureDoneBy: '',
+    procedureDoneByEmpId: '',
   });
+
+  // ── Fetch Operations employees for the dropdown ───────────────────
+  const { data: employees = [], isLoading: employeesLoading } = useOperationsEmployees();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,16 +39,16 @@ const InvestigationTracker = ({ caseId, currentStatus, updates, onUpdateAdded }:
     try {
       setIsSubmitting(true);
       await apiClient.post(
-        `/operation/cases/${caseId}/updates`,
-        newUpdate,
-        {
-          headers: {
-            'X-Username': user?.empId || user?.fullName || 'unknown',
-          },
-        }
-      );
+    `/operation/cases/${caseId}/updates`,
+    newUpdate,
+    {
+        headers: {
+            'X-Username': user?.empId || 'unknown',  // ← always send empId, backend resolves name
+        },
+    }
+);
       toast.success('Update added successfully');
-      setNewUpdate({ status: currentStatus, description: '' });
+      setNewUpdate({ status: currentStatus, description: '', procedureDoneBy: '', procedureDoneByEmpId: '' });
       setIsAddingUpdate(false);
       onUpdateAdded();
     } catch (error: any) {
@@ -52,11 +58,10 @@ const InvestigationTracker = ({ caseId, currentStatus, updates, onUpdateAdded }:
     }
   };
 
-
-
   return (
     <div className="space-y-6">
-      {/* Header */}
+
+      {/* ── Header ──────────────────────────────────────────────────── */}
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold text-gray-900">Investigation Timeline</h3>
         {!isAddingUpdate && (
@@ -70,12 +75,47 @@ const InvestigationTracker = ({ caseId, currentStatus, updates, onUpdateAdded }:
         )}
       </div>
 
-      {/* Add Update Form */}
+      {/* ── Add Update Form ──────────────────────────────────────────── */}
       {isAddingUpdate && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
           <h4 className="font-semibold text-gray-900 mb-4">Add Investigation Update</h4>
           <form onSubmit={handleSubmit} className="space-y-4">
 
+            {/* Procedure Done By — dropdown */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Procedure Done By
+                <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                <select
+                  value={newUpdate.procedureDoneByEmpId ?? ''}
+                  onChange={(e) => setNewUpdate({
+                    ...newUpdate,
+                    procedureDoneByEmpId: e.target.value,
+                    procedureDoneBy: '',   // backend resolves this — no need to send
+                  })}
+                  disabled={isSubmitting || employeesLoading}
+                  className="w-full pl-9 pr-9 py-2.5 text-sm border border-gray-300 rounded-lg
+        bg-white appearance-none
+        focus:ring-2 focus:ring-blue-500 focus:border-transparent
+        disabled:bg-gray-50 disabled:cursor-not-allowed"
+                >
+                  <option value="">
+                    {employeesLoading ? 'Loading employees...' : '— Select employee —'}
+                  </option>
+                  {employees.map((emp) => (
+                    <option key={emp.empId} value={emp.empId}>
+                      {emp.fullName} &nbsp;({emp.empId})
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Description */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Update Description <span className="text-red-500">*</span>
@@ -102,7 +142,7 @@ const InvestigationTracker = ({ caseId, currentStatus, updates, onUpdateAdded }:
                 type="button"
                 onClick={() => {
                   setIsAddingUpdate(false);
-                  setNewUpdate({ status: currentStatus, description: '' });
+                  setNewUpdate({ status: currentStatus, description: '', procedureDoneBy: '' });
                 }}
                 className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               >
@@ -113,7 +153,7 @@ const InvestigationTracker = ({ caseId, currentStatus, updates, onUpdateAdded }:
         </div>
       )}
 
-      {/* Timeline */}
+      {/* ── Timeline ─────────────────────────────────────────────────── */}
       {updates.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 rounded-lg">
           <MessageSquare className="w-16 h-16 mx-auto mb-4 text-gray-300" />
@@ -124,28 +164,51 @@ const InvestigationTracker = ({ caseId, currentStatus, updates, onUpdateAdded }:
         <div className="relative">
           <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gray-200" />
           <div className="space-y-6">
+            {/* Latest first — backend returns OrderByUpdateDateDesc */}
             {updates.map((update, index) => (
               <div key={update.id} className="relative pl-16">
-                <div className="absolute left-6 top-0 w-4 h-4 bg-blue-600 rounded-full border-4 border-white shadow" />
+                <div className={`absolute left-6 top-0 w-4 h-4 rounded-full border-4 border-white shadow
+                  ${index === 0 ? 'bg-green-500' : 'bg-blue-400'}`}
+                />
                 <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        {index === 0 && (
+
+                      {/* Latest badge */}
+                      {index === 0 && (
+                        <div className="mb-2">
                           <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-medium rounded">
                             Latest
                           </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-gray-500">
+                        </div>
+                      )}
+
+                      {/* Meta row */}
+                      <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
+
+                        {/* Updated by */}
                         <div className="flex items-center gap-1">
                           <User className="w-4 h-4" />
-                          <span>{update.updatedBy}</span>
+                          <span className="font-medium text-gray-700">{update.updatedBy}</span>
                         </div>
+
+                        {/* Procedure Done By — only if present */}
+                        {update.procedureDoneBy && (
+                          <div className="flex items-center gap-1 px-2.5 py-0.5 bg-purple-50 border border-purple-200 rounded-full">
+                            <User className="w-3.5 h-3.5 text-purple-500" />
+                            <span className="text-xs font-semibold text-purple-700">
+                              Done by: {update.procedureDoneBy}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Date */}
                         <div className="flex items-center gap-1">
                           <Calendar className="w-4 h-4" />
                           <span>{format(new Date(update.updateDate), 'dd MMM yyyy')}</span>
                         </div>
+
+                        {/* Time */}
                         <div className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
                           <span>{format(new Date(update.updateDate), 'hh:mm a')}</span>
@@ -153,6 +216,7 @@ const InvestigationTracker = ({ caseId, currentStatus, updates, onUpdateAdded }:
                       </div>
                     </div>
                   </div>
+
                   <p className="text-sm text-gray-700 whitespace-pre-wrap">{update.description}</p>
                 </div>
               </div>
@@ -161,7 +225,7 @@ const InvestigationTracker = ({ caseId, currentStatus, updates, onUpdateAdded }:
         </div>
       )}
 
-      {/* Summary */}
+      {/* ── Summary ──────────────────────────────────────────────────── */}
       {updates.length > 0 && (
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
           <div className="grid grid-cols-3 gap-4 text-center">

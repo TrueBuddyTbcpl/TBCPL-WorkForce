@@ -10,6 +10,7 @@ export interface CaseUpdate {
   id: number;
   updateDate: string;
   updatedBy: string;
+  procedureDoneBy?: string;
   status: string;
   description: string;
 }
@@ -76,6 +77,8 @@ export interface CaseDetail {
 export interface AddCaseUpdateRequest {
   status: string;
   description: string;
+  procedureDoneBy?: string;
+  procedureDoneByEmpId?: string; 
 }
 
 export interface CasePagination {
