@@ -237,6 +237,17 @@ export interface ProfileInitRequest {
   profilePhoto?: string;
 }
 
+export const savePersonalInfo = async (
+  profileId: number,
+  data: any
+): Promise<ApiProfileDetail> => {
+  const response = await apiClient.put(
+    `/operation/profiles/${profileId}/personal-info`,
+    data
+  );
+  return response.data;
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // INTERNAL HELPER — uppercase all enum string fields before sending
 // ─────────────────────────────────────────────────────────────────────────────

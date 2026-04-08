@@ -21,16 +21,13 @@ import type {
   FinalReportStatusUpdateRequest,
 } from './types/report.types';
 
-
 const PreviewReportPage = () => {
   const { reportId } = useParams<{ reportId: string }>();
   const navigate = useNavigate();
   const { user } = useAuthStore();
 
-
   const parsedId =
     reportId && !isNaN(Number(reportId)) ? Number(reportId) : null;
-
 
   const {
     data: report,
@@ -39,10 +36,8 @@ const PreviewReportPage = () => {
     refetch,
   } = useGetFinalReport(parsedId);
 
-
   const submitMutation = useSubmitForApproval(parsedId ?? 0);
   const statusMutation = useUpdateReportStatus(parsedId ?? 0);
-
 
   const [changeComments, setChangeComments] = useState('');
   const [showStatusModal, setShowStatusModal] = useState(false);
@@ -50,10 +45,8 @@ const PreviewReportPage = () => {
     'REQUEST_CHANGES' | 'APPROVED' | null
   >(null);
 
-
   const isAdmin =
     user?.roleName === 'SUPER_ADMIN' || user?.roleName === 'HR_MANAGER';
-
 
   if (!parsedId) {
     return (
@@ -64,7 +57,6 @@ const PreviewReportPage = () => {
     );
   }
 
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -73,7 +65,6 @@ const PreviewReportPage = () => {
       </div>
     );
   }
-
 
   if (isError || !report) {
     return (
@@ -85,7 +76,6 @@ const PreviewReportPage = () => {
       </div>
     );
   }
-
 
   const reportData: ReportData = {
     reportId: report.id,
@@ -105,19 +95,22 @@ const PreviewReportPage = () => {
     sections: report.sections,
   };
 
-
   const statusBadgeClass = () => {
     switch (report.reportStatus) {
-      case 'APPROVED':             return 'bg-green-100 text-green-800';
-      case 'WAITING_FOR_APPROVAL': return 'bg-yellow-100 text-yellow-800';
-      case 'REQUEST_CHANGES':      return 'bg-red-100 text-red-800';
-      default:                     return 'bg-gray-100 text-gray-800';
+      case 'APPROVED':
+        return 'bg-green-100 text-green-800';
+      case 'WAITING_FOR_APPROVAL':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'REQUEST_CHANGES':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
-
   const handleSubmitForApproval = async () => {
     const username = user?.empId || user?.fullName || 'unknown';
+
     try {
       await submitMutation.mutateAsync(username);
       toast.success('Report submitted for approval');
@@ -127,26 +120,31 @@ const PreviewReportPage = () => {
     }
   };
 
-
   const handleAdminStatusUpdate = async () => {
     if (!pendingStatus) return;
+
     if (pendingStatus === 'REQUEST_CHANGES' && !changeComments.trim()) {
       toast.error('Please provide change comments');
       return;
     }
+
     const username = user?.empId || user?.fullName || 'unknown';
+
     const payload: FinalReportStatusUpdateRequest = {
       reportStatus: pendingStatus,
       changeComments:
         pendingStatus === 'REQUEST_CHANGES' ? changeComments : null,
     };
+
     try {
       await statusMutation.mutateAsync({ payload, username });
+
       toast.success(
         pendingStatus === 'APPROVED'
           ? 'Report approved'
           : 'Report sent back for changes'
       );
+
       setShowStatusModal(false);
       setChangeComments('');
       setPendingStatus(null);
@@ -156,16 +154,16 @@ const PreviewReportPage = () => {
     }
   };
 
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* ── Action Bar ─────────────────────────────────────────────── */}
+    <div className="bg-gray-50 min-h-screen">
+      {/* Top Action Bar */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-40 px-6 py-3">
         <div className="max-w-5xl mx-auto flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium text-gray-700">
               {report.reportNumber}
             </span>
+
             <span
               className={`text-xs px-2 py-1 rounded-full font-semibold ${statusBadgeClass()}`}
             >
@@ -173,9 +171,7 @@ const PreviewReportPage = () => {
             </span>
           </div>
 
-
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Edit — DRAFT or REQUEST_CHANGES */}
             {(report.reportStatus === 'DRAFT' ||
               report.reportStatus === 'REQUEST_CHANGES') && (
               <button
@@ -189,8 +185,6 @@ const PreviewReportPage = () => {
               </button>
             )}
 
-
-            {/* Submit for Approval — DRAFT or REQUEST_CHANGES, non-admin */}
             {!isAdmin &&
               (report.reportStatus === 'DRAFT' ||
                 report.reportStatus === 'REQUEST_CHANGES') && (
@@ -208,8 +202,6 @@ const PreviewReportPage = () => {
                 </button>
               )}
 
-
-            {/* Admin: Request Changes / Approve — WAITING_FOR_APPROVAL */}
             {isAdmin && report.reportStatus === 'WAITING_FOR_APPROVAL' && (
               <>
                 <button
@@ -222,6 +214,7 @@ const PreviewReportPage = () => {
                   <RefreshCcw className="w-4 h-4" />
                   Request Changes
                 </button>
+
                 <button
                   onClick={() => {
                     setPendingStatus('APPROVED');
@@ -235,17 +228,22 @@ const PreviewReportPage = () => {
               </>
             )}
 
-
-            {/* Admin: Generate PDF */}
+            {/* Optional admin shortcuts; actual PDF generation is handled inside ReportPreview */}
             {isAdmin && report.generatePdfEnabled && (
-              <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
+              <button
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+                onClick={() => {
+                  const pdfBtn = document.querySelector(
+                    'button[data-generate-pdf]'
+                  ) as HTMLButtonElement | null;
+                  pdfBtn?.click();
+                }}
+              >
                 <FileDown className="w-4 h-4" />
                 Generate PDF
               </button>
             )}
 
-
-            {/* Admin: Send Report */}
             {isAdmin && report.sendReportEnabled && (
               <button className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium">
                 <Send className="w-4 h-4" />
@@ -256,8 +254,7 @@ const PreviewReportPage = () => {
         </div>
       </div>
 
-
-      {/* REQUEST_CHANGES warning banner — shown to employee */}
+      {/* Employee Changes Requested Banner */}
       {!isAdmin &&
         report.reportStatus === 'REQUEST_CHANGES' &&
         report.changeComments && (
@@ -268,12 +265,13 @@ const PreviewReportPage = () => {
                 <p className="text-sm font-bold text-amber-900 mb-1">
                   Changes Requested
                 </p>
-                <p className="text-sm text-amber-800">{report.changeComments}</p>
+                <p className="text-sm text-amber-800">
+                  {report.changeComments}
+                </p>
               </div>
             </div>
           </div>
         )}
-
 
       {/* Report Preview */}
       <ReportPreview
@@ -281,7 +279,6 @@ const PreviewReportPage = () => {
         onEdit={() => navigate(`/operations/finalreport/${parsedId}/edit`)}
         onUpdate={() => {}}
       />
-
 
       {/* Admin Status Modal */}
       {showStatusModal && (
@@ -293,10 +290,8 @@ const PreviewReportPage = () => {
                 : 'Request Changes'}
             </h3>
 
-
             {pendingStatus === 'REQUEST_CHANGES' && (
               <div className="mb-4">
-                {/* ✅ FIX: was `abel className=` — missing opening `<` */}
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Change Comments *
                 </label>
@@ -310,14 +305,12 @@ const PreviewReportPage = () => {
               </div>
             )}
 
-
             {pendingStatus === 'APPROVED' && (
               <p className="text-sm text-gray-600 mb-4">
                 Are you sure you want to approve this report? This will allow
                 PDF generation and sending.
               </p>
             )}
-
 
             <div className="flex justify-end gap-3">
               <button
@@ -330,6 +323,7 @@ const PreviewReportPage = () => {
               >
                 Cancel
               </button>
+
               <button
                 onClick={handleAdminStatusUpdate}
                 disabled={statusMutation.isPending}
@@ -353,6 +347,5 @@ const PreviewReportPage = () => {
     </div>
   );
 };
-
 
 export default PreviewReportPage;

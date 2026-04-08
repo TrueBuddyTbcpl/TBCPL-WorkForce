@@ -3,7 +3,7 @@ import { Check, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import PersonalInfo from './steps/PersonalInfo';
+import PersonalInfoStep from './steps/PersonalInfo';
 import AddressInfo from './steps/AddressInfo';
 import ContactInfo from './steps/ContactInfo';
 import IdentificationDocs from './steps/IdentificationDocs';
@@ -23,6 +23,7 @@ import AdditionalInfo from './steps/AdditionalInfo';
 
 import {
   initProfile,
+  savePersonalInfo,
   saveAddress,
   saveContactInfo,
   saveIdentificationDocs,
@@ -80,23 +81,22 @@ const steps = [
   { id: 1, name: 'Personal Info', component: 'personal' },
   { id: 2, name: 'Address', component: 'address' },
   { id: 3, name: 'Contact Info', component: 'contact' },
-  { id: 4, name: 'ID Docume...', component: 'identification' },
-  { id: 5, name: 'Business Ac...', component: 'businessActivities' },
+  { id: 4, name: 'ID Documents', component: 'identification' },
+  { id: 5, name: 'Business Act.', component: 'businessActivities' },
   { id: 6, name: 'Entity & Org', component: 'entityOrganization' },
-  { id: 7, name: 'Geographic ...', component: 'geographicExposure' },
+  { id: 7, name: 'Geographic Exp.', component: 'geographicExposure' },
   { id: 8, name: 'Related FIRs', component: 'relatedFIRsCases' },
-  { id: 9, name: 'Material Se...', component: 'materialSeized' },
+  { id: 9, name: 'Material Seized', component: 'materialSeized' },
   { id: 10, name: 'Assets', component: 'assets' },
-  { id: 11, name: 'Known Ass...', component: 'knownAssociates' },
-  { id: 12, name: 'Known Em...', component: 'knownEmployees' },
-  { id: 13, name: 'Products &...', component: 'productsOperations' },
-  { id: 14, name: 'Family Bac...', component: 'familyBackground' },
-  { id: 15, name: 'Influential ...', component: 'influentialLinks' },
-  { id: 16, name: 'Current Sta...', component: 'currentStatus' },
-  { id: 17, name: 'Additional ...', component: 'additional' },
+  { id: 11, name: 'Known Associates', component: 'knownAssociates' },
+  { id: 12, name: 'Known Employees', component: 'knownEmployees' },
+  { id: 13, name: 'Products & Ops', component: 'productsOperations' },
+  { id: 14, name: 'Family Background', component: 'familyBackground' },
+  { id: 15, name: 'Influential Links', component: 'influentialLinks' },
+  { id: 16, name: 'Current Status', component: 'currentStatus' },
+  { id: 17, name: 'Additional Info', component: 'additional' },
 ];
 
-// Steps where empty submission is allowed — just advance without saving
 const ALWAYS_OPTIONAL_STEPS = new Set([
   'entityOrganization',
   'geographicExposure',
@@ -123,11 +123,8 @@ const hasValue = (val: any): boolean => {
 };
 
 const isStepDataEmpty = (stepComponent: string, data: any): boolean => {
-  // Step 1 always runs — creates the profile
   if (stepComponent === 'personal') return false;
-  // Always optional steps — never block
   if (ALWAYS_OPTIONAL_STEPS.has(stepComponent)) return false;
-  // For all others — check if any real data exists
   if (!data) return true;
   return !hasValue(data);
 };
@@ -144,8 +141,8 @@ const ProfileForm = ({ initialData, onSaved, onCancel }: Props) => {
   const [savedIndicator, setSavedIndicator] = useState(false);
   const [profileId, setProfileId] = useState<number | null>(initialData?.id ?? null);
   const profileIdRef = useRef<number | null>(initialData?.id ?? null);
+  const [localProfile, setLocalProfile] = useState<ApiProfileDetail | undefined>(initialData);
 
-  // Track which steps have been completed (have real saved data)
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(() => {
     if (initialData?.stepStatuses) {
       const completed = new Set<number>();
@@ -177,7 +174,6 @@ const ProfileForm = ({ initialData, onSaved, onCancel }: Props) => {
   const handleStep = async (stepComponent: string, data: any) => {
     const id = profileIdRef.current;
 
-    // If data is empty for optional/semi-optional steps — skip save, just advance
     if (stepComponent !== 'personal' && isStepDataEmpty(stepComponent, data)) {
       advanceStep();
       return;
@@ -191,10 +187,16 @@ const ProfileForm = ({ initialData, onSaved, onCancel }: Props) => {
 
         case 'personal': {
           if (id) {
-            // Editing — personal info update not re-init; just advance
-            advanceStep();
-            setSaving(false);
-            return;
+            result = await savePersonalInfo(id, {
+              firstName: data.firstName?.trim(),
+              middleName: data.middleName?.trim() || undefined,
+              lastName: data.lastName?.trim(),
+              gender: data.gender || undefined,
+              dateOfBirth: data.dateOfBirth || undefined,
+              nationality: data.nationality?.trim() || undefined,
+              profilePhoto: data.profilePhoto || undefined,
+            });
+            break;
           }
           result = await initProfile({
             firstName: data.firstName?.trim(),
@@ -272,14 +274,14 @@ const ProfileForm = ({ initialData, onSaved, onCancel }: Props) => {
 
         case 'additional': {
           result = await saveAdditionalInfo(id!, data);
-          // ✅ Mark final step complete
+          setLocalProfile(result); 
           const stepInfo = result.stepStatuses?.find(s => s.stepNumber === currentStep);
           if (stepInfo?.status === 'COMPLETED' || stepInfo?.status === 'HALF_FILLED') {
             setCompletedSteps(prev => new Set(prev).add(currentStep));
           }
           showSaved();
           toast.success('Profile saved successfully!');
-          if (onSaved) onSaved(result!);
+          if (onSaved) onSaved(result);
           else navigate('/operations/profiles');
           return;
         }
@@ -289,9 +291,9 @@ const ProfileForm = ({ initialData, onSaved, onCancel }: Props) => {
           setSaving(false);
           return;
       }
+      setLocalProfile(result!);
 
-      // ✅ Mark this step as complete (real data was saved)
-      const stepInfo = result.stepStatuses?.find(s => s.stepNumber === currentStep);
+      const stepInfo = result!.stepStatuses?.find(s => s.stepNumber === currentStep);
       if (stepInfo?.status === 'COMPLETED' || stepInfo?.status === 'HALF_FILLED') {
         setCompletedSteps(prev => new Set(prev).add(currentStep));
       } else {
@@ -333,11 +335,11 @@ const ProfileForm = ({ initialData, onSaved, onCancel }: Props) => {
   const renderStep = () => {
     const step = steps[currentStep - 1];
     const onNext = (data: any) => handleStep(step.component, data);
-    const d = initialData;
+    const d = localProfile ?? undefined;
 
     switch (step.component) {
       case 'personal':
-        return <PersonalInfo data={mapToPersonalInfo(d)} onNext={onNext} onBack={currentStep > 1 ? handleBack : undefined} />;
+        return <PersonalInfoStep data={mapToPersonalInfo(d)} onNext={onNext} onBack={currentStep > 1 ? handleBack : undefined} />;
       case 'address':
         return <AddressInfo data={mapToAddress(d)} onNext={onNext} onBack={handleBack} />;
       case 'contact':
@@ -437,7 +439,6 @@ const ProfileForm = ({ initialData, onSaved, onCancel }: Props) => {
             </span>
           </div>
 
-          {/* Progress bar — based on completed steps */}
           <div className="h-2 bg-gray-200 rounded mb-4">
             <div
               style={{ width: `${(completedSteps.size / steps.length) * 100}%` }}
@@ -445,17 +446,14 @@ const ProfileForm = ({ initialData, onSaved, onCancel }: Props) => {
             />
           </div>
 
-          {/* Step badges */}
           <div className="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-9 gap-1">
             {steps.map((step) => {
               const isCompleted = completedSteps.has(step.id);
               const isCurrent = step.id === currentStep;
-
               return (
                 <div
                   key={step.id}
                   onClick={() => {
-                    // Allow jumping to completed steps or current step
                     if ((isCompleted || isCurrent) && (profileId || step.id === 1)) {
                       setCurrentStep(step.id);
                     }
@@ -481,7 +479,10 @@ const ProfileForm = ({ initialData, onSaved, onCancel }: Props) => {
         </div>
 
         {/* ── Step Content ── */}
-        <div className={saving ? 'pointer-events-none opacity-60 transition-opacity' : ''}>
+        <div
+          key={`step-${currentStep}-${initialData?.id ?? 'new'}`}
+          className={saving ? 'pointer-events-none opacity-60 transition-opacity' : ''}
+        >
           {renderStep()}
         </div>
 

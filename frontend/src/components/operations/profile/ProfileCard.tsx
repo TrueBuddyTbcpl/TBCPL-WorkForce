@@ -22,17 +22,37 @@ const ProfileCard = ({ profile, onEdit, onView, onDelete }: Props) => {
   return (
     <div className="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow p-6">
       <div className="flex items-start gap-4 mb-4">
-        {profile.personalInfo?.profilePhoto ? (
-          <img
-            src={profile.personalInfo.profilePhoto}
-            alt={profile.name}
-            className="w-16 h-16 rounded-lg object-cover"
-          />
-        ) : (
-          <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center">
-            <User className="w-8 h-8 text-blue-600" />
-          </div>
-        )}
+        {(() => {
+          // 🔍 STEP 1: Add this log once, check console, find where photo lives
+          console.log('📸 photo fields:', {
+            fromPersonalInfo: profile.personalInfo?.profilePhoto,
+            fromRoot: (profile as any).profilePhoto,
+            fromPhotoUrl: (profile as any).photoUrl,
+          });
+
+          const photoUrl =
+            profile.personalInfo?.profilePhoto ||   // ← most likely correct
+            (profile as any).profilePhoto ||        // ← if stored at root level
+            (profile as any).photoUrl;              // ← alternate field name
+
+          return photoUrl ? (
+            <img
+              src={photoUrl}
+              alt={profile.name}
+              className="w-16 h-16 rounded-lg object-cover"
+              onError={(e) => {
+                // Graceful fallback if URL is broken/expired
+                (e.currentTarget as HTMLImageElement).style.display = 'none';
+                (e.currentTarget.nextElementSibling as HTMLElement)?.removeAttribute('style');
+              }}
+            />
+          ) : (
+            <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center">
+              <User className="w-8 h-8 text-blue-600" />
+            </div>
+          );
+        })()}
+
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-lg text-gray-900 truncate">{profile.name}</h3>
           <p className="text-sm text-gray-500">{profile.profileNumber}</p>

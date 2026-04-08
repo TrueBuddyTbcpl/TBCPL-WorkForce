@@ -9,8 +9,10 @@ import {
   searchProfiles,
   getProfilesByStatus,
   deleteProfile,
+  getProfileById,        // ← ADDED
   type ApiProfileDetail,
 } from '../../../services/api/profileApi';
+
 
 const ProfileIndex = () => {
   const [showForm, setShowForm] = useState(false);
@@ -21,6 +23,7 @@ const ProfileIndex = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchDebounce, setSearchDebounce] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(false); // ← ADDED
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
@@ -61,7 +64,6 @@ const ProfileIndex = () => {
     setLoading(true);
     try {
       let response;
-
       if (searchDebounce.trim()) {
         response = await searchProfiles(searchDebounce, currentPage, 10);
       } else if (filters.status) {
@@ -69,7 +71,6 @@ const ProfileIndex = () => {
       } else {
         response = await getAllProfiles(currentPage, 10);
       }
-
       setProfiles(response.profiles);
       setTotalPages(response.totalPages);
       setTotalElements(response.totalElements);
@@ -84,7 +85,6 @@ const ProfileIndex = () => {
     fetchProfiles();
   }, [fetchProfiles]);
 
-  // Reset to page 0 on search/filter change
   useEffect(() => {
     setCurrentPage(0);
   }, [searchDebounce, filters.status]);
@@ -98,17 +98,26 @@ const ProfileIndex = () => {
     setShowForm(true);
   };
 
-  const handleEdit = (profile: ApiProfileDetail) => {
-    setSelectedProfile(profile);
-    setShowForm(true);
-    setShowPreview(false);
+  // ← FIXED: fetch full profile before opening form
+  const handleEdit = async (profile: ApiProfileDetail) => {
+    setLoadingProfile(true);
+    try {
+      const fullProfile = await getProfileById(profile.id);
+      setSelectedProfile(fullProfile);
+      setShowForm(true);
+      setShowPreview(false);
+    } catch {
+      toast.error('Failed to load profile details.');
+    } finally {
+      setLoadingProfile(false);
+    }
   };
 
   const handleProfileSaved = (profile: ApiProfileDetail) => {
     setSelectedProfile(profile);
     setShowForm(false);
     setShowPreview(true);
-    fetchProfiles(); // refresh list
+    fetchProfiles();
     toast.success('Profile saved successfully!');
   };
 
@@ -117,10 +126,16 @@ const ProfileIndex = () => {
     setSelectedProfile(null);
   };
 
-  const handleViewProfile = (profile: ApiProfileDetail) => {
-    setSelectedProfile(profile);
+  // ← FIXED: fetch full profile before opening preview
+  const handleViewProfile = async (profile: ApiProfileDetail) => {
+  try {
+    const fullProfile = await getProfileById(profile.id);
+    setSelectedProfile(fullProfile);
     setShowPreview(true);
-  };
+  } catch {
+    toast.error('Failed to load profile details.');
+  }
+};
 
   const handleClosePreview = () => {
     setShowPreview(false);
@@ -129,7 +144,6 @@ const ProfileIndex = () => {
   const handleDelete = async (profileId: number) => {
     const confirmed = window.confirm('Are you sure you want to delete this profile?');
     if (!confirmed) return;
-
     try {
       await deleteProfile(profileId);
       toast.success('Profile deleted successfully');
@@ -159,7 +173,7 @@ const ProfileIndex = () => {
   const hasActiveFilters = Object.values(filters).some(v => v !== '');
 
   // ─────────────────────────────────────────────────────────────────────
-  // CLIENT-SIDE FILTERS (applied on top of API results)
+  // CLIENT-SIDE FILTERS
   // ─────────────────────────────────────────────────────────────────────
 
   const filteredProfiles = profiles.filter(profile => {
@@ -199,6 +213,18 @@ const ProfileIndex = () => {
   // ─────────────────────────────────────────────────────────────────────
   // RENDER
   // ─────────────────────────────────────────────────────────────────────
+
+  // ← ADDED: full-screen loading overlay while fetching single profile
+  if (loadingProfile) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
+          <p className="text-gray-600 text-sm">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -265,7 +291,7 @@ const ProfileIndex = () => {
             </button>
           </div>
 
-          {/* Filter Panel — Status only sent to backend, rest are client-side */}
+          {/* Filter Panel */}
           {showFilters && (
             <div className="mb-6 bg-white border rounded-lg p-6 shadow-sm">
               <div className="flex justify-between items-center mb-4">

@@ -1,13 +1,18 @@
 import { useForm } from 'react-hook-form';
-import { useState } from 'react';
-import { Upload, X } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Upload, X, Loader2 } from 'lucide-react';
 import type { PersonalInfo } from '../types/profile.types';
+import apiClient from '../../../../services/api/apiClient';
 
 interface Props {
   data?: PersonalInfo;
   onNext: (data: PersonalInfo) => void;
   onBack?: () => void;
 }
+
+// ── Constants ────────────────────────────────────────────────────────────────
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
 const PersonalInfoStep = ({ data, onNext, onBack }: Props) => {
   const {
@@ -19,39 +24,72 @@ const PersonalInfoStep = ({ data, onNext, onBack }: Props) => {
     defaultValues: data || {},
   });
 
-  const [imagePreview, setImagePreview] = useState<string | null>(
-    data?.profilePhoto || null
-  );
+  const [imagePreview, setImagePreview]   = useState<string | null>(data?.profilePhoto || null);
+  const [uploading, setUploading]         = useState(false);
+  const [uploadError, setUploadError]     = useState<string | null>(null);
+  const fileInputRef                      = useRef<HTMLInputElement>(null);
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // ── Image Upload Handler ────────────────────────────────────────────────────
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert('File size exceeds 5MB limit');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setImagePreview(base64String);
-        setValue('profilePhoto', base64String);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+    if (!file) return;
 
+    if (!ALLOWED_TYPES.includes(file.type)) {
+        setUploadError('Invalid file type. Allowed: JPG, PNG, WEBP.');
+        return;
+    }
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+        setUploadError('File size exceeds 5 MB limit.');
+        return;
+    }
+
+    setUploadError(null);
+    setUploading(true);
+
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('folder', 'profiles/photos');
+
+        // ✅ FIX: use apiClient — interceptor auto-attaches correct JWT
+        // ✅ FIX: NO Content-Type header — browser sets it with boundary automatically
+        const { data: uploadResult } = await apiClient.post<{
+            url: string;
+            publicId: string;
+            format: string;
+            size: number;
+        }>('/operation/profiles/upload-image', formData);
+        //   ↑ No headers object needed at all — apiClient handles Auth
+
+        setImagePreview(uploadResult.url);
+        setValue('profilePhoto', uploadResult.url, { shouldDirty: true });
+
+    } catch (err: any) {
+        const message =
+            err?.response?.data?.message ||
+            'Image upload failed. Please try again.';
+        setUploadError(message);
+    } finally {
+        setUploading(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+};
+
+  // ── Remove Image ─────────────────────────────────────────────────────────
   const removeImage = () => {
     setImagePreview(null);
-    setValue('profilePhoto', '');
+    setUploadError(null);
+    setValue('profilePhoto', '', { shouldDirty: true });
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // ── field class helper ──────────────────────────────────────────────────────
+  // ── Field class helper ────────────────────────────────────────────────────
   const fieldClass = (hasError: boolean) =>
-    `w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors ${hasError
-      ? 'border-red-500 bg-red-50 focus:ring-red-400'
-      : 'border-gray-300'
+    `w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors ${
+      hasError ? 'border-red-500 bg-red-50 focus:ring-red-400' : 'border-gray-300'
     }`;
 
+  // ─────────────────────────────────────────────────────────────────────────
   return (
     <form onSubmit={handleSubmit(onNext)} className="space-y-6" noValidate>
       <div className="bg-white p-6 rounded-lg shadow-sm border">
@@ -59,52 +97,94 @@ const PersonalInfoStep = ({ data, onNext, onBack }: Props) => {
           Personal Information
         </h3>
 
-        {/* Profile Photo Upload */}
+        {/* ── Profile Photo Upload ─────────────────────────────────────── */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Profile Photo
           </label>
           <div className="flex items-center gap-4">
-            {imagePreview ? (
-              <div className="relative">
-                <img
-                  src={imagePreview}
-                  alt="Preview"
-                  className="w-32 h-32 rounded-lg object-cover border-2 border-gray-300"
-                />
-                <button
-                  type="button"
-                  onClick={removeImage}
-                  className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            ) : (
-              <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
-                <Upload className="w-8 h-8 text-gray-400" />
-              </div>
-            )}
-            <div>
+
+            {/* Preview / Placeholder */}
+            <div className="relative w-32 h-32 flex-shrink-0">
+              {imagePreview ? (
+                <>
+                  <img
+                    src={imagePreview}
+                    alt="Profile Preview"
+                    className="w-32 h-32 rounded-lg object-cover border-2 border-gray-300"
+                  />
+                  {!uploading && (
+                    <button
+                      type="button"
+                      onClick={removeImage}
+                      className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                      title="Remove photo"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </>
+              ) : (
+                <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+                  {uploading ? (
+                    <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                  ) : (
+                    <Upload className="w-8 h-8 text-gray-400" />
+                  )}
+                </div>
+              )}
+
+              {/* Uploading overlay on existing preview */}
+              {uploading && imagePreview && (
+                <div className="absolute inset-0 bg-white/70 rounded-lg flex items-center justify-center">
+                  <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                </div>
+              )}
+            </div>
+
+            {/* Upload Button + Meta */}
+            <div className="flex flex-col gap-2">
               <input
+                ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
                 onChange={handleImageChange}
                 className="hidden"
                 id="profile-photo"
+                disabled={uploading}
               />
               <label
                 htmlFor="profile-photo"
-                className="cursor-pointer px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 inline-block"
+                className={`cursor-pointer px-4 py-2 bg-blue-600 text-white rounded-lg inline-block text-sm transition-colors ${
+                  uploading
+                    ? 'opacity-50 cursor-not-allowed'
+                    : 'hover:bg-blue-700'
+                }`}
               >
-                {imagePreview ? 'Change Photo' : 'Upload Photo'}
+                {uploading
+                  ? 'Uploading...'
+                  : imagePreview
+                  ? 'Change Photo'
+                  : 'Upload Photo'}
               </label>
-              <p className="text-xs text-gray-500 mt-2">JPG, PNG or GIF (MAX. 5MB)</p>
+              <p className="text-xs text-gray-500">
+                JPG, PNG or WEBP · Max 5 MB
+              </p>
+
+              {/* Upload Error */}
+              {uploadError && (
+                <p className="text-xs text-red-600 flex items-center gap-1">
+                  <span>⚠</span> {uploadError}
+                </p>
+              )}
             </div>
           </div>
+
+          {/* Hidden field stores S3 URL */}
           <input type="hidden" {...register('profilePhoto')} />
         </div>
 
+        {/* ── Form Fields ──────────────────────────────────────────────── */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
           {/* First Name */}
@@ -179,15 +259,13 @@ const PersonalInfoStep = ({ data, onNext, onBack }: Props) => {
               Gender <span className="text-red-500">*</span>
             </label>
             <select
-              {...register('gender', {
-                required: 'Gender is required',
-              })}
+              {...register('gender', { required: 'Gender is required' })}
               className={fieldClass(!!errors.gender)}
             >
               <option value="">Select Gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
+              <option value="MALE">Male</option>
+              <option value="FEMALE">Female</option>
+              <option value="OTHER">Other</option>
             </select>
             {errors.gender && (
               <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
@@ -208,11 +286,10 @@ const PersonalInfoStep = ({ data, onNext, onBack }: Props) => {
               placeholder="Enter nationality"
             />
           </div>
-
         </div>
       </div>
 
-      {/* Footer Buttons */}
+      {/* ── Footer Buttons ─────────────────────────────────────────────── */}
       <div className="flex justify-between">
         {onBack && (
           <button
@@ -225,7 +302,8 @@ const PersonalInfoStep = ({ data, onNext, onBack }: Props) => {
         )}
         <button
           type="submit"
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 ml-auto"
+          disabled={uploading}
+          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 ml-auto disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           Next Step
         </button>

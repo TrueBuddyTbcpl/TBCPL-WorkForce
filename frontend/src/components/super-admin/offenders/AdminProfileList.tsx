@@ -9,8 +9,10 @@ import {
   searchProfiles,
   getProfilesByStatus,
   deleteProfile,
+  getProfileById,
   type ApiProfileDetail,
 } from '../../../services/api/profileApi';
+
 
 const ProfileIndex = () => {
   const [showForm, setShowForm]               = useState(false);
@@ -21,6 +23,7 @@ const ProfileIndex = () => {
   const [searchTerm, setSearchTerm]           = useState('');
   const [searchDebounce, setSearchDebounce]   = useState('');
   const [loading, setLoading]                 = useState(false);
+  const [loadingProfile, setLoadingProfile]   = useState(false);   // ← ADDED
   const [currentPage, setCurrentPage]         = useState(0);
   const [totalPages, setTotalPages]           = useState(0);
   const [totalElements, setTotalElements]     = useState(0);
@@ -65,27 +68,66 @@ const ProfileIndex = () => {
 
   // ── Handlers ──
   const handleCreateNew = () => { setSelectedProfile(null); setShowForm(true); };
-  const handleEdit = (profile: ApiProfileDetail) => {
-    setSelectedProfile(profile); setShowForm(true); setShowPreview(false);
+
+  // ← FIXED: fetch full profile before opening form
+  const handleEdit = async (profile: ApiProfileDetail) => {
+    setLoadingProfile(true);
+    try {
+      const fullProfile = await getProfileById(profile.id);
+      setSelectedProfile(fullProfile);
+      setShowForm(true);
+      setShowPreview(false);
+    } catch {
+      toast.error('Failed to load profile details.');
+    } finally {
+      setLoadingProfile(false);
+    }
   };
+
   const handleProfileSaved = (profile: ApiProfileDetail) => {
-    setSelectedProfile(profile); setShowForm(false); setShowPreview(true);
-    fetchProfiles(); toast.success('Profile saved successfully!');
+    setSelectedProfile(profile);
+    setShowForm(false);
+    setShowPreview(true);
+    fetchProfiles();
+    toast.success('Profile saved successfully!');
   };
-  const handleCancel      = () => { setShowForm(false); setSelectedProfile(null); };
-  const handleViewProfile = (profile: ApiProfileDetail) => { setSelectedProfile(profile); setShowPreview(true); };
+
+  const handleCancel = () => { setShowForm(false); setSelectedProfile(null); };
+
+  // ← FIXED: fetch full profile before opening preview
+  const handleViewProfile = async (profile: ApiProfileDetail) => {
+    setLoadingProfile(true);
+    try {
+      const fullProfile = await getProfileById(profile.id);
+      setSelectedProfile(fullProfile);
+      setShowPreview(true);
+    } catch {
+      toast.error('Failed to load profile details.');
+    } finally {
+      setLoadingProfile(false);
+    }
+  };
+
   const handleClosePreview = () => setShowPreview(false);
+
   const handleDelete = async (profileId: number) => {
     if (!window.confirm('Are you sure you want to delete this profile?')) return;
     try {
       await deleteProfile(profileId);
       toast.success('Profile deleted successfully');
       fetchProfiles();
-      if (selectedProfile?.id === profileId) { setShowPreview(false); setSelectedProfile(null); }
-    } catch { toast.error('Failed to delete profile'); }
+      if (selectedProfile?.id === profileId) {
+        setShowPreview(false);
+        setSelectedProfile(null);
+      }
+    } catch {
+      toast.error('Failed to delete profile');
+    }
   };
+
   const handleFilterChange = (key: string, value: string) =>
     setFilters(prev => ({ ...prev, [key]: value }));
+
   const clearFilters = () => setFilters({
     status: '', gender: '', nationality: '', city: '', state: '',
     country: '', retailerStatus: '', supplierStatus: '', manufacturerStatus: '',
@@ -135,6 +177,22 @@ const ProfileIndex = () => {
     focus:border-white/40 transition appearance-none cursor-pointer
     [&>option]:bg-[#3a2a00] [&>option]:text-white`;
 
+  // ── Full-screen loading overlay while fetching single profile ──
+  if (loadingProfile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-10 h-10 text-white/70 animate-spin
+            drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)]" />
+          <p className="text-white/60 text-sm
+            [text-shadow:0_1px_3px_rgba(0,0,0,0.4)]">
+            Loading profile...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen">
 
@@ -177,8 +235,6 @@ const ProfileIndex = () => {
 
           {/* ── Search + Filter Toggle ── */}
           <div className="flex gap-3">
-
-            {/* Search */}
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4
                 text-white/50 drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]" />
@@ -205,7 +261,6 @@ const ProfileIndex = () => {
               )}
             </div>
 
-            {/* Filter Button */}
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium
@@ -234,7 +289,6 @@ const ProfileIndex = () => {
             <div className="bg-white/10 backdrop-blur-lg border border-white/20
               rounded-2xl p-6 space-y-4">
 
-              {/* Filter Header */}
               <div className="flex justify-between items-center">
                 <h3 className="text-sm font-bold text-white uppercase tracking-widest
                   [text-shadow:0_1px_4px_rgba(0,0,0,0.5)]">
@@ -263,9 +317,7 @@ const ProfileIndex = () => {
                 </div>
               </div>
 
-              {/* Filter Grid */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-
                 <FilterField label="Status">
                   <select value={filters.status}
                     onChange={e => handleFilterChange('status', e.target.value)}
@@ -377,7 +429,6 @@ const ProfileIndex = () => {
           {/* ── Results ── */}
           {!loading && (
             <>
-              {/* Count bar */}
               <p className="text-xs text-white/50
                 [text-shadow:0_1px_3px_rgba(0,0,0,0.4)]">
                 Showing{' '}
@@ -387,7 +438,6 @@ const ProfileIndex = () => {
                 {' '}profiles
               </p>
 
-              {/* ── Empty State ── */}
               {filteredProfiles.length === 0 ? (
                 <div className="bg-white/10 backdrop-blur-lg border border-white/20
                   rounded-2xl p-16 text-center">
@@ -420,9 +470,7 @@ const ProfileIndex = () => {
                     </button>
                   )}
                 </div>
-
               ) : (
-                /* ── Profile Cards Grid ── */
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                   {filteredProfiles.map(profile => (
                     <ProfileCard
@@ -436,7 +484,6 @@ const ProfileIndex = () => {
                 </div>
               )}
 
-              {/* ── Pagination ── */}
               {totalPages > 1 && (
                 <div className="flex justify-center items-center gap-3 pt-4">
                   <button
