@@ -41,46 +41,6 @@ const flowPageStyle: CSSProperties = {
   backgroundColor: 'white',
 };
 
-type PhotoOrientation = 'portrait' | 'landscape';
-
-type PreviewPhoto = {
-  url: string;
-  reason: string;
-  orientation: PhotoOrientation;
-};
-
-type PhotoGroup = {
-  orientation: PhotoOrientation;
-  images: PreviewPhoto[];
-};
-
-const groupImagesByOrientationFlow = (images: PreviewPhoto[]): PhotoGroup[] => {
-  if (!images.length) return [];
-
-  const groups: PhotoGroup[] = [];
-  let current: PhotoGroup = {
-    orientation: images[0].orientation,
-    images: [images[0]],
-  };
-
-  for (let i = 1; i < images.length; i++) {
-    const img = images[i];
-    if (img.orientation === current.orientation) {
-      current.images.push(img);
-    } else {
-      groups.push(current);
-      current = {
-        orientation: img.orientation,
-        images: [img],
-      };
-    }
-  }
-
-  groups.push(current);
-  return groups;
-};
-
-
 
 // ── Main Component ───────────────────────────────────────────────────────────
 
