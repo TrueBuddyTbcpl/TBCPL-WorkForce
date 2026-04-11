@@ -227,6 +227,55 @@ const ReportPreview = ({ data, onEdit, onUpdate }: ReportPreviewProps) => {
     return null;
   };
 
+  // ── Estimate height of each section in pixels ────────────────────────────
+  const estimateSectionHeight = (section: Section): number => {
+    const HEADER = 72;   // title + border + margin
+    const FOOTER = 48;   // page footer
+    const NOTES = section.notes?.trim() ? 90 : 0;
+    const GAP = 32;      // space between sections on same page
+
+    let content = 0;
+
+    if (section.type === 'narrative') {
+      const text = (section.content as NarrativeContent).text || '';
+      content = Math.max(50, Math.ceil(text.length / 75) * 22);
+    } else if (section.type === 'table') {
+      const rows = (section.content as TableContent).rows?.length ?? 0;
+      content = 46 + rows * 42;
+    } else if (section.type === 'custom-table') {
+      const rows = (section.content as CustomTableContent).rows?.length ?? 0;
+      content = 46 + rows * 42;
+    }
+
+    return HEADER + content + NOTES + FOOTER + GAP;
+  };
+
+  // ── Group sections into A4 pages by estimated height ────────────────────
+  const groupSectionsIntoPages = (sections: Section[]): Section[][] => {
+    const A4_USABLE_HEIGHT = 900; // px (297mm - 40px top/bottom padding)
+    const pages: Section[][] = [];
+    let currentPage: Section[] = [];
+    let currentHeight = 0;
+
+    sections.forEach((section) => {
+      const height = estimateSectionHeight(section);
+      if (currentPage.length > 0 && currentHeight + height > A4_USABLE_HEIGHT) {
+        pages.push(currentPage);
+        currentPage = [section];
+        currentHeight = height;
+      } else {
+        currentPage.push(section);
+        currentHeight += height;
+      }
+    });
+
+    if (currentPage.length > 0) pages.push(currentPage);
+    return pages;
+  };
+
+  // ── Compute grouped pages ─────────────────────────────────────────────────
+  const sectionPages = groupSectionsIntoPages(data.sections);
+
 
   return (
     <div className="report-preview-root min-h-screen bg-white py-8 relative">
@@ -446,50 +495,73 @@ const ReportPreview = ({ data, onEdit, onUpdate }: ReportPreviewProps) => {
         </div>
 
 
-        {/* ── PAGES 3+: FLOWING CONTENT SECTIONS ────────────────────────────── */}
-        {data.sections.length > 0 && (
-          <div data-pdf-flow style={flowPageStyle} className="shadow-lg border border-gray-200">
-            <div className="space-y-10">
-              {data.sections.map((section, index) => (
-                <div key={section.id} className="report-section">
-                  <div className="report-section-header flex items-start justify-between gap-4 mb-4 pb-3 border-b-2 border-gray-400">
-                    <h3 className="text-xl font-bold text-gray-900">
-                      {index + 1}) {section.title}
-                    </h3>
-                    <button
-                      type="button"
-                      onClick={() => handleSectionEdit(section)}
-                      className="flex items-center gap-2 px-2 py-1 text-blue-600 hover:bg-blue-50 rounded text-xs whitespace-nowrap"
-                      data-no-print="true"
-                    >
-                      <Edit className="w-3 h-3" />
-                      Edit
-                    </button>
-                  </div>
+        {/* ── PAGES 3+: SECTIONS PACKED INTO A4 PAGES ─────────────────────────── */}
+        {sectionPages.map((pageSections, pageIdx) => (
+          <div
+            key={pageIdx}
+            data-pdf-flow
+            style={flowPageStyle}
+            className="shadow-lg border border-gray-200"
+          >
+            <div className="space-y-0">
+              {pageSections.map((section, sectionIdx) => {
+                // Get original index for correct numbering (e.g. "3) Section Title")
+                const globalIndex = data.sections.findIndex((s) => s.id === section.id);
 
-                  <div className="mb-4">{renderSectionContent(section)}</div>
+                return (
+                  <div key={section.id} className="report-section">
 
-                  {section.notes && section.notes.trim().length > 0 && (
-                    <div className="mt-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg">
-                      <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-1">
-                        {section.notesHeading && section.notesHeading.trim().length > 0
-                          ? section.notesHeading
-                          : 'Note:'}
-                      </p>
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-                        {section.notes}
-                      </p>
+                    {/* Section header */}
+                    <div className="report-section-header flex items-start justify-between gap-4 mb-4 pb-3 border-b-2 border-gray-400">
+                      <h3 className="text-xl font-bold text-gray-900">
+                        {globalIndex + 1}) {section.title}
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => handleSectionEdit(section)}
+                        className="flex items-center gap-2 px-2 py-1 text-blue-600 hover:bg-blue-50 rounded text-xs whitespace-nowrap"
+                        data-no-print="true"
+                      >
+                        <Edit className="w-3 h-3" />
+                        Edit
+                      </button>
                     </div>
-                  )}
 
-                  {index < data.sections.length - 1 && (
-                    <div className="mt-8 h-px bg-gray-200" />
-                  )}
-                </div>
-              ))}
+                    {/* Section content */}
+                    <div className="mb-4">{renderSectionContent(section)}</div>
+
+                    {/* Notes */}
+                    {section.notes && section.notes.trim().length > 0 && (
+                      <div className="mt-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg">
+                        <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-1">
+                          {section.notesHeading?.trim() || 'Note:'}
+                        </p>
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                          {section.notes}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Divider between sections on same page (not after last section) */}
+                    {sectionIdx < pageSections.length - 1 && (
+                      <div className="my-8 h-px bg-gray-200" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Page footer */}
+            <div className="mt-8 pt-4 border-t border-gray-200 flex items-center justify-between">
+              <span className="text-xs text-gray-400 font-medium">
+                {data.header.preparedBy} — Confidential
+              </span>
+              <span className="text-xs text-gray-400 font-medium">
+                Page {pageIdx + 3}
+              </span>
             </div>
           </div>
-        )}
+        ))}
 
 
         {/* ── PHOTOGRAPHIC EVIDENCE PAGE ────────────────────────────────────── */}
