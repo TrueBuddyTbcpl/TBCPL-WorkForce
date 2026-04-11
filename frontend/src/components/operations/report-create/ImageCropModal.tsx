@@ -12,23 +12,26 @@ type AspectRatio = '4:3-portrait' | '16:9-landscape';
 interface CropSize { w: number; h: number }
 
 const CROP_SIZES: Record<AspectRatio, CropSize> = {
-  '4:3-portrait':   { w: 225, h: 300 },  // 3:4 portrait
+  '4:3-portrait': { w: 225, h: 300 },  // 3:4 portrait
   '16:9-landscape': { w: 480, h: 270 },  // 16:9 landscape
 };
+type PhotoOrientation = 'portrait' | 'landscape';
 
 interface Props {
   file: File | null;
-  onConfirm: (croppedDataUrl: string) => void;
-  onCancel:  () => void;
+  onConfirm(result: {
+    croppedDataUrl: string;
+    orientation: PhotoOrientation;
+  }): void;
+  onCancel(): void;
 }
-
 const ImageCropModal: React.FC<Props> = ({ file, onConfirm, onCancel }) => {
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('16:9-landscape');
-  const [zoom,        setZoom]        = useState(1);
-  const [offset,      setOffset]      = useState({ x: 0, y: 0 });
-  const [isDragging,  setIsDragging]  = useState(false);
-  const [dragStart,   setDragStart]   = useState({ x: 0, y: 0 });
-  const [imgLoaded,   setImgLoaded]   = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [imgLoaded, setImgLoaded] = useState(false);
 
   // Native Image element for canvas drawing
   const nativeImg = useRef(new Image());
@@ -40,11 +43,11 @@ const ImageCropModal: React.FC<Props> = ({ file, onConfirm, onCancel }) => {
     setOffset({ x: 0, y: 0 });
 
     const url = URL.createObjectURL(file);
-    const img  = nativeImg.current;
+    const img = nativeImg.current;
 
     img.onload = () => {
       const crop = CROP_SIZES[aspectRatio];
-      const fit  = Math.max(crop.w / img.naturalWidth, crop.h / img.naturalHeight);
+      const fit = Math.max(crop.w / img.naturalWidth, crop.h / img.naturalHeight);
       setZoom(Math.max(fit, 0.3));
       setImgLoaded(true);
     };
@@ -56,9 +59,9 @@ const ImageCropModal: React.FC<Props> = ({ file, onConfirm, onCancel }) => {
   // ── Auto fit when aspect ratio changes ─────────────────────────────────────
   useEffect(() => {
     if (!imgLoaded) return;
-    const img  = nativeImg.current;
+    const img = nativeImg.current;
     const crop = CROP_SIZES[aspectRatio];
-    const fit  = Math.max(crop.w / img.naturalWidth, crop.h / img.naturalHeight);
+    const fit = Math.max(crop.w / img.naturalWidth, crop.h / img.naturalHeight);
     setZoom(Math.max(fit, 0.3));
     setOffset({ x: 0, y: 0 });
   }, [aspectRatio]);
@@ -97,27 +100,27 @@ const ImageCropModal: React.FC<Props> = ({ file, onConfirm, onCancel }) => {
   };
 
   // ── Zoom controls ───────────────────────────────────────────────────────────
-  const zoomIn    = () => setZoom(z => Math.min(z + 0.1, 5));
-  const zoomOut   = () => setZoom(z => Math.max(z - 0.1, 0.1));
+  const zoomIn = () => setZoom(z => Math.min(z + 0.1, 5));
+  const zoomOut = () => setZoom(z => Math.max(z - 0.1, 0.1));
   const resetView = () => {
-    const img  = nativeImg.current;
+    const img = nativeImg.current;
     const crop = CROP_SIZES[aspectRatio];
-    const fit  = Math.max(crop.w / img.naturalWidth, crop.h / img.naturalHeight);
+    const fit = Math.max(crop.w / img.naturalWidth, crop.h / img.naturalHeight);
     setZoom(Math.max(fit, 0.3));
     setOffset({ x: 0, y: 0 });
   };
 
   // ── Crop & confirm ──────────────────────────────────────────────────────────
   const handleCrop = () => {
-    const img  = nativeImg.current;
+    const img = nativeImg.current;
     const crop = CROP_SIZES[aspectRatio];
 
     // 2× output resolution for crispness
     const OUT_SCALE = 2;
-    const canvas    = document.createElement('canvas');
-    canvas.width    = crop.w * OUT_SCALE;
-    canvas.height   = crop.h * OUT_SCALE;
-    const ctx       = canvas.getContext('2d')!;
+    const canvas = document.createElement('canvas');
+    canvas.width = crop.w * OUT_SCALE;
+    canvas.height = crop.h * OUT_SCALE;
+    const ctx = canvas.getContext('2d')!;
 
     // Image display dimensions inside the container
     const displayW = zoom * img.naturalWidth;
@@ -138,19 +141,22 @@ const ImageCropModal: React.FC<Props> = ({ file, onConfirm, onCancel }) => {
     const srcH = crop.h / zoom;
 
     ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, canvas.width, canvas.height);
-    onConfirm(canvas.toDataURL('image/jpeg', 0.92));
+    onConfirm({
+      croppedDataUrl: canvas.toDataURL('image/jpeg', 0.92),
+      orientation: aspectRatio === '4:3-portrait' ? 'portrait' : 'landscape',
+    });
   };
 
   if (!file) return null;
 
   // ── Derived layout values ───────────────────────────────────────────────────
-  const crop       = CROP_SIZES[aspectRatio];
-  const cropLeft   = (CONTAINER_W - crop.w) / 2;
-  const cropTop    = (CONTAINER_H - crop.h) / 2;
-  const displayW   = imgLoaded ? zoom * nativeImg.current.naturalWidth  : 0;
-  const displayH   = imgLoaded ? zoom * nativeImg.current.naturalHeight : 0;
-  const imgLeft    = CONTAINER_W / 2 + offset.x - displayW / 2;
-  const imgTop     = CONTAINER_H / 2 + offset.y - displayH / 2;
+  const crop = CROP_SIZES[aspectRatio];
+  const cropLeft = (CONTAINER_W - crop.w) / 2;
+  const cropTop = (CONTAINER_H - crop.h) / 2;
+  const displayW = imgLoaded ? zoom * nativeImg.current.naturalWidth : 0;
+  const displayH = imgLoaded ? zoom * nativeImg.current.naturalHeight : 0;
+  const imgLeft = CONTAINER_W / 2 + offset.x - displayW / 2;
+  const imgTop = CONTAINER_H / 2 + offset.y - displayH / 2;
 
   return (
     <div
@@ -158,7 +164,7 @@ const ImageCropModal: React.FC<Props> = ({ file, onConfirm, onCancel }) => {
       style={{ backgroundColor: 'rgba(0,0,0,0.8)' }}
     >
       <div className="bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden"
-           style={{ width: CONTAINER_W + 48 }}>
+        style={{ width: CONTAINER_W + 48 }}>
 
         {/* ── Header ─────────────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
@@ -188,22 +194,20 @@ const ImageCropModal: React.FC<Props> = ({ file, onConfirm, onCancel }) => {
           </span>
           <div className="flex gap-2">
             {([
-              { key: '4:3-portrait'   as AspectRatio, label: '4:3 Portrait',  iconW: 9,  iconH: 12 },
-              { key: '16:9-landscape' as AspectRatio, label: '16:9 Landscape', iconW: 16, iconH: 9  },
+              { key: '4:3-portrait' as AspectRatio, label: '4:3 Portrait', iconW: 9, iconH: 12 },
+              { key: '16:9-landscape' as AspectRatio, label: '16:9 Landscape', iconW: 16, iconH: 9 },
             ]).map(r => (
               <button
                 key={r.key}
                 onClick={() => setAspectRatio(r.key)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
-                  aspectRatio === r.key
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-all ${aspectRatio === r.key
                     ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
                     : 'text-gray-600 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                }`}
+                  }`}
               >
                 <span
-                  className={`inline-block border-2 rounded-sm flex-shrink-0 ${
-                    aspectRatio === r.key ? 'border-white' : 'border-current'
-                  }`}
+                  className={`inline-block border-2 rounded-sm flex-shrink-0 ${aspectRatio === r.key ? 'border-white' : 'border-current'
+                    }`}
                   style={{ width: r.iconW, height: r.iconH }}
                 />
                 {r.label}
@@ -215,14 +219,14 @@ const ImageCropModal: React.FC<Props> = ({ file, onConfirm, onCancel }) => {
         {/* ── Crop Canvas ────────────────────────────────────────────────────── */}
         <div
           style={{
-            width:     CONTAINER_W,
-            height:    CONTAINER_H,
-            margin:    '0 auto',
-            position:  'relative',
-            overflow:  'hidden',
-            background:'#1a1a2e',
-            cursor:    isDragging ? 'grabbing' : 'grab',
-            userSelect:'none',
+            width: CONTAINER_W,
+            height: CONTAINER_H,
+            margin: '0 auto',
+            position: 'relative',
+            overflow: 'hidden',
+            background: '#1a1a2e',
+            cursor: isDragging ? 'grabbing' : 'grab',
+            userSelect: 'none',
           }}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
@@ -240,11 +244,11 @@ const ImageCropModal: React.FC<Props> = ({ file, onConfirm, onCancel }) => {
               alt="crop"
               draggable={false}
               style={{
-                position:      'absolute',
-                left:           imgLeft,
-                top:            imgTop,
-                width:          displayW,
-                height:         displayH,
+                position: 'absolute',
+                left: imgLeft,
+                top: imgTop,
+                width: displayW,
+                height: displayH,
                 pointerEvents: 'none',
               }}
             />
@@ -259,12 +263,12 @@ const ImageCropModal: React.FC<Props> = ({ file, onConfirm, onCancel }) => {
           {/* Crop box outline + rule-of-thirds grid */}
           <div
             style={{
-              position:  'absolute',
-              top:        cropTop,
-              left:       cropLeft,
-              width:      crop.w,
-              height:     crop.h,
-              border:    '2px solid rgba(255,255,255,0.9)',
+              position: 'absolute',
+              top: cropTop,
+              left: cropLeft,
+              width: crop.w,
+              height: crop.h,
+              border: '2px solid rgba(255,255,255,0.9)',
               boxSizing: 'border-box',
               pointerEvents: 'none',
             }}
@@ -272,16 +276,16 @@ const ImageCropModal: React.FC<Props> = ({ file, onConfirm, onCancel }) => {
             {/* Rule-of-thirds lines */}
             {[1, 2].map(i => (
               <React.Fragment key={i}>
-                <div style={{ position:'absolute', left:`${(i/3)*100}%`, top:0, bottom:0, width:1, background:'rgba(255,255,255,0.35)' }} />
-                <div style={{ position:'absolute', top:`${(i/3)*100}%`, left:0, right:0, height:1, background:'rgba(255,255,255,0.35)' }} />
+                <div style={{ position: 'absolute', left: `${(i / 3) * 100}%`, top: 0, bottom: 0, width: 1, background: 'rgba(255,255,255,0.35)' }} />
+                <div style={{ position: 'absolute', top: `${(i / 3) * 100}%`, left: 0, right: 0, height: 1, background: 'rgba(255,255,255,0.35)' }} />
               </React.Fragment>
             ))}
             {/* Corner handles */}
             {[
-              { top:-2, left:-2 }, { top:-2, right:-2 },
-              { bottom:-2, left:-2 }, { bottom:-2, right:-2 },
+              { top: -2, left: -2 }, { top: -2, right: -2 },
+              { bottom: -2, left: -2 }, { bottom: -2, right: -2 },
             ].map((s, i) => (
-              <div key={i} style={{ position:'absolute', width:12, height:12, background:'white', borderRadius:1, ...s }} />
+              <div key={i} style={{ position: 'absolute', width: 12, height: 12, background: 'white', borderRadius: 1, ...s }} />
             ))}
           </div>
 

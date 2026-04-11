@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import ReportForm from './ReportForm';
 import ReportPreview from './ReportPreview';
-import type { ReportData } from './types/report.types';
+import type { PhotographicEvidence, ReportData } from './types/report.types';
 import { RotateCcw, Loader2 } from 'lucide-react';
 import { useCreateFinalReport } from '../../../hooks/finalreport/useCreateFinalReport';
 import { useAuthStore } from '../../../stores/authStore';
@@ -32,6 +32,7 @@ const ReportCreate = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [photographicEvidence, setPhotographicEvidence] = useState<PhotographicEvidence | undefined>(undefined);
 
     // Load saved data on mount
     useEffect(() => {
@@ -65,13 +66,20 @@ const ReportCreate = () => {
     };
 
     const handleFormComplete = async (data: ReportData) => {
-        setReportData(data);
+        const updatedData = {
+            ...data,
+            photographicEvidence,
+        };
+        setReportData(updatedData);
         setIsSaving(true);
 
         const username = user?.empId || user?.fullName || 'unknown';
 
-        // If report already has an ID (edit mode) skip create
+        // ✅ If report already has an ID (edit mode) — skip create, go straight to preview
         if (data.reportId) {
+            // Persist the latest data (including photographicEvidence) to localStorage
+            localStorage.setItem(STORAGE_KEYS.DATA, JSON.stringify(data));
+            localStorage.setItem(STORAGE_KEYS.STEP, 'preview');
             setStep('preview');
             window.history.pushState({ step: 'preview' }, '', window.location.pathname);
             setIsSaving(false);
@@ -91,9 +99,11 @@ const ReportCreate = () => {
                 reportSubtitle: data.header.subtitle,
                 preparedFor: data.header.preparedFor,
                 preparedBy: data.header.preparedBy,
-                reportDate: data.header.date, // already "YYYY-MM-DD"
+                reportDate: data.header.date,
                 sections: data.sections,
                 tableOfContents: data.tableOfContents,
+                // ✅ FIX: include photographicEvidence in the create payload
+                photographicEvidence: data.photographicEvidence,
             };
 
             const saved = await createMutation.mutateAsync({ payload, username });
@@ -107,6 +117,7 @@ const ReportCreate = () => {
             };
             setReportData(updatedData);
             localStorage.setItem(STORAGE_KEYS.DATA, JSON.stringify(updatedData));
+            localStorage.setItem(STORAGE_KEYS.STEP, 'preview');
 
             toast.success(`Report ${saved.reportNumber} created successfully`);
             setStep('preview');
@@ -129,7 +140,6 @@ const ReportCreate = () => {
             await submitForApproval(reportData.reportId, username);
             toast.success('Report submitted for approval!');
             clearStorage();
-            // Navigate back to cases or show success
             window.location.href = '/operations/cases';
         } catch (err: any) {
             toast.error(err.response?.data?.message ?? 'Failed to submit report');
@@ -139,6 +149,7 @@ const ReportCreate = () => {
     };
 
     const handleEdit = () => {
+        localStorage.setItem(STORAGE_KEYS.STEP, 'form');
         setStep('form');
         window.history.pushState({ step: 'form' }, '', window.location.pathname);
     };
@@ -204,10 +215,13 @@ const ReportCreate = () => {
                 <ReportForm
                     onComplete={handleFormComplete}
                     initialData={reportData || undefined}
+                    reportId={reportData?.reportId}
+                    photographicEvidence={photographicEvidence}
+                    setPhotographicEvidence={setPhotographicEvidence}
                 />
             ) : (
                 <div className="min-h-screen bg-gray-50">
-                    {/* ✅ Submit for Approval Banner */}
+                    {/* Submit for Approval Banner */}
                     <div className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm px-6 py-3 flex items-center justify-between">
                         <div>
                             <p className="text-sm font-semibold text-gray-900">
@@ -248,7 +262,6 @@ const ReportCreate = () => {
                     />
                 </div>
             )}
-
         </div>
     );
 };

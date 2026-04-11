@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import type {
   ReportData,
   Section,
@@ -14,6 +14,7 @@ import {
 import { format } from 'date-fns';
 import EditModal from './preview-components/EditModal';
 import { generatePDF } from './utils/pdfGenerator';
+import SmartImageGrid from './SmartImageGrid';
 
 
 interface ReportPreviewProps {
@@ -21,6 +22,7 @@ interface ReportPreviewProps {
   onEdit: () => void;
   onUpdate: (updatedData: ReportData) => void;
 }
+
 
 const pageStyle: CSSProperties = {
   width: '210mm',
@@ -30,6 +32,7 @@ const pageStyle: CSSProperties = {
   backgroundColor: 'white',
 };
 
+
 const flowPageStyle: CSSProperties = {
   width: '210mm',
   height: 'auto',
@@ -38,96 +41,60 @@ const flowPageStyle: CSSProperties = {
   backgroundColor: 'white',
 };
 
-const useImageOrientations = (images: string[]) => {
-  const [orientations, setOrientations] = useState<Record<string, 'portrait' | 'landscape'>>({});
-  useEffect(() => {
-    images.forEach((src) => {
-      if (orientations[src]) return;
-      const img = new Image();
-      img.onload = () => {
-        setOrientations((prev) => ({
-          ...prev,
-          [src]: img.naturalHeight > img.naturalWidth ? 'portrait' : 'landscape',
-        }));
+type PhotoOrientation = 'portrait' | 'landscape';
+
+type PreviewPhoto = {
+  url: string;
+  reason: string;
+  orientation: PhotoOrientation;
+};
+
+type PhotoGroup = {
+  orientation: PhotoOrientation;
+  images: PreviewPhoto[];
+};
+
+const groupImagesByOrientationFlow = (images: PreviewPhoto[]): PhotoGroup[] => {
+  if (!images.length) return [];
+
+  const groups: PhotoGroup[] = [];
+  let current: PhotoGroup = {
+    orientation: images[0].orientation,
+    images: [images[0]],
+  };
+
+  for (let i = 1; i < images.length; i++) {
+    const img = images[i];
+    if (img.orientation === current.orientation) {
+      current.images.push(img);
+    } else {
+      groups.push(current);
+      current = {
+        orientation: img.orientation,
+        images: [img],
       };
-      img.src = src;
-    });
-  }, [images]);
-  return orientations;
+    }
+  }
+
+  groups.push(current);
+  return groups;
 };
 
-
-// ── Section Images Component ─────────────────────────────────────────────────
-
-const SectionImages = ({ images }: { images: string[] }) => {
-  const orientations = useImageOrientations(images);
-  const portraitCount = Object.values(orientations).filter((o) => o === 'portrait').length;
-  const landscapeCount = Object.values(orientations).filter((o) => o === 'landscape').length;
-  const allDetected = Object.keys(orientations).length === images.length;
-  const cols = allDetected ? (portraitCount > landscapeCount ? 3 : 2) : 2;
-
-  return (
-    <div className="mt-6">
-      <div className="flex items-center gap-2 mb-3">
-        <div className="w-1 h-4 bg-blue-600 rounded-full"></div>
-        <h4 className="text-xs font-bold text-gray-600 uppercase tracking-wide">
-          Photographic Evidence ({images.length} image{images.length > 1 ? 's' : ''})
-        </h4>
-      </div>
-
-      {/* section-image-grid: allows breaks between rows but not inside cards */}
-      <div
-        className="section-image-grid"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: `repeat(${cols}, 1fr)`,
-          gap: '10px',
-        }}
-      >
-        {images.map((img, idx) => {
-          const orientation = orientations[img] ?? 'landscape';
-          const maxH = orientation === 'portrait' ? '280px' : '200px';
-          return (
-            // section-image-card: box + image + label always stay on the same page
-            <div
-              key={idx}
-              className="section-image-card border border-gray-200 rounded-lg overflow-hidden shadow-sm flex flex-col"
-            >
-              <div
-                className="bg-gray-50 flex items-center justify-center p-1"
-                style={{ minHeight: '100px' }}
-              >
-                <img
-                  src={img}
-                  alt={`Section image ${idx + 1}`}
-                  style={{
-                    maxWidth: '100%',
-                    maxHeight: maxH,
-                    width: 'auto',
-                    height: 'auto',
-                    display: 'block',
-                    margin: '0 auto',
-                  }}
-                />
-              </div>
-              <div className="bg-gray-50 border-t border-gray-200 px-2 py-1 text-center">
-                <span className="text-xs text-gray-500 font-medium">Image {idx + 1}</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="mt-4 h-px bg-gray-100"></div>
-    </div>
-  );
-};
 
 
 // ── Main Component ───────────────────────────────────────────────────────────
 
 const ReportPreview = ({ data, onEdit, onUpdate }: ReportPreviewProps) => {
   const [editingSection, setEditingSection] = useState<Section | null>(null);
+
+  // ── Photographic evidence from dedicated field only ──────────────────────
+  const photoEvidence = data.photographicEvidence;
+  const hasPhotos = (photoEvidence?.images?.length ?? 0) > 0;
+  const photoHeading =
+    photoEvidence?.showHeading && photoEvidence.heading?.trim()
+      ? photoEvidence.heading
+      : 'Photographic Evidence';
+
 
   const handleGeneratePDF = async () => {
     const btn = document.querySelector('button[data-generate-pdf]') as HTMLButtonElement | null;
@@ -149,8 +116,10 @@ const ReportPreview = ({ data, onEdit, onUpdate }: ReportPreviewProps) => {
     }
   };
 
+
   const handleSectionEdit = (section: Section) => setEditingSection(section);
   const handleCloseEdit = () => setEditingSection(null);
+
 
   const handleSectionUpdate = (updatedSection: Section) => {
     const updatedSections = data.sections.map((s) =>
@@ -166,76 +135,103 @@ const ReportPreview = ({ data, onEdit, onUpdate }: ReportPreviewProps) => {
     handleCloseEdit();
   };
 
-  const renderTable = (content: TableContent) => (
-    <div className="report-table-wrap overflow-hidden border border-gray-300 rounded">
-      <table className="w-full text-sm">
-        <thead className="bg-gray-100">
-          <tr>
-            {content.columns.map((col, i) => (
-              <th key={i} className="px-4 py-3 text-left font-bold text-gray-700 border-b border-gray-300">
-                {col}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200">
-          {content.rows.map((row, rowIndex) => (
-            <tr key={rowIndex}>
-              {content.columns.map((col, colIndex) => (
-                <td key={colIndex} className="px-4 py-3 text-gray-700 align-top whitespace-pre-wrap">
-                  {row[col] || '-'}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
 
-  const renderCustomTable = (content: CustomTableContent) => (
-    <div className="report-table-wrap overflow-hidden border border-gray-300 rounded">
-      <table className="w-full text-sm">
-        <thead className="bg-gray-100">
-          <tr>
-            {content.columnHeaders.map((header, i) => (
-              <th key={i} className="px-4 py-3 text-left font-bold text-gray-700 border-b border-gray-300">
-                {header || `Column ${i + 1}`}
+  const renderTable = (content: TableContent) => {
+    const col1 =
+      content.useCustomHeadings && content.col1Label?.trim() ? content.col1Label : 'Parameter';
+    const col2 =
+      content.useCustomHeadings && content.col2Label?.trim() ? content.col2Label : 'Details';
+
+    return (
+      <div className="report-table-wrap overflow-hidden border border-gray-300 rounded">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="px-4 py-3 text-left font-bold text-gray-700 border-b border-gray-300">
+                {col1}
               </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200">
-          {content.rows.map((row, rowIndex) => (
-            <tr key={rowIndex}>
-              {row.map((cell, colIndex) => (
-                <td key={colIndex} className="px-4 py-3 text-gray-700 align-top whitespace-pre-wrap">
-                  {cell || '-'}
-                </td>
-              ))}
+              <th className="px-4 py-3 text-left font-bold text-gray-700 border-b border-gray-300">
+                {col2}
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {content.rows.map((row, rowIndex) => (
+              <tr key={rowIndex}>
+                <td className="px-4 py-3 text-gray-700 align-top whitespace-pre-wrap">
+                  {row['Parameter'] || '-'}
+                </td>
+                <td className="px-4 py-3 text-gray-700 align-top whitespace-pre-wrap">
+                  {row['Details'] || '-'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+
+  const renderCustomTable = (content: CustomTableContent) => {
+    const showHeader = content.columnCount > 1 || content.showSingleColumnHeader === true;
+
+    return (
+      <div className="report-table-wrap overflow-hidden border border-gray-300 rounded">
+        <table className="w-full text-sm">
+          {showHeader && (
+            <thead className="bg-gray-100">
+              <tr>
+                {content.columnHeaders.map((header, i) => (
+                  <th
+                    key={i}
+                    className="px-4 py-3 text-left font-bold text-gray-700 border-b border-gray-300"
+                  >
+                    {header || `Column ${i + 1}`}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+          )}
+          <tbody className="divide-y divide-gray-200">
+            {content.rows.map((row, rowIndex) => (
+              <tr key={rowIndex}>
+                {row.map((cell, colIndex) => (
+                  <td
+                    key={colIndex}
+                    className="px-4 py-3 text-gray-700 align-top whitespace-pre-wrap"
+                  >
+                    {cell || '-'}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
 
   const renderSectionContent = (section: Section) => {
     if (section.type === 'narrative') {
       return (
         <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-          {(section.content as NarrativeContent).text || '-'}
+          {(section.content as NarrativeContent).text}
         </p>
       );
     }
     if (section.type === 'table') return renderTable(section.content as TableContent);
-    if (section.type === 'custom-table') return renderCustomTable(section.content as CustomTableContent);
+    if (section.type === 'custom-table')
+      return renderCustomTable(section.content as CustomTableContent);
     return null;
   };
+
 
   return (
     <div className="report-preview-root min-h-screen bg-white py-8 relative">
 
+      {/* ── Background decoration ── */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         <div className="absolute top-20 left-10 w-40 h-40 bg-sky-200 rounded-3xl opacity-40 transform rotate-12"></div>
         <div className="absolute top-1/2 left-5 w-2 h-64 bg-gradient-to-b from-sky-400 via-blue-400 to-transparent opacity-40 rounded-full"></div>
@@ -249,67 +245,109 @@ const ReportPreview = ({ data, onEdit, onUpdate }: ReportPreviewProps) => {
 
       <div className="max-w-5xl mx-auto px-4 relative z-10">
 
-        <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-4 mb-6 flex items-center justify-between sticky top-4 z-50" data-no-print="true">
-          <button onClick={onEdit} className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+        {/* ── Sticky toolbar ── */}
+        <div
+          className="bg-white rounded-lg shadow-lg border border-gray-200 p-4 mb-6 flex items-center justify-between sticky top-4 z-50"
+          data-no-print="true"
+        >
+          <button
+            type="button"
+            onClick={onEdit}
+            className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+          >
             <ArrowLeft className="w-5 h-5" />
             Back to Edit
           </button>
-          <button data-generate-pdf onClick={handleGeneratePDF} className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+          <button
+            type="button"
+            data-generate-pdf
+            onClick={handleGeneratePDF}
+            className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          >
             <FileDown className="w-5 h-5" />
             Generate PDF
           </button>
         </div>
 
-        {/* PAGE 1: COVER */}
-        <div data-pdf-page style={pageStyle} className="shadow-lg border border-gray-200 bg-gradient-to-br from-white via-gray-50 to-blue-50">
+
+        {/* ── PAGE 1: COVER ─────────────────────────────────────────────────── */}
+        <div
+          data-pdf-page
+          style={pageStyle}
+          className="shadow-lg border border-gray-200 bg-gradient-to-br from-white via-gray-50 to-blue-50"
+        >
           <div className="h-full flex flex-col justify-between">
             <div className="pt-12">
               <div className="bg-white rounded-xl shadow-lg border-l-4 border-blue-600 p-6 mb-4">
                 <div className="flex items-start gap-4">
-                  <div className="bg-blue-600 p-3 rounded-lg"><FileText className="w-8 h-8 text-white" /></div>
+                  <div className="bg-blue-600 p-3 rounded-lg">
+                    <FileText className="w-8 h-8 text-white" />
+                  </div>
                   <div className="flex-1">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2 leading-tight">{data.header.title}</h1>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2 leading-tight">
+                      {data.header.title}
+                    </h1>
                     <p className="text-lg text-gray-600">{data.header.subtitle}</p>
                   </div>
                 </div>
               </div>
             </div>
+
             <div className="flex items-center justify-center my-6">
               <div className="relative">
                 <div className="absolute inset-0 transform rotate-45 bg-gradient-to-br from-blue-100 to-blue-50 rounded-2xl -m-4"></div>
                 <div className="relative bg-white rounded-xl shadow-xl p-8 border border-gray-200">
                   {data.header.clientLogo ? (
-                    <img src={data.header.clientLogo} alt="Client Logo" className="h-28 w-auto relative z-10" />
+                    <img
+                      src={data.header.clientLogo}
+                      alt="Client Logo"
+                      className="h-28 w-auto relative z-10"
+                    />
                   ) : (
                     <div className="h-28 w-28 flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg">
                       <Building2 className="w-12 h-12 text-gray-400" />
                     </div>
                   )}
                 </div>
-                <div className="absolute -top-3 -right-3 bg-blue-600 rounded-full p-2"><Award className="w-4 h-4 text-white" /></div>
-                <div className="absolute -bottom-3 -left-3 bg-blue-600 rounded-full p-2"><Shield className="w-4 h-4 text-white" /></div>
+                <div className="absolute -top-3 -right-3 bg-blue-600 rounded-full p-2">
+                  <Award className="w-4 h-4 text-white" />
+                </div>
+                <div className="absolute -bottom-3 -left-3 bg-blue-600 rounded-full p-2">
+                  <Shield className="w-4 h-4 text-white" />
+                </div>
               </div>
             </div>
+
             <div className="pb-8">
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div className="bg-white rounded-lg shadow-md border border-gray-200 p-4">
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="bg-blue-100 p-2 rounded-lg"><Users className="w-4 h-4 text-blue-600" /></div>
+                    <div className="bg-blue-100 p-2 rounded-lg">
+                      <Users className="w-4 h-4 text-blue-600" />
+                    </div>
                     <p className="text-xs font-bold text-gray-500 uppercase">Prepared for</p>
                   </div>
-                  <p className="text-sm text-gray-900 font-semibold ml-11">{data.header.preparedFor}</p>
+                  <p className="text-sm text-gray-900 font-semibold ml-11">
+                    {data.header.preparedFor}
+                  </p>
                 </div>
                 <div className="bg-white rounded-lg shadow-md border border-gray-200 p-4">
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="bg-blue-100 p-2 rounded-lg"><Calendar className="w-4 h-4 text-blue-600" /></div>
+                    <div className="bg-blue-100 p-2 rounded-lg">
+                      <Calendar className="w-4 h-4 text-blue-600" />
+                    </div>
                     <p className="text-xs font-bold text-gray-500 uppercase">Date</p>
                   </div>
-                  <p className="text-sm text-gray-900 font-semibold ml-11">{format(new Date(data.header.date), 'dd MMM yyyy')}</p>
+                  <p className="text-sm text-gray-900 font-semibold ml-11">
+                    {format(new Date(data.header.date), 'dd MMM yyyy')}
+                  </p>
                 </div>
               </div>
               <div className="bg-gradient-to-r from-blue-600 to-blue-500 rounded-lg shadow-lg p-4">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="bg-white p-2 rounded-lg"><Briefcase className="w-4 h-4 text-blue-600" /></div>
+                  <div className="bg-white p-2 rounded-lg">
+                    <Briefcase className="w-4 h-4 text-blue-600" />
+                  </div>
                   <p className="text-xs font-bold text-blue-100 uppercase">Prepared by</p>
                 </div>
                 <p className="text-base text-white font-bold ml-11">{data.header.preparedBy}</p>
@@ -318,16 +356,24 @@ const ReportPreview = ({ data, onEdit, onUpdate }: ReportPreviewProps) => {
           </div>
         </div>
 
-        {/* PAGE 2: TOC */}
-        <div data-pdf-page style={pageStyle} className="shadow-lg border border-gray-200 bg-gradient-to-br from-white to-gray-50">
+
+        {/* ── PAGE 2: TABLE OF CONTENTS ──────────────────────────────────────── */}
+        <div
+          data-pdf-page
+          style={pageStyle}
+          className="shadow-lg border border-gray-200 bg-gradient-to-br from-white to-gray-50"
+        >
           <div className="h-full flex flex-col">
             <div className="mb-8">
               <div className="flex items-center gap-4 mb-4">
-                <div className="bg-gradient-to-br from-blue-600 to-blue-500 p-3 rounded-xl shadow-lg"><BookOpen className="w-7 h-7 text-white" /></div>
+                <div className="bg-gradient-to-br from-blue-600 to-blue-500 p-3 rounded-xl shadow-lg">
+                  <BookOpen className="w-7 h-7 text-white" />
+                </div>
                 <h2 className="text-3xl font-bold text-gray-900">TABLE OF CONTENTS</h2>
               </div>
               <div className="h-1 bg-gradient-to-r from-blue-600 via-blue-400 to-transparent rounded-full"></div>
             </div>
+
             <div className="flex-1 space-y-3">
               {data.tableOfContents.length === 0 ? (
                 <div className="flex items-center justify-center h-64 border-2 border-dashed border-gray-300 rounded-xl">
@@ -338,13 +384,18 @@ const ReportPreview = ({ data, onEdit, onUpdate }: ReportPreviewProps) => {
                 </div>
               ) : (
                 data.tableOfContents.map((item, index) => (
-                  <div key={index} className="group bg-white hover:bg-blue-50 border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-all duration-200">
+                  <div
+                    key={index}
+                    className="group bg-white hover:bg-blue-50 border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-all duration-200"
+                  >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4 flex-1">
                         <div className="bg-gradient-to-br from-blue-600 to-blue-500 text-white font-bold rounded-lg w-10 h-10 flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
                           {index + 1}
                         </div>
-                        <span className="text-gray-800 font-medium group-hover:text-blue-700 transition-colors flex-1">{item}</span>
+                        <span className="text-gray-800 font-medium group-hover:text-blue-700 transition-colors flex-1">
+                          {item}
+                        </span>
                       </div>
                       <div className="flex items-center gap-2 text-gray-500 group-hover:text-blue-600 transition-colors">
                         <FileText className="w-4 h-4" />
@@ -354,44 +405,132 @@ const ReportPreview = ({ data, onEdit, onUpdate }: ReportPreviewProps) => {
                   </div>
                 ))
               )}
+
+              {/* ── TOC entry for Photographic Evidence (only if photos exist) ── */}
+              {hasPhotos && (
+                <div className="group bg-blue-50 border border-blue-200 rounded-lg p-4 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4 flex-1">
+                      <div className="bg-blue-600 text-white font-bold rounded-lg w-10 h-10 flex items-center justify-center shadow-md">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                            d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      </div>
+                      <span className="text-blue-800 font-medium flex-1">{photoHeading}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-blue-500">
+                      <FileText className="w-4 h-4" />
+                      <span className="text-sm font-semibold">
+                        Page {data.tableOfContents.length + 3}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
+
             <div className="mt-6 pt-6 border-t border-gray-200">
               <div className="flex items-center justify-center gap-2">
                 <div className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-2 rounded-full shadow-md">
                   <CheckCircle2 className="w-4 h-4" />
-                  <span className="text-xs font-semibold">{data.tableOfContents.length} Sections</span>
+                  <span className="text-xs font-semibold">
+                    {data.tableOfContents.length} Section
+                    {data.tableOfContents.length !== 1 ? 's' : ''}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* PAGES 3+: FLOWING SECTIONS */}
+
+        {/* ── PAGES 3+: FLOWING CONTENT SECTIONS ────────────────────────────── */}
         {data.sections.length > 0 && (
           <div data-pdf-flow style={flowPageStyle} className="shadow-lg border border-gray-200">
             <div className="space-y-10">
               {data.sections.map((section, index) => (
                 <div key={section.id} className="report-section">
                   <div className="report-section-header flex items-start justify-between gap-4 mb-4 pb-3 border-b-2 border-gray-400">
-                    <h3 className="text-xl font-bold text-gray-900">{index + 1}) {section.title}</h3>
-                    <button onClick={() => handleSectionEdit(section)} className="flex items-center gap-2 px-2 py-1 text-blue-600 hover:bg-blue-50 rounded text-xs whitespace-nowrap" data-no-print="true">
+                    <h3 className="text-xl font-bold text-gray-900">
+                      {index + 1}) {section.title}
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => handleSectionEdit(section)}
+                      className="flex items-center gap-2 px-2 py-1 text-blue-600 hover:bg-blue-50 rounded text-xs whitespace-nowrap"
+                      data-no-print="true"
+                    >
                       <Edit className="w-3 h-3" />
                       Edit
                     </button>
                   </div>
+
                   <div className="mb-4">{renderSectionContent(section)}</div>
-                  {section.images && section.images.length > 0 && (
-                    <SectionImages images={section.images} />
+
+                  {section.notes && section.notes.trim().length > 0 && (
+                    <div className="mt-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg">
+                      <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-1">
+                        {section.notesHeading && section.notesHeading.trim().length > 0
+                          ? section.notesHeading
+                          : 'Note:'}
+                      </p>
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                        {section.notes}
+                      </p>
+                    </div>
                   )}
-                  {index < data.sections.length - 1 && <div className="mt-8 h-px bg-gray-200" />}
+
+                  {index < data.sections.length - 1 && (
+                    <div className="mt-8 h-px bg-gray-200" />
+                  )}
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* LAST PAGE: END OF REPORT */}
-        <div data-pdf-page style={pageStyle} className="shadow-lg border border-gray-200 bg-gradient-to-br from-white to-gray-50">
+
+        {/* ── PHOTOGRAPHIC EVIDENCE PAGE ────────────────────────────────────── */}
+        {hasPhotos && (
+          <div data-pdf-flow style={flowPageStyle} className="shadow-lg border border-gray-200">
+
+            {/* Section header */}
+            <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-gray-400">
+              <div className="bg-blue-600 p-2 rounded-lg">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">{photoHeading}</h3>
+                <p className="text-xs text-gray-500">
+                  {photoEvidence!.images.length} image
+                  {photoEvidence!.images.length !== 1 ? 's' : ''} attached
+                </p>
+              </div>
+            </div>
+
+            {/* Image grid — 1 column if single image, 2 columns otherwise */}
+            {/* ✅ Smart orientation-aware image grid */}
+            <SmartImageGrid
+              images={photoEvidence!.images as any}
+              showCaptions
+              mode="preview"
+            />
+          </div>
+        )}
+
+
+        {/* ── LAST PAGE: END OF REPORT ───────────────────────────────────────── */}
+        <div
+          data-pdf-page
+          style={pageStyle}
+          className="shadow-lg border border-gray-200 bg-gradient-to-br from-white to-gray-50"
+        >
           <div className="h-full flex flex-col justify-between">
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
@@ -411,36 +550,35 @@ const ReportPreview = ({ data, onEdit, onUpdate }: ReportPreviewProps) => {
                 </div>
                 <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 inline-block">
                   <div className="flex items-center gap-4">
-                    <div className="bg-blue-100 p-3 rounded-lg"><Calendar className="w-5 h-5 text-blue-600" /></div>
-                    <div className="text-left">
-                      <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Document Created</p>
-                      <p className="text-sm font-bold text-gray-900">{format(new Date(), 'dd MMM yyyy')}</p>
+                    <div className="bg-blue-100 p-3 rounded-lg">
+                      <Calendar className="w-5 h-5 text-blue-600" />
                     </div>
-                  </div>
-                </div>
-                <div className="mt-8 flex items-center justify-center gap-4">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-blue-600" />
-                    <span className="text-xs font-semibold text-blue-700">{data.sections.length} Sections</span>
-                  </div>
-                  <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-2 flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-green-600" />
-                    <span className="text-xs font-semibold text-green-700">Verified</span>
+                    <div className="text-left">
+                      <p className="text-xs font-semibold text-gray-500 uppercase mb-1">
+                        Document Created
+                      </p>
+                      <p className="text-sm font-bold text-gray-900">
+                        {format(new Date(), 'dd MMM yyyy')}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
+
             <div className="border-t-2 border-gray-300 pt-6">
               <div className="bg-amber-50 border-l-4 border-amber-500 rounded-lg p-4 shadow-sm">
                 <div className="flex items-start gap-3">
-                  <div className="bg-amber-500 p-2 rounded-lg flex-shrink-0 mt-0.5"><AlertCircle className="w-4 h-4 text-white" /></div>
+                  <div className="bg-amber-500 p-2 rounded-lg flex-shrink-0 mt-0.5">
+                    <AlertCircle className="w-4 h-4 text-white" />
+                  </div>
                   <div>
                     <p className="text-xs font-bold text-amber-900 mb-2 uppercase">Disclaimer</p>
                     <p className="text-xs text-gray-700 leading-relaxed">
                       Our reports and comments are confidential in nature and not intended for general
                       circulation or publication. Client shall have no authority to modify our findings.
-                      We disclaim all responsibility for any costs, damages, losses incurred by circulation
-                      or use of our reports contrary to the provisions hereof.
+                      We disclaim all responsibility for any costs, damages, losses incurred by
+                      circulation or use of our reports contrary to the provisions hereof.
                     </p>
                   </div>
                 </div>
@@ -463,7 +601,11 @@ const ReportPreview = ({ data, onEdit, onUpdate }: ReportPreviewProps) => {
       </div>
 
       {editingSection && (
-        <EditModal section={editingSection} onClose={handleCloseEdit} onSave={handleSectionUpdate} />
+        <EditModal
+          section={editingSection}
+          onClose={handleCloseEdit}
+          onSave={handleSectionUpdate}
+        />
       )}
     </div>
   );

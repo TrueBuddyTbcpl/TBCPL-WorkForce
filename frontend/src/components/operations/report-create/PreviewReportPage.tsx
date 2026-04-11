@@ -16,6 +16,8 @@ import { useUpdateReportStatus } from '../../../hooks/finalreport/useUpdateRepor
 import { useAuthStore } from '../../../stores/authStore';
 import { toast } from 'sonner';
 import ReportPreview from './ReportPreview';
+import { useUpdateFinalReport } from '../../../hooks/finalreport/useUpdateFinalReport';
+import { queryClient } from '../../../lib/queryClient';
 import type {
   ReportData,
   FinalReportStatusUpdateRequest,
@@ -36,8 +38,13 @@ const PreviewReportPage = () => {
     refetch,
   } = useGetFinalReport(parsedId);
 
+  console.log("FULL REPORT RESPONSE:", report);
+
   const submitMutation = useSubmitForApproval(parsedId ?? 0);
   const statusMutation = useUpdateReportStatus(parsedId ?? 0);
+  const updateMutation = useUpdateFinalReport(parsedId ?? 0);
+
+  const [isSaving, setIsSaving] = useState(false);
 
   const [changeComments, setChangeComments] = useState('');
   const [showStatusModal, setShowStatusModal] = useState(false);
@@ -93,6 +100,13 @@ const PreviewReportPage = () => {
     },
     tableOfContents: report.tableOfContents,
     sections: report.sections,
+
+    // ✅ FIX: ensure photographicEvidence is never undefined
+    photographicEvidence: report.photographicEvidence ?? {
+      showHeading: false,
+      heading: '',
+      images: [],
+    },
   };
 
   const statusBadgeClass = () => {
@@ -154,6 +168,33 @@ const PreviewReportPage = () => {
     }
   };
 
+  const handleUpdate = async (updatedData: ReportData) => {
+    const username = user?.empId || user?.fullName || 'unknown';
+    setIsSaving(true);
+    try {
+      await updateMutation.mutateAsync({
+        payload: {
+          reportTitle: updatedData.header.title,
+          reportSubtitle: updatedData.header.subtitle,
+          preparedFor: updatedData.header.preparedFor,
+          preparedBy: updatedData.header.preparedBy,
+          reportDate: updatedData.header.date,
+          sections: updatedData.sections,
+          tableOfContents: updatedData.tableOfContents,
+          photographicEvidence: updatedData.photographicEvidence,  // ← ADD THIS
+        },
+        username,
+        isAdminEdit: false,
+      });
+      await queryClient.invalidateQueries({ queryKey: ['final-report', parsedId] });
+      toast.success('Section updated successfully');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message ?? 'Failed to save changes');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Top Action Bar */}
@@ -174,16 +215,16 @@ const PreviewReportPage = () => {
           <div className="flex items-center gap-2 flex-wrap">
             {(report.reportStatus === 'DRAFT' ||
               report.reportStatus === 'REQUEST_CHANGES') && (
-              <button
-                onClick={() =>
-                  navigate(`/operations/finalreport/${parsedId}/edit`)
-                }
-                className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium"
-              >
-                <Edit className="w-4 h-4" />
-                Edit Report
-              </button>
-            )}
+                <button
+                  onClick={() =>
+                    navigate(`/operations/finalreport/${parsedId}/edit`)
+                  }
+                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium"
+                >
+                  <Edit className="w-4 h-4" />
+                  Edit Report
+                </button>
+              )}
 
             {!isAdmin &&
               (report.reportStatus === 'DRAFT' ||
@@ -277,8 +318,17 @@ const PreviewReportPage = () => {
       <ReportPreview
         data={reportData}
         onEdit={() => navigate(`/operations/finalreport/${parsedId}/edit`)}
-        onUpdate={() => {}}
+        onUpdate={handleUpdate}
       />
+      {/* ✅ Saving overlay */}
+      {isSaving && (
+        <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-[99999]">
+          <div className="bg-white rounded-xl shadow-lg px-6 py-4 flex items-center gap-3">
+            <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+            <span className="text-sm font-medium text-gray-700">Saving changes…</span>
+          </div>
+        </div>
+      )}
 
       {/* Admin Status Modal */}
       {showStatusModal && (
@@ -327,11 +377,10 @@ const PreviewReportPage = () => {
               <button
                 onClick={handleAdminStatusUpdate}
                 disabled={statusMutation.isPending}
-                className={`px-4 py-2 text-white rounded-lg text-sm font-medium disabled:opacity-50 ${
-                  pendingStatus === 'APPROVED'
-                    ? 'bg-green-600 hover:bg-green-700'
-                    : 'bg-orange-600 hover:bg-orange-700'
-                }`}
+                className={`px-4 py-2 text-white rounded-lg text-sm font-medium disabled:opacity-50 ${pendingStatus === 'APPROVED'
+                  ? 'bg-green-600 hover:bg-green-700'
+                  : 'bg-orange-600 hover:bg-orange-700'
+                  }`}
               >
                 {statusMutation.isPending && (
                   <Loader2 className="w-4 h-4 animate-spin inline mr-2" />

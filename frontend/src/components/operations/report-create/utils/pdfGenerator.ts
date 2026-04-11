@@ -125,6 +125,28 @@ export const generatePDF = async (): Promise<boolean> => {
           max-width: 100% !important;
           height: auto !important;
         }
+
+        .section-image-groups {
+  page-break-inside: auto !important;
+  break-inside: auto !important;
+}
+
+.section-image-group {
+  page-break-inside: auto !important;
+  break-inside: auto !important;
+}
+
+.section-image-row {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+  margin-bottom: 16px !important;
+}
+
+.section-image-card {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+  overflow: hidden !important;
+}
       }
     `;
 

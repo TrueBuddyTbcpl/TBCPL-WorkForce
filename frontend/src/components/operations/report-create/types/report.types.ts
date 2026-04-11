@@ -31,6 +31,7 @@ export interface FinalReportResponse {
   reportDate: string;
   sections: Section[];
   tableOfContents: string[];
+  photographicEvidence?: PhotographicEvidence;
   reportStatus: ReportStatus;
   changeComments: string | null;
   previewEnabled: boolean;
@@ -77,9 +78,10 @@ export interface CreateFinalReportRequest {
   reportSubtitle: string;
   preparedFor: string;
   preparedBy: string;
-  reportDate: string; // "YYYY-MM-DD"
+  reportDate: string;
   sections: Section[];
   tableOfContents: string[];
+  photographicEvidence?: PhotographicEvidence;
 }
 
 export interface UpdateFinalReportRequest {
@@ -90,6 +92,7 @@ export interface UpdateFinalReportRequest {
   reportDate: string;
   sections: Section[];
   tableOfContents: string[];
+  photographicEvidence?: PhotographicEvidence;
 }
 
 export interface FinalReportStatusUpdateRequest {
@@ -97,40 +100,73 @@ export interface FinalReportStatusUpdateRequest {
   changeComments: string | null;
 }
 
+// ── Photographic Evidence ─────────────────────────────────────────────────
+
+export type PhotoOrientation = 'portrait' | 'landscape';
+
+export interface PhotographicImage {
+  url: string;
+  reason: string;
+  orientation: PhotoOrientation;
+}
+
+export interface PhotographicEvidence {
+  showHeading: boolean;
+  heading: string;
+  images: PhotographicImage[];
+}
+
+export type CollageLayout =
+  | '1-full' | '2-side' | '3-row' | '2+1' | '1+2' | '2x2' | '2+3' | '3x2' | 'auto';
+
+export interface PhotographicEvidence {
+  showHeading: boolean;
+  heading: string;
+  images: Array<{
+    url: string;
+    reason: string;
+    orientation: 'portrait' | 'landscape';
+  }>;
+  collageLayout?: CollageLayout; // ✅ ADD THIS
+}
+
 // ── Local Form Types ──────────────────────────────────────────────────────
 
 export interface ReportData {
-  // Backend fields (set after save)
   reportId?: number;
   reportNumber?: string;
   reportStatus?: ReportStatus;
   caseId?: number;
-  // Client info from prefill
   clientLogoUrl?: string | null;
-  // Form header
   header: {
     title: string;
     subtitle: string;
     preparedFor: string;
     preparedBy: string;
     date: string;
-    clientLogo?: string; // Cloudinary URL or base64 (legacy)
+    clientLogo?: string;
   };
   tableOfContents: string[];
   sections: Section[];
+  photographicEvidence?: PhotographicEvidence;
 }
 
 export interface Section {
   id: string;
   title: string;
-  type: 'table' | 'narrative' | 'mixed' | 'custom-table';
-  content: TableContent | NarrativeContent | MixedContent | CustomTableContent;
-  images?: string[]; // Cloudinary URLs only
+  type: 'table' | 'narrative' | 'mixed' | 'custom-table' | 'image';
+  content: TableContent | NarrativeContent | MixedContent | CustomTableContent | ImageSectionContent;
+  images?: string[];
+  notes?: string;
+  notesHeading?: string;
 }
 
 export interface TableContent {
   columns: string[];
   rows: Record<string, string>[];
+  useCustomHeadings?: boolean;
+  col1Label?: string;
+  col2Label?: string;
 }
 
 export interface NarrativeContent {
@@ -145,6 +181,14 @@ export interface CustomTableContent {
   columnCount: number;
   columnHeaders: string[];
   rows: string[][];
+  showSingleColumnHeader?: boolean;
+}
+
+export interface ImageSectionContent {
+  images: Array<{ url: string; reason: string }>;
+  reason: string;
+  showHeading: boolean;
+  heading: string;
 }
 
 export interface FormStepProps {
@@ -155,7 +199,7 @@ export interface FormStepProps {
 
 export interface SectionFormData {
   title: string;
-  type: 'table' | 'narrative' | 'mixed' | 'custom-table';
+  type: 'table' | 'narrative' | 'mixed' | 'custom-table' | 'image';
   tableColumns?: string[];
   tableRows?: Record<string, string>[];
   narrativeText?: string;

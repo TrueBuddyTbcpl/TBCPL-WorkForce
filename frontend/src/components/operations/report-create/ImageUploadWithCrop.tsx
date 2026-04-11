@@ -4,11 +4,13 @@ import ImageCropModal from './ImageCropModal';
 import { reportImageApi } from '../../../services/api/reportImageApi';
 import { toast } from 'sonner';
 
+type PhotoOrientation = 'portrait' | 'landscape';
+
 interface Props {
-  caseId:         number | null;
-  onImageCropped: (s3Url: string) => void;
-  label?:         string;
-  disabled?:      boolean;
+  caseId: number | null;
+  onImageCropped: (image: { url: string; orientation: PhotoOrientation }) => void;
+  label?: string;
+  disabled?: boolean;
 }
 
 const ALLOWED = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
@@ -16,12 +18,12 @@ const ALLOWED = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 const ImageUploadWithCrop: React.FC<Props> = ({
   caseId,
   onImageCropped,
-  label    = 'Attach Image',
+  label = 'Attach Image',
   disabled = false,
 }) => {
-  const fileInputRef                  = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
-  const [uploading,   setUploading]   = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -39,10 +41,15 @@ const ImageUploadWithCrop: React.FC<Props> = ({
     setPendingFile(file);
   };
 
-  const handleCropConfirm = async (croppedDataUrl: string) => {
+  const handleCropConfirm = async ({
+    croppedDataUrl,
+    orientation,
+  }: {
+    croppedDataUrl: string;
+    orientation: PhotoOrientation;
+  }) => {
     setPendingFile(null);
 
-    // ✅ FIXED: never store base64 in state — caseId is always required
     if (!caseId) {
       toast.error('Cannot upload image: case is not saved yet.');
       return;
@@ -51,7 +58,20 @@ const ImageUploadWithCrop: React.FC<Props> = ({
     setUploading(true);
     try {
       const result = await reportImageApi.uploadCroppedImage(caseId, croppedDataUrl);
-      onImageCropped(result.url); // ✅ only S3 URL stored in state, never base64
+
+      const imageUrl = result?.url;
+
+      if (!imageUrl) {
+        console.error('❌ Invalid upload response:', result);
+        toast.error('Image upload failed (no URL returned)');
+        return;
+      }
+
+      onImageCropped({
+        url: imageUrl,
+        orientation,
+      });
+
       toast.success('Image uploaded successfully.');
     } catch (err: any) {
       toast.error(err?.response?.data?.message ?? 'Image upload failed. Please try again.');
