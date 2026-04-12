@@ -10,6 +10,7 @@ import EmployeeProfile from '../components/admin/EmployeeProfile';
 import EmployeeChangeHistoryReport from '../components/admin/EmployeeChangeHistoryReport';
 import NotFound from './NotFound';
 import ResetPasswordPage from '../pages/ResetPasswordPage';
+import { PublicRoute } from './PublicRoute';
 
 // ✅ Import Pre-Report Components
 import { EmployeePreReportList } from '../components/operations/dashboard/EmployeePreReportList';
@@ -126,7 +127,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       {/* Login Routes - Two paths for backward compatibility & Default redirect */}
-      <Route path="/auth/login" element={<LoginPage />} />
+      <Route path="/auth/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
       <Route path="/auth/verify-email" element={<VerifyEmailPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/" element={<Navigate to={getDefaultRoute()} replace />} />
