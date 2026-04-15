@@ -41,14 +41,19 @@ export interface ApiProfileAddress {
   permCountry?: string;
 }
 
+export interface ApiProfileEmergencyContact {
+  id?: number;
+  name?: string;
+  phone?: string;
+  relation?: string;
+}
+
 export interface ApiProfileContactInfo {
   primaryPhone?: string;
   secondaryPhone?: string;
   primaryEmail?: string;
   secondaryEmail?: string;
-  emergencyContactName?: string;
-  emergencyContactPhone?: string;
-  emergencyContactRelation?: string;
+  emergencyContacts?: ApiProfileEmergencyContact[]; // ✅ list
 }
 
 export interface ApiProfileIdentificationDocs {

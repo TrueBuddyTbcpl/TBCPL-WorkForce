@@ -109,7 +109,7 @@ const ProfilePreview = ({ profile, onClose, onEdit, onDelete }: Props) => {
               <InfoRow label="Blood Group" value={pi?.bloodGroup} />
             </Section>
 
-            
+
 
             {/* Address */}
             {p.address && (
@@ -129,15 +129,34 @@ const ProfilePreview = ({ profile, onClose, onEdit, onDelete }: Props) => {
                 <InfoRow label="Secondary Phone" value={p.contactInfo.secondaryPhone} />
                 <InfoRow label="Primary Email" value={p.contactInfo.primaryEmail} />
                 <InfoRow label="Secondary Email" value={p.contactInfo.secondaryEmail} />
-                {p.contactInfo.emergencyContactName && (
-                  <>
-                    <div className="border-t pt-2 mt-2">
-                      <p className="text-sm font-semibold text-gray-700 mb-1">Emergency Contact</p>
+
+                {/* ✅ NEW — render emergency contacts list instead of 3 single fields */}
+                {p.contactInfo.emergencyContacts && p.contactInfo.emergencyContacts.length > 0 && (
+                  <div className="border-t pt-3 mt-3">
+                    <p className="text-sm font-semibold text-gray-700 mb-2">
+                      Emergency Contacts
+                      <span className="ml-2 text-xs font-normal text-gray-500">
+                        ({p.contactInfo.emergencyContacts.length})
+                      </span>
+                    </p>
+                    <div className="space-y-2">
+                      {p.contactInfo.emergencyContacts.map((ec, i) => (
+                        <div key={ec.id ?? i} className="p-2 bg-red-50 border border-red-100 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium text-gray-900">{ec.name || '—'}</p>
+                            {ec.relation && (
+                              <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full">
+                                {ec.relation}
+                              </span>
+                            )}
+                          </div>
+                          {ec.phone && (
+                            <p className="text-xs text-gray-600 mt-0.5">{ec.phone}</p>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                    <InfoRow label="Name" value={p.contactInfo.emergencyContactName} />
-                    <InfoRow label="Phone" value={p.contactInfo.emergencyContactPhone} />
-                    <InfoRow label="Relation" value={p.contactInfo.emergencyContactRelation} />
-                  </>
+                  </div>
                 )}
               </Section>
             )}

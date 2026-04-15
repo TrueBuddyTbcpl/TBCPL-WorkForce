@@ -1,5 +1,7 @@
 import { useForm } from 'react-hook-form';
+import { Controller } from 'react-hook-form';
 import type { BusinessActivities } from '../types/profile.types';
+import DropdownWithOther from '../../../ui/DropdownWithOther';
 
 interface Props {
   data?: BusinessActivities;
@@ -8,7 +10,7 @@ interface Props {
 }
 
 const BusinessActivitiesStep = ({ data, onNext, onBack }: Props) => {
-  const { register, handleSubmit } = useForm<BusinessActivities>({
+  const { register, control, handleSubmit } = useForm<BusinessActivities>({
     defaultValues: data || {},
   });
 
@@ -16,26 +18,30 @@ const BusinessActivitiesStep = ({ data, onNext, onBack }: Props) => {
     <form onSubmit={handleSubmit(onNext)} className="space-y-6">
       <div className="bg-white p-6 rounded-lg shadow-sm border">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Business Activities</h3>
-        
-        {/* Retailer Section */}
+
+        {/* ── Retailer ───────────────────────────────────────────────── */}
         <div className="mb-6 p-4 bg-blue-50 rounded-lg">
           <h4 className="text-md font-medium text-gray-800 mb-3">Retailer Information</h4>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Entity Type</label>
-              <select {...register('retailerStatus')} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                <option value="">Select Type</option>
-                <option value="Individual">Individual</option>
-                <option value="Entity">Entity</option>
-              </select>
+              <Controller
+                name="retailerStatus"
+                control={control}
+                render={({ field }) => (
+                  <DropdownWithOther fieldName="businessEntityStatus" value={field.value} onChange={field.onChange} placeholder="Select Type" />
+                )}
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Authorization Status</label>
-              <select {...register('retailerType')} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                <option value="">Select Status</option>
-                <option value="Authorized">Authorized</option>
-                <option value="Unauthorized">Unauthorized</option>
-              </select>
+              <Controller
+                name="retailerType"
+                control={control}
+                render={({ field }) => (
+                  <DropdownWithOther fieldName="authorizationStatus" value={field.value} onChange={field.onChange} placeholder="Select Status" />
+                )}
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Details</label>
@@ -44,25 +50,29 @@ const BusinessActivitiesStep = ({ data, onNext, onBack }: Props) => {
           </div>
         </div>
 
-        {/* Supplier Section */}
+        {/* ── Supplier ───────────────────────────────────────────────── */}
         <div className="mb-6 p-4 bg-green-50 rounded-lg">
           <h4 className="text-md font-medium text-gray-800 mb-3">Supplier Information</h4>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Entity Type</label>
-              <select {...register('supplierStatus')} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                <option value="">Select Type</option>
-                <option value="Individual">Individual</option>
-                <option value="Entity">Entity</option>
-              </select>
+              <Controller
+                name="supplierStatus"
+                control={control}
+                render={({ field }) => (
+                  <DropdownWithOther fieldName="businessEntityStatus" value={field.value} onChange={field.onChange} placeholder="Select Type" />
+                )}
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Authorization Status</label>
-              <select {...register('supplierType')} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                <option value="">Select Status</option>
-                <option value="Authorized">Authorized</option>
-                <option value="Unauthorized">Unauthorized</option>
-              </select>
+              <Controller
+                name="supplierType"
+                control={control}
+                render={({ field }) => (
+                  <DropdownWithOther fieldName="authorizationStatus" value={field.value} onChange={field.onChange} placeholder="Select Status" />
+                )}
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Details</label>
@@ -71,25 +81,29 @@ const BusinessActivitiesStep = ({ data, onNext, onBack }: Props) => {
           </div>
         </div>
 
-        {/* Manufacturer Section */}
+        {/* ── Manufacturer ───────────────────────────────────────────── */}
         <div className="p-4 bg-yellow-50 rounded-lg">
           <h4 className="text-md font-medium text-gray-800 mb-3">Manufacturer Information</h4>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Entity Type</label>
-              <select {...register('manufacturerStatus')} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                <option value="">Select Type</option>
-                <option value="Individual">Individual</option>
-                <option value="Entity">Entity</option>
-              </select>
+              <Controller
+                name="manufacturerStatus"
+                control={control}
+                render={({ field }) => (
+                  <DropdownWithOther fieldName="businessEntityStatus" value={field.value} onChange={field.onChange} placeholder="Select Type" />
+                )}
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Authorization Status</label>
-              <select {...register('manufacturerType')} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                <option value="">Select Status</option>
-                <option value="Authorized">Authorized</option>
-                <option value="Unauthorized">Unauthorized</option>
-              </select>
+              <Controller
+                name="manufacturerType"
+                control={control}
+                render={({ field }) => (
+                  <DropdownWithOther fieldName="authorizationStatus" value={field.value} onChange={field.onChange} placeholder="Select Status" />
+                )}
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Details</label>

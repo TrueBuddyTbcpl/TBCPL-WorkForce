@@ -1,6 +1,7 @@
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { Plus, Trash2 } from 'lucide-react';
 import type { RelatedFIRsCases } from '../types/profile.types';
+import DropdownWithOther from '../../../../components/ui/DropdownWithOther';
 
 interface Props {
   data?: RelatedFIRsCases;
@@ -15,20 +16,17 @@ const RelatedFIRsCasesStep = ({ data, onNext, onBack }: Props) => {
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: 'firs',
-  });
+  const { fields, append, remove } = useFieldArray({ control, name: 'firs' });
 
   const onSubmit = (formData: RelatedFIRsCases) => {
     const processedData = {
       ...formData,
       firs: formData.firs?.map(fir => ({
         ...fir,
-        sections: typeof fir.sections === 'string' 
+        sections: typeof fir.sections === 'string'
           ? (fir.sections as string).split(',').map(s => s.trim()).filter(Boolean)
-          : fir.sections
-      }))
+          : fir.sections,
+      })),
     };
     onNext(processedData);
   };
@@ -52,11 +50,7 @@ const RelatedFIRsCasesStep = ({ data, onNext, onBack }: Props) => {
           {fields.map((field, index) => (
             <div key={field.id} className="relative border border-gray-200 rounded-lg p-4 bg-gray-50">
               {fields.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => remove(index)}
-                  className="absolute top-4 right-4 p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                >
+                <button type="button" onClick={() => remove(index)} className="absolute top-4 right-4 p-2 text-red-600 hover:bg-red-50 rounded-lg">
                   <Trash2 className="w-5 h-5" />
                 </button>
               )}
@@ -66,57 +60,39 @@ const RelatedFIRsCasesStep = ({ data, onNext, onBack }: Props) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">FIR Number</label>
-                  <input
-                    type="text"
-                    {...register(`firs.${index}.firNumber` as const)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter FIR number"
-                  />
+                  <input type="text" {...register(`firs.${index}.firNumber`)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Enter FIR number" />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Case Number</label>
-                  <input
-                    type="text"
-                    {...register(`firs.${index}.caseNumber` as const)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter case number"
-                  />
+                  <input type="text" {...register(`firs.${index}.caseNumber`)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Enter case number" />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Sections (comma separated)</label>
-                  <input
-                    type="text"
-                    {...register(`firs.${index}.sections` as const)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g., 420, 467, 468"
-                  />
+                  <input type="text" {...register(`firs.${index}.sections`)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="e.g., 420, 467, 468" />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Date Registered</label>
-                  <input
-                    type="date"
-                    {...register(`firs.${index}.dateRegistered` as const)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
+                  <input type="date" {...register(`firs.${index}.dateRegistered`)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
                 </div>
 
+                {/* ── CHANGED: DropdownWithOther replaces static <select> ── */}
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                  <select
-                    {...register(`firs.${index}.status` as const)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select Status</option>
-                    <option value="N_A">N/A</option>
-                    <option value="Open">Open</option>
-                    <option value="Under_Investigation">Under Investigation</option>
-                    <option value="Closed">Closed</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Chargesheet_Filed">Chargesheet Filed</option>
-                  </select>
+                  <Controller
+                    name={`firs.${index}.status`}
+                    control={control}
+                    render={({ field }) => (
+                      <DropdownWithOther
+                        fieldName="firStatus"
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Select Status"
+                      />
+                    )}
+                  />
                 </div>
               </div>
             </div>

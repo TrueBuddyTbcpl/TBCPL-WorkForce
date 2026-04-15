@@ -17,15 +17,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   // ✅ Listen for session expiry event from API interceptor
   useEffect(() => {
     const handleSessionExpired = () => {
-      console.log('🔴 Session expired event received');
       setShowSessionExpiredModal(true);
     };
-
     window.addEventListener('session-expired', handleSessionExpired);
-
-    return () => {
-      window.removeEventListener('session-expired', handleSessionExpired);
-    };
+    return () => window.removeEventListener('session-expired', handleSessionExpired);
   }, []);
 
   // ✅ Handle modal confirmation

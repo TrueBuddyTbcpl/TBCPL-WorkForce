@@ -8,7 +8,6 @@ import type {
   ImageSectionContent,
 } from '../types/report.types';
 import { X, Save, Plus, Trash2 } from 'lucide-react';
-import ImageUploadWithCrop from '../ImageUploadWithCrop';
 
 
 // ── Migration: handles old single-image format → new multi-image format ──────
@@ -141,14 +140,7 @@ const EditModal = ({ section, onClose, onSave }: EditModalProps) => {
     setEditedSection({ ...editedSection, content: { ...current, ...patch } });
   };
 
-  const handleAddImage = (s3Url: string) => {
-    const current = editedSection.content as ImageSectionContent;
-    const updated: ImageSectionContent = {
-      ...current,
-      images: [...(current.images ?? []), { url: s3Url, reason: '' }],
-    };
-    setEditedSection({ ...editedSection, content: updated });
-  };
+
 
   const handleImageReasonChange = (idx: number, value: string) => {
     const current = editedSection.content as ImageSectionContent;
@@ -340,18 +332,7 @@ const EditModal = ({ section, onClose, onSave }: EditModalProps) => {
                     </div>
                   ))}
 
-                  {/* Add image upload trigger */}
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 hover:border-blue-400 transition-colors bg-white">
-                    <ImageUploadWithCrop
-                      caseId={null}
-                      label={
-                        (imgContent.images?.length ?? 0) > 0
-                          ? '+ Add Another Image'
-                          : '+ Upload First Image'
-                      }
-                      onImageCropped={handleAddImage}
-                    />
-                  </div>
+                  
 
                   {/* Empty state */}
                   {(!imgContent.images || imgContent.images.length === 0) && (

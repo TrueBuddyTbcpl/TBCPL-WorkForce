@@ -1,6 +1,8 @@
 import { useForm, useFieldArray } from 'react-hook-form';
+import { Controller } from 'react-hook-form';
 import { Plus, Trash2 } from 'lucide-react';
 import type { EntityOrganization } from '../types/profile.types';
+import DropdownWithOther from '../../../ui/DropdownWithOther';
 
 interface Props {
   data?: EntityOrganization;
@@ -13,17 +15,18 @@ const EntityOrganizationStep = ({ data, onNext, onBack }: Props) => {
     defaultValues: data || { associatedCompanies: [{ companyName: '', relationshipNature: '', details: '' }] },
   });
 
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: 'associatedCompanies',
-  });
+  const { fields, append, remove } = useFieldArray({ control, name: 'associatedCompanies' });
 
   return (
     <form onSubmit={handleSubmit(onNext)} className="space-y-6">
       <div className="bg-white p-6 rounded-lg shadow-sm border">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-gray-900">Entity & Organization Associations</h3>
-          <button type="button" onClick={() => append({ companyName: '', relationshipNature: '', details: '' })} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+          <button
+            type="button"
+            onClick={() => append({ companyName: '', relationshipNature: '', details: '' })}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
             <Plus className="w-4 h-4" />
             Add Company
           </button>
@@ -43,25 +46,39 @@ const EntityOrganizationStep = ({ data, onNext, onBack }: Props) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
-                  <input type="text" {...register(`associatedCompanies.${index}.companyName` as const)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Enter company name" />
+                  <input
+                    type="text"
+                    {...register(`associatedCompanies.${index}.companyName`)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter company name"
+                  />
                 </div>
 
+                {/* ── CHANGED: DropdownWithOther replaces static <select> ── */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Relationship Nature</label>
-                  <select {...register(`associatedCompanies.${index}.relationshipNature` as const)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                    <option value="">Select Relationship</option>
-                    <option value="OWNERSHIP">Ownership</option>
-                    <option value="CONTROL">Control</option>
-                    <option value="REPRESENTATION">Representation</option>
-                    <option value="PARTNERSHIP">Partnership</option>
-                    <option value="SUPPLIER">Supplier</option>
-                    <option value="CLIENT">Client</option>
-                  </select>
+                  <Controller
+                    name={`associatedCompanies.${index}.relationshipNature`}
+                    control={control}
+                    render={({ field }) => (
+                      <DropdownWithOther
+                        fieldName="relationshipNature"
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Select Relationship"
+                      />
+                    )}
+                  />
                 </div>
 
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Details</label>
-                  <textarea {...register(`associatedCompanies.${index}.details` as const)} rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Additional details about the relationship" />
+                  <textarea
+                    {...register(`associatedCompanies.${index}.details`)}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="Additional details about the relationship"
+                  />
                 </div>
               </div>
             </div>

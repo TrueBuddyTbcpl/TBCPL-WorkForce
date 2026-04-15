@@ -18,10 +18,10 @@ interface PublicRouteProps {
 }
 
 export const PublicRoute = ({ children }: PublicRouteProps) => {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, tokenExpiry } = useAuthStore();
+   const isTokenValid = !!tokenExpiry && Date.now() < tokenExpiry;
 
-  if (isAuthenticated && user) {
-    // ✅ Already logged in → redirect to their dashboard
+  if (isAuthenticated && user && isTokenValid) {
     return <Navigate to={getDashboardRoute(user.roleName)} replace />;
   }
 

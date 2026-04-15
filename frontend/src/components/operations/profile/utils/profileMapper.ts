@@ -29,7 +29,22 @@ export const mapToAddress = (d?: ApiProfileDetail) => {
 
 export const mapToContactInfo = (d?: ApiProfileDetail) => {
   if (!d?.contactInfo) return undefined;
-  return { ...d.contactInfo };
+  const c = d.contactInfo;
+  return {
+    primaryPhone:      c.primaryPhone      ?? '',
+    secondaryPhone:    c.secondaryPhone    ?? '',
+    primaryEmail:      c.primaryEmail      ?? '',
+    secondaryEmail:    c.secondaryEmail    ?? '',
+    // ✅ Map new emergency contacts list from API response
+    emergencyContacts: Array.isArray(c.emergencyContacts) && c.emergencyContacts.length > 0
+      ? c.emergencyContacts.map((ec: any) => ({
+          id:       ec.id,
+          name:     ec.name     ?? '',
+          phone:    ec.phone    ?? '',
+          relation: ec.relation ?? '',
+        }))
+      : [{ name: '', phone: '', relation: '' }], // ✅ default 1 empty row for new profiles
+  };
 };
 
 export const mapToIdentificationDocs = (d?: ApiProfileDetail) => {

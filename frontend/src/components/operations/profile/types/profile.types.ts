@@ -3,7 +3,7 @@ export interface PersonalInfo {
   middleName?: string;
   lastName: string;
   dateOfBirth?: string;
-  gender?: 'Male' | 'Female' | 'Other';
+  gender?: string; 
   nationality?: string;
   profilePhoto?: string;
 }
@@ -27,14 +27,20 @@ export interface AddressInfo {
   };
 }
 
+export interface EmergencyContact {
+  id?: number;
+  name?: string;
+  phone?: string;
+  relation?: string;
+}
+
+// ✅ UPDATED — ContactInfo with list instead of 3 single fields
 export interface ContactInfo {
   primaryPhone?: string;
   secondaryPhone?: string;
   primaryEmail?: string;
   secondaryEmail?: string;
-  emergencyContactName?: string;
-  emergencyContactPhone?: string;
-  emergencyContactRelation?: string;
+  emergencyContacts?: EmergencyContact[]; // replaced emergencyContactName/Phone/Relation
 }
 
 export interface IdentificationDocs {
@@ -63,14 +69,14 @@ export interface AdditionalInfo {
 
 // Business Activities
 export interface BusinessActivities {
-  retailerStatus?: 'Individual' | 'Entity';
-  retailerType?: 'Authorized' | 'Unauthorized';
+  retailerStatus?: string;      // was: 'Individual' | 'Entity'
+  retailerType?: string;        // was: 'Authorized' | 'Unauthorized'
   retailerDetails?: string;
-  supplierStatus?: 'Individual' | 'Entity';
-  supplierType?: 'Authorized' | 'Unauthorized';
+  supplierStatus?: string;      // was: 'Individual' | 'Entity'
+  supplierType?: string;        // was: 'Authorized' | 'Unauthorized'
   supplierDetails?: string;
-  manufacturerStatus?: 'Individual' | 'Entity';
-  manufacturerType?: 'Authorized' | 'Unauthorized';
+  manufacturerStatus?: string;  // was: 'Individual' | 'Entity'
+  manufacturerType?: string;    // was: 'Authorized' | 'Unauthorized'
   manufacturerDetails?: string;
 }
 
@@ -97,7 +103,7 @@ export interface MaterialSeizedItem {
   company?: string;
   quantity?: string;
   location?: string;
-  raidingAuthority?: 'N_A' | 'Agriculture' | 'Police' | 'Wing' | 'Other';
+  raidingAuthority?: string;    // was: 'N_A' | 'Agriculture' | 'Police' | 'Wing' | 'Other'
   raidingAuthorityOther?: string;
   dateSeized?: string;
 }
@@ -120,7 +126,7 @@ export interface VehicleInfo {
   make?: string;
   model?: string;
   registrationNumber?: string;
-  ownershipType?: 'N_A' | 'Owned' | 'Leased' | 'Unknown';
+  ownershipType?: string;       // was: 'N_A' | 'Owned' | 'Leased' | 'Unknown'
 }
 
 // Assets
@@ -133,7 +139,7 @@ export interface AssociateInfo {
   id?: string;
   name?: string;
   relationship?: string;
-  role?: 'N_A' | 'Associate' | 'Employee' | 'Family';
+  role?: string;                // was: 'N_A' | 'Associate' | 'Employee' | 'Family'
   contactInfo?: string;
   notes?: string;
 }
@@ -177,7 +183,7 @@ export interface FamilyBackground {
 
 // Current Status
 export interface CurrentStatus {
-  status?: 'Active' | 'Inactive' | 'Arrested' | 'Absconding' | 'Unknown';
+  status?: string;              // was: 'Active' | 'Inactive' | 'Arrested' | 'Absconding' | 'Unknown'
   lastKnownLocation?: string;
   statusDate?: string;
   remarks?: string;

@@ -134,8 +134,8 @@ const AppRoutes = () => {
 
 
       {/*--------------Admin Routes------------- */}
-      <Route path="/admin" element={<ProtectedRoute> <RoleBasedRoute allowedRoles={['ADMIN']}><AdminDashboard /></RoleBasedRoute></ProtectedRoute>} />
-      
+      <Route path="/admin" element={<ProtectedRoute><RoleBasedRoute allowedRoles={['ADMIN']}>...</RoleBasedRoute></ProtectedRoute>} />
+
       <Route path="/admin/clients"
         element={
           <ProtectedRoute>
@@ -384,7 +384,13 @@ const AppRoutes = () => {
 
 
       {/*--------------Super-Admin Routes------------- */}
-      <Route path="/super-admin/cases" element={<SuperAdminDashboard />} />
+      <Route path="/super-admin/cases" element={
+        <ProtectedRoute>
+          <RoleBasedRoute allowedRoles={['SUPER_ADMIN']}>
+            <SuperAdminDashboard />
+          </RoleBasedRoute>
+        </ProtectedRoute>
+      } />
       <Route
         path="/super-admin/cases/:caseId"
         element={
@@ -395,13 +401,13 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
-      <Route path="/super-admin/profiles" element={ <RoleBasedRoute allowedRoles={['SUPER_ADMIN', ]}><SuperAdminDashboard /></RoleBasedRoute>} />
-      <Route path="/super-admin/pre-reports" element={ <RoleBasedRoute allowedRoles={['SUPER_ADMIN', ]}><SuperAdminDashboard /></RoleBasedRoute>} />
-      <Route path="/super-admin/clients" element={ <RoleBasedRoute allowedRoles={['SUPER_ADMIN', ]}><SuperAdminDashboard /></RoleBasedRoute>} />
-      <Route path="/super-admin/finalreports" element={ <RoleBasedRoute allowedRoles={['SUPER_ADMIN']}><SuperAdminDashboard /></RoleBasedRoute>} />
-      <Route path="/super-admin/loa" element={ <RoleBasedRoute allowedRoles={['SUPER_ADMIN', ]}><SuperAdminDashboard /></RoleBasedRoute>} />
-      <Route path="/super-admin/loa/create" element={ <RoleBasedRoute allowedRoles={['SUPER_ADMIN', ]}><SuperAdminDashboard /></RoleBasedRoute>} />
-      <Route path="/super-admin/proposals" element={ <RoleBasedRoute allowedRoles={['SUPER_ADMIN', ]}><SuperAdminDashboard /></RoleBasedRoute>} />
+      <Route path="/super-admin/profiles" element={<RoleBasedRoute allowedRoles={['SUPER_ADMIN',]}><SuperAdminDashboard /></RoleBasedRoute>} />
+      <Route path="/super-admin/pre-reports" element={<RoleBasedRoute allowedRoles={['SUPER_ADMIN',]}><SuperAdminDashboard /></RoleBasedRoute>} />
+      <Route path="/super-admin/clients" element={<RoleBasedRoute allowedRoles={['SUPER_ADMIN',]}><SuperAdminDashboard /></RoleBasedRoute>} />
+      <Route path="/super-admin/finalreports" element={<RoleBasedRoute allowedRoles={['SUPER_ADMIN']}><SuperAdminDashboard /></RoleBasedRoute>} />
+      <Route path="/super-admin/loa" element={<RoleBasedRoute allowedRoles={['SUPER_ADMIN',]}><SuperAdminDashboard /></RoleBasedRoute>} />
+      <Route path="/super-admin/loa/create" element={<RoleBasedRoute allowedRoles={['SUPER_ADMIN',]}><SuperAdminDashboard /></RoleBasedRoute>} />
+      <Route path="/super-admin/proposals" element={<RoleBasedRoute allowedRoles={['SUPER_ADMIN',]}><SuperAdminDashboard /></RoleBasedRoute>} />
       <Route
         path="/super-admin/loa/:id/edit"
         element={
